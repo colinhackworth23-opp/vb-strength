@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="VB Strength">
+<title>VB Strength Program</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bg: #ffffff;
+    --bg2: #f5f5f5;
+    --bg3: #eeeeee;
+    --text: #111111;
+    --text2: #666666;
+    --text3: #999999;
+    --border: rgba(0,0,0,0.1);
+    --border2: rgba(0,0,0,0.2);
+    --blue-bg: #E6F1FB;
+    --blue: #185FA5;
+    --green-bg: #EAF3DE;
+    --green: #3B6D11;
+    --amber-bg: #FAEEDA;
+    --amber: #854F0B;
+    --red-bg: #FCEBEB;
+    --red: #A32D2D;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a1a;
+      --bg2: #242424;
+      --bg3: #2e2e2e;
+      --text: #f0f0f0;
+      --text2: #aaaaaa;
+      --text3: #777777;
+      --border: rgba(255,255,255,0.1);
+      --border2: rgba(255,255,255,0.2);
+      --blue-bg: #0d2e4a;
+      --blue: #6db3f2;
+      --green-bg: #1a2e10;
+      --green: #7ec850;
+      --amber-bg: #2e1f00;
+      --amber: #f0a830;
+      --red-bg: #2e0d0d;
+      --red: #f07070;
+    }
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; background: var(--bg3); color: var(--text); min-height: 100vh; }
+  .app { max-width: 430px; margin: 0 auto; background: var(--bg3); min-height: 100vh; position: relative; padding-bottom: 80px; }
+
+  /* Header */
+  .header { background: var(--bg); padding: env(safe-area-inset-top, 44px) 20px 14px; border-bottom: 0.5px solid var(--border); position: sticky; top: 0; z-index: 10; }
+  .header-week { font-size: 11px; font-weight: 600; color: var(--text2); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 2px; }
+  .header-title { font-size: 22px; font-weight: 600; color: var(--text); }
+  .header-meta { font-size: 12px; color: var(--text2); margin-top: 3px; }
+
+  /* Day strip */
+  .day-strip { background: var(--bg); border-bottom: 0.5px solid var(--border); display: flex; overflow-x: auto; padding: 0 8px; scrollbar-width: none; position: sticky; top: calc(env(safe-area-inset-top, 44px) + 68px); z-index: 10; }
+  .day-strip::-webkit-scrollbar { display: none; }
+  .day-pill { flex-shrink: 0; padding: 10px 12px; font-size: 12px; font-weight: 600; color: var(--text2); text-align: center; border-bottom: 2px solid transparent; cursor: pointer; background: none; border-left: none; border-right: none; border-top: none; white-space: nowrap; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .day-pill.active { color: var(--text); border-bottom: 2px solid var(--text); }
+  .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--border2); }
+  .lift-day .dot { background: var(--blue); }
+  .vb-day .dot { background: var(--green); }
+  .pump-day .dot { background: var(--amber); }
+  .day-pill.active .dot { opacity: 0; }
+
+  /* Sections */
+  .section { margin: 12px 16px 0; background: var(--bg); border-radius: var(--radius); border: 0.5px solid var(--border); overflow: hidden; }
+  .section-header { padding: 10px 14px; border-bottom: 0.5px solid var(--border); font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text2); }
+
+  /* Lift rows */
+  .lift-row { padding: 11px 14px; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; gap: 8px; }
+  .lift-row:last-child { border-bottom: none; }
+  .lift-label { font-size: 13px; color: var(--text); font-weight: 500; flex: 1; min-width: 0; }
+  .lift-sub { font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 1px; }
+  .lift-target { font-size: 13px; font-weight: 600; color: var(--text); text-align: right; white-space: nowrap; }
+  .badge { font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 600; white-space: nowrap; }
+  .badge-warmup { background: var(--bg3); color: var(--text2); }
+  .badge-work { background: var(--blue-bg); color: var(--blue); }
+
+  /* Accessory rows */
+  .acc-row { padding: 11px 14px; border-bottom: 0.5px solid var(--border); }
+  .acc-row:last-child { border-bottom: none; }
+  .acc-top { display: flex; align-items: baseline; gap: 6px; margin-bottom: 3px; flex-wrap: wrap; }
+  .acc-name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .acc-meta { font-size: 11px; color: var(--text2); }
+  .acc-rec { font-size: 11px; color: var(--blue); font-weight: 600; }
+  .acc-cue { font-size: 11px; color: var(--text2); margin-bottom: 8px; line-height: 1.45; }
+  .set-inputs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .set-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .set-lbl { font-size: 10px; color: var(--text3); }
+  .set-input { width: 52px; height: 32px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--bg2); font-size: 13px; font-weight: 600; text-align: center; color: var(--text); font-family: inherit; }
+  .set-input:focus { outline: none; border-color: var(--blue); background: var(--bg); }
+
+  /* Callouts */
+  .callout { margin: 12px 16px 0; padding: 11px 14px; border-radius: var(--radius); font-size: 12px; line-height: 1.55; font-weight: 500; }
+  .callout-blue { background: var(--blue-bg); color: var(--blue); }
+  .callout-green { background: var(--green-bg); color: var(--green); }
+  .callout-amber { background: var(--amber-bg); color: var(--amber); }
+  .callout-gray { background: var(--bg2); color: var(--text2); }
+  .callout-success { background: var(--green-bg); color: var(--green); }
+  .callout-error { background: var(--red-bg); color: var(--red); }
+
+  /* Mobility */
+  .mob-row { padding: 11px 14px; border-bottom: 0.5px solid var(--border); display: flex; align-items: flex-start; gap: 10px; }
+  .mob-row:last-child { border-bottom: none; }
+  .mob-check { width: 20px; height: 20px; border-radius: 5px; border: 0.5px solid var(--border2); background: var(--bg2); flex-shrink: 0; margin-top: 1px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .mob-check.checked { background: var(--text); border-color: var(--text); }
+  .mob-check.checked::after { content: ''; width: 9px; height: 5px; border-left: 2px solid var(--bg); border-bottom: 2px solid var(--bg); transform: rotate(-45deg) translateY(-1px); display: block; }
+  .mob-info { flex: 1; }
+  .mob-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .mob-detail { font-size: 11px; color: var(--text2); line-height: 1.4; }
+  .mob-vol { font-size: 11px; color: var(--blue); font-weight: 600; margin-top: 2px; }
+
+  /* Day tag */
+  .day-tag { display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 20px; margin-bottom: 8px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .tag-lift { background: var(--blue-bg); color: var(--blue); }
+  .tag-vb { background: var(--green-bg); color: var(--green); }
+  .tag-pump { background: var(--amber-bg); color: var(--amber); }
+  .tag-rest { background: var(--bg2); color: var(--text2); }
+
+  /* Save button */
+  .save-btn { display: block; width: calc(100% - 32px); margin: 12px 16px 0; padding: 14px; background: var(--text); color: var(--bg); border: none; border-radius: var(--radius); font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; text-align: center; }
+  .save-btn:disabled { opacity: 0.45; }
+  .save-btn:active { opacity: 0.8; }
+
+  /* Bottom nav */
+  .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; background: var(--bg); border-top: 0.5px solid var(--border); display: flex; padding: 10px 0 env(safe-area-inset-bottom, 16px); z-index: 20; }
+  .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: none; cursor: pointer; padding: 4px 0; }
+  .nav-icon { width: 22px; height: 22px; border-radius: 5px; background: var(--border); }
+  .nav-icon.on { background: var(--text); }
+  .nav-lbl { font-size: 10px; color: var(--text2); font-weight: 500; }
+  .nav-lbl.on { color: var(--text); font-weight: 700; }
+
+  /* History */
+  .hist-row { padding: 12px 14px; border-bottom: 0.5px solid var(--border); }
+  .hist-row:last-child { border-bottom: none; }
+  .hist-date { font-size: 11px; color: var(--text2); margin-bottom: 3px; }
+  .hist-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .hist-detail { font-size: 11px; color: var(--text2); }
+
+  /* Maxes */
+  .max-row { padding: 12px 14px; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; }
+  .max-row:last-child { border-bottom: none; }
+  .max-lbl { font-size: 14px; font-weight: 500; color: var(--text); flex: 1; }
+  .max-input { width: 90px; height: 36px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--bg2); font-size: 14px; font-weight: 600; text-align: center; color: var(--text); font-family: inherit; }
+  .max-input:focus { outline: none; border-color: var(--blue); background: var(--bg); }
+
+  /* Rest hero */
+  .rest-hero { margin: 20px 16px 0; padding: 28px 20px; background: var(--bg); border-radius: var(--radius); border: 0.5px solid var(--border); text-align: center; }
+  .rest-title { font-size: 18px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
+  .rest-body { font-size: 13px; color: var(--text2); line-height: 1.65; }
+
+  .empty-state { padding: 48px 20px; text-align: center; color: var(--text2); font-size: 13px; line-height: 1.65; }
+  .spacer { height: 16px; }
+  .screen-title { padding: 18px 16px 4px; font-size: 20px; font-weight: 700; color: var(--text); }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .day-screen { display: none; }
+  .day-screen.active { display: block; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER (program only) -->
+  <div id="programHeader">
+    <div class="header">
+      <div class="header-week">Week 3 of 8</div>
+      <div class="header-title">Intensification</div>
+      <div class="header-meta">Apr 14–20 &middot; 73–83% &middot; 4&times;5 &middot; RPE 7–8</div>
+    </div>
+    <div class="day-strip">
+      <button class="day-pill lift-day active" onclick="showDay(0)">Mon<div class="dot"></div></button>
+      <button class="day-pill lift-day" onclick="showDay(1)">Tue<div class="dot"></div></button>
+      <button class="day-pill vb-day" onclick="showDay(2)">Wed<div class="dot"></div></button>
+      <button class="day-pill" onclick="showDay(3)">Thu<div class="dot"></div></button>
+      <button class="day-pill lift-day" onclick="showDay(4)">Fri<div class="dot"></div></button>
+      <button class="day-pill pump-day" onclick="showDay(5)">Sat<div class="dot"></div></button>
+      <button class="day-pill" onclick="showDay(6)">Sun<div class="dot"></div></button>
+    </div>
+  </div>
+
+  <!-- ==================== PROGRAM SCREEN ==================== -->
+  <div class="screen active" id="screen-program">
+
+    <!-- MON -->
+    <div class="day-screen active" id="day-0">
+      <div style="padding:12px 16px 0"><span class="day-tag tag-lift">Lifting day</span></div>
+      <div class="section">
+        <div class="section-header">Back squat &middot; primary lift</div>
+        <div class="lift-row"><div class="lift-label">Warm-up 1<div class="lift-sub">Pattern activation ~60% TM</div></div><span class="badge badge-warmup">5 reps</span><div class="lift-target">140 lbs</div></div>
+        <div class="lift-row"><div class="lift-label">Warm-up 2<div class="lift-sub">Bridge to working weight</div></div><span class="badge badge-warmup">2 reps</span><div class="lift-target">155 lbs</div></div>
+        <div class="lift-row"><div class="lift-label">Working set 1<div class="lift-sub">73% TM</div></div><span class="badge badge-work">5 reps</span><div class="lift-target">170 lbs</div></div>
+        <div class="lift-row"><div class="lift-label">Working set 2<div class="lift-sub">76% TM</div></div><span class="badge badge-work">5 reps</span><div class="lift-target">175 lbs</div></div>
+        <div class="lift-row"><div class="lift-label">Working set 3<div class="lift-sub">80% TM</div></div><span class="badge badge-work">5 reps</span><div class="lift-target">185 lbs</div></div>
+        <div class="lift-row"><div class="lift-label">Working set 4<div class="lift-sub">83% TM</div></div><span class="badge badge-work">5 reps</span><div class="lift-target">190 lbs</div></div>
+      </div>
+      <div class="section">
+        <div class="section-header">Accessories &middot; log your weights</div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Bulgarian split squat</span><span class="acc-meta">3 &times; 8 ea</span><span class="acc-rec">rec: 30/40/50</span></div><div class="acc-cue">Front shin vertical, drive through heel — unilateral VB takeoff pattern</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Bulgarian Split Squat" data-s="0" type="text" value="30" inputmode="text"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Bulgarian Split Squat" data-s="1" type="text" value="40" inputmode="text"></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Bulgarian Split Squat" data-s="2" type="text" value="50" inputmode="text"></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Nordic hamstring curl</span><span class="acc-meta">3 &times; 5</span><span class="acc-rec">rec: BW</span></div><div class="acc-cue">Brace hard, lower as slow as possible — eccentric control is the stimulus</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Nordic Hamstring Curl" data-s="0" type="text" value="BW"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Nordic Hamstring Curl" data-s="1" type="text" value="BW"></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Nordic Hamstring Curl" data-s="2" type="text" value="BW"></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Seated calf raise</span><span class="acc-meta">3 &times; 12</span><span class="acc-rec">rec: 100/100/110</span></div><div class="acc-cue">Full ROM, pause at bottom — soleus reactive ankle stiffness</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Seated Calf Raise" data-s="0" type="text" value="100"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Seated Calf Raise" data-s="1" type="text" value="100"></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Seated Calf Raise" data-s="2" type="text" value="110"></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Standing calf raise</span><span class="acc-meta">2 &times; 12</span><span class="acc-rec">rec: BW</span></div><div class="acc-cue">3s eccentric, full stretch at bottom — Achilles tendon loading</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Standing Calf Raise" data-s="0" type="text" value="BW"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Standing Calf Raise" data-s="1" type="text" value="BW"></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Copenhagen plank</span><span class="acc-meta">3 &times; 20s ea</span><span class="acc-rec">rec: BW</span></div><div class="acc-cue">Hips level, don't let bottom hip sag — adductor strength for lateral movement</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Copenhagen Plank" data-s="0" type="text" value="BW"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Copenhagen Plank" data-s="1" type="text" value="BW"></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Copenhagen Plank" data-s="2" type="text" value="BW"></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Pallof press</span><span class="acc-meta">2 &times; 10 ea</span><span class="acc-rec">rec: 30/35</span></div><div class="acc-cue">Tall spine, resist rotation — anti-rotation core for explosive push-off</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Pallof Press" data-s="0" type="text" value="30"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Pallof Press" data-s="1" type="text" value="35"></div></div></div>
+      </div>
+      <div class="section">
+        <div class="section-header">Power block &middot; vertical jump (15 min)</div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Depth drop &rarr; box jump</span><span class="acc-meta">4 &times; 4</span><span class="acc-rec">rec: BW</span></div><div class="acc-cue">Drop, instant reaction — minimize ground contact time</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Depth Drop Box Jump" data-s="0" type="text" value="BW"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Depth Drop Box Jump" data-s="1" type="text" value="BW"></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Depth Drop Box Jump" data-s="2" type="text" value="BW"></div><div class="set-wrap"><span class="set-lbl">S4</span><input class="set-input" data-ex="Depth Drop Box Jump" data-s="3" type="text" value="BW"></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Single-leg bound &rarr; stick</span><span class="acc-meta">3 &times; 5 ea</span><span class="acc-rec">rec: BW</span></div><div class="acc-cue">Drive knee up, stick landing 2s — mimics VB approach takeoff</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Single Leg Bound" data-s="0" type="text" value="BW"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Single Leg Bound" data-s="1" type="text" value="BW"></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Single Leg Bound" data-s="2" type="text" value="BW"></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Trap bar jump</span><span class="acc-meta">4 &times; 4</span><span class="acc-rec">rec: 155 lbs</span></div><div class="acc-cue">Hinge back, explode through hips — transfers DL strength to power</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Trap Bar Jump" data-s="0" type="text" value="155"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Trap Bar Jump" data-s="1" type="text" value="155"></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Trap Bar Jump" data-s="2" type="text" value="155"></div><div class="set-wrap"><span class="set-lbl">S4</span><input class="set-input" data-ex="Trap Bar Jump" data-s="3" type="text" value="155"></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Ankle pogo (fast)</span><span class="acc-meta">3 &times; 20</span><span class="acc-rec">rec: BW</span></div><div class="acc-cue">Minimal knee bend, fast ground contact — reactive ankle stiffness</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Ankle Pogo" data-s="0" type="text" value="BW"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Ankle Pogo" data-s="1" type="text" value="BW"></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Ankle Pogo" data-s="2" type="text" value="BW"></div></div></div>
+      </div>
+      <div class="callout callout-blue">Depth drops are new this week. Land soft, react fast — don't pause at the bottom.</div>
+      <div id="status-0"></div>
+      <button class="save-btn" id="btn-0" onclick="saveSession(0,'Week 3 - Monday - Back Squat')">Save session</button>
+      <div class="spacer"></div>
+    </div>
+
+    <!-- TUE -->
+    <div class="day-screen" id="day-1">
+      <div style="padding:12px 16px 0"><span class="day-tag tag-lift">Lifting day</span></div>
+      <div class="section">
+        <div class="section-header">Incline bench &middot; primary lift</div>
+        <div class="lift-row"><div class="lift-label">Warm-up 1<div class="lift-sub">~60% TM</div></div><span class="badge badge-warmup">5 reps</span><div class="lift-target">110 lbs</div></div>
+        <div class="lift-row"><div class="lift-label">Warm-up 2<div class="lift-sub">Bridge</div></div><span class="badge badge-warmup">2 reps</span><div class="lift-target">125 lbs</div></div>
+        <div class="lift-row"><div class="lift-label">Working set 1<div class="lift-sub">73% TM</div></div><span class="badge badge-work">5 reps</span><div class="lift-target">135 lbs</div></div>
+        <div class="lift-row"><div class="lift-label">Working set 2<div class="lift-sub">76% TM</div></div><span class="badge badge-work">5 reps</span><div class="lift-target">140 lbs</div></div>
+        <div class="lift-row"><div class="lift-label">Working set 3<div class="lift-sub">80% TM</div></div><span class="badge badge-work">5 reps</span><div class="lift-target">150 lbs</div></div>
+        <div class="lift-row"><div class="lift-label">Working set 4<div class="lift-sub">83% TM</div></div><span class="badge badge-work">5 reps</span><div class="lift-target">155 lbs</div></div>
+      </div>
+      <div class="section">
+        <div class="section-header">OHP &middot; primary lift</div>
+        <div class="lift-row"><div class="lift-label">Warm-up 1<div class="lift-sub">~60% TM</div></div><span class="badge badge-warmup">5 reps</span><div class="lift-target">70 lbs</div></div>
+        <div class="lift-row"><div class="lift-label">Warm-up 2<div class="lift-sub">Bridge</div></div><span class="badge badge-warmup">2 reps</span><div class="lift-target">80 lbs</div></div>
+        <div class="lift-row"><div class="lift-label">Working set 1<div class="lift-sub">73% TM</div></div><span class="badge badge-work">5 reps</span><div class="lift-target">85 lbs</div></div>
+        <div class="lift-row"><div class="lift-label">Working set 2<div class="lift-sub">76% TM</div></div><span class="badge badge-work">5 reps</span><div class="lift-target">85 lbs</div></div>
+        <div class="lift-row"><div class="lift-label">Working set 3<div class="lift-sub">80% TM</div></div><span class="badge badge-work">5 reps</span><div class="lift-target">90 lbs</div></div>
+        <div class="lift-row"><div class="lift-label">Working set 4<div class="lift-sub">83% TM</div></div><span class="badge badge-work">5 reps</span><div class="lift-target">95 lbs</div></div>
+      </div>
+      <div class="section">
+        <div class="section-header">Accessories &middot; log your weights</div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Weighted pull-up</span><span class="acc-meta">4 &times; 5</span><span class="acc-rec">rec: BW/+10/+10</span></div><div class="acc-cue">Depress scapula before pulling, lead with elbows — lat torque for arm swing</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Weighted Pull-Up" data-s="0" type="text" value="BW"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Weighted Pull-Up" data-s="1" type="text" value="+10"></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Weighted Pull-Up" data-s="2" type="text" value="+10"></div><div class="set-wrap"><span class="set-lbl">S4</span><input class="set-input" data-ex="Weighted Pull-Up" data-s="3" type="text" value="+10"></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Single-arm DB row</span><span class="acc-meta">3 &times; 10 ea</span><span class="acc-rec">rec: 70/80/85</span></div><div class="acc-cue">Chest tall, row to hip not armpit — thoracic posture at 6'10"</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Single Arm DB Row" data-s="0" type="text" value="70"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Single Arm DB Row" data-s="1" type="text" value="80"></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Single Arm DB Row" data-s="2" type="text" value="85"></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Facepull</span><span class="acc-meta">3 &times; 15</span><span class="acc-rec">rec: green band</span></div><div class="acc-cue">Pull to forehead, elbows high, pause at end range — NON-NEGOTIABLE rear cuff</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Facepull" data-s="0" type="text" value="grn"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Facepull" data-s="1" type="text" value="grn"></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Facepull" data-s="2" type="text" value="grn"></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">DB lateral raise</span><span class="acc-meta">3 &times; 15</span><span class="acc-rec">rec: 20/20/20</span></div><div class="acc-cue">Lead with elbow, stop at shoulder height — medial delt stability</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="DB Lateral Raise" data-s="0" type="text" value="20"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="DB Lateral Raise" data-s="1" type="text" value="20"></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="DB Lateral Raise" data-s="2" type="text" value="20"></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Tricep pushdown</span><span class="acc-meta">3 &times; 12</span><span class="acc-rec">rec: 50/60/65</span></div><div class="acc-cue">Elbows pinned, full extension at bottom — wrist snap at ball contact</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Tricep Pushdown" data-s="0" type="text" value="50"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Tricep Pushdown" data-s="1" type="text" value="60"></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Tricep Pushdown" data-s="2" type="text" value="65"></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Wrist roller</span><span class="acc-meta">2 &times; 30s</span><span class="acc-rec">rec: BW</span></div><div class="acc-cue">Slow and controlled both directions — forearm endurance through long sets</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Wrist Roller" data-s="0" type="text" value="BW"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Wrist Roller" data-s="1" type="text" value="BW"></div></div></div>
+      </div>
+      <div class="section">
+        <div class="section-header">Power block &middot; hitting power (15 min)</div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Med ball spike sim</span><span class="acc-meta">4 &times; 6</span><span class="acc-rec">rec: 10 lbs</span></div><div class="acc-cue">Full wind-up, accelerate through contact — direct arm swing pattern</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Med Ball Spike Sim" data-s="0" type="text" value="10"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Med Ball Spike Sim" data-s="1" type="text" value="10"></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Med Ball Spike Sim" data-s="2" type="text" value="10"></div><div class="set-wrap"><span class="set-lbl">S4</span><input class="set-input" data-ex="Med Ball Spike Sim" data-s="3" type="text" value="10"></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Med ball rotational throw</span><span class="acc-meta">4 &times; 6 ea</span><span class="acc-rec">rec: 10 lbs</span></div><div class="acc-cue">Hips before shoulders, max trunk rotation — primary hitting velocity driver</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Med Ball Rotational Throw" data-s="0" type="text" value="10"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Med Ball Rotational Throw" data-s="1" type="text" value="10"></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Med Ball Rotational Throw" data-s="2" type="text" value="10"></div><div class="set-wrap"><span class="set-lbl">S4</span><input class="set-input" data-ex="Med Ball Rotational Throw" data-s="3" type="text" value="10"></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Explosive push-up</span><span class="acc-meta">3 &times; 5</span><span class="acc-rec">rec: BW</span></div><div class="acc-cue">Tight core, max push velocity — upper body RFD, protect shoulder at contact</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Explosive Push-Up" data-s="0" type="text" value="BW"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Explosive Push-Up" data-s="1" type="text" value="BW"></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Explosive Push-Up" data-s="2" type="text" value="BW"></div></div></div>
+      </div>
+      <div class="callout callout-blue">Rotational throws are the most direct hitting power stimulus in the gym. Full trunk wind-up every rep.</div>
+      <div id="status-1"></div>
+      <button class="save-btn" id="btn-1" onclick="saveSession(1,'Week 3 - Tuesday - Incline Bench + OHP')">Save session</button>
+      <div class="spacer"></div>
+    </div>
+
+    <!-- WED -->
+    <div class="day-screen" id="day-2">
+      <div style="padding:12px 16px 0"><span class="day-tag tag-vb">VB practice tonight</span></div>
+      <div class="callout callout-green" style="margin-top:12px">Practice 8–10:30pm. No lifting today. Do this pre-practice prep 30–45 min before you play.</div>
+      <div class="section">
+        <div class="section-header">Pre-practice activation &middot; 20–25 min</div>
+        <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Assault bike easy</div><div class="mob-detail">Low intensity — raise core temp without spiking HR</div><div class="mob-vol">5 min</div></div></div>
+        <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Hip 90/90 switches</div><div class="mob-detail">Full ROM both sides — hip capsule prep for lateral movement</div><div class="mob-vol">2 &times; 8 each</div></div></div>
+        <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Ankle CARs + heel raise</div><div class="mob-detail">Dorsiflexion — directly limits jump landing depth if stiff</div><div class="mob-vol">2 &times; 10 each</div></div></div>
+        <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Adductor rock-back</div><div class="mob-detail">Groin prep — lateral VB movement protection</div><div class="mob-vol">2 &times; 8 each</div></div></div>
+        <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Band pull-apart</div><div class="mob-detail">Rear cuff activation — mandatory before spiking and blocking</div><div class="mob-vol">3 &times; 15</div></div></div>
+        <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Prone Y-T-W</div><div class="mob-detail">Lower trap + scapular control — overhead hitting mechanics</div><div class="mob-vol">2 &times; 8 each</div></div></div>
+        <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Ankle pogo (small, fast)</div><div class="mob-detail">Achilles stiffness — biggest factor in reactive jump height</div><div class="mob-vol">2 &times; 20</div></div></div>
+        <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Approach jumps at 70%</div><div class="mob-detail">Pattern warm-up — don't go max effort before practice starts</div><div class="mob-vol">3–4 reps</div></div></div>
+      </div>
+      <div class="callout callout-green">VB practice is your energy systems work tonight. Don't add any gym sessions after.</div>
+      <div class="spacer"></div>
+    </div>
+
+    <!-- THU -->
+    <div class="day-screen" id="day-3">
+      <div style="padding:12px 16px 0"><span class="day-tag tag-rest">Recovery day</span></div>
+      <div class="callout callout-gray" style="margin-top:12px">Between VB practice last night and heavy hex bar tomorrow — protect Friday's session. Keep everything easy.</div>
+      <div class="section">
+        <div class="section-header">Mobility flow &middot; 20–30 min</div>
+        <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Hip 90/90 + thoracic rotation</div><div class="mob-detail">Hip capsule + t-spine — two biggest limiters at 6'10"</div><div class="mob-vol">3 &times; 8 each, slow</div></div></div>
+        <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Couch stretch</div><div class="mob-detail">Hip flexor — critical for DL setup, gets compressed sitting</div><div class="mob-vol">2 min each side</div></div></div>
+        <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Adductor side-lying stretch</div><div class="mob-detail">Groin recovery from lateral VB movement last night</div><div class="mob-vol">90s each side</div></div></div>
+        <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Ankle CARs (slow)</div><div class="mob-detail">Full circles — Achilles + ankle joint recovery</div><div class="mob-vol">2 &times; 10 each</div></div></div>
+        <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Dead bug (slow)</div><div class="mob-detail">Anterior core — re-establish brace without loading the back</div><div class="mob-vol">2 &times; 6 each side</div></div></div>
+        <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Cat-cow + child's pose</div><div class="mob-detail">Lumbar decompression after VB lateral loading</div><div class="mob-vol">2 min continuous</div></div></div>
+      </div>
+      <div class="section">
+        <div class="section-header">Optional light cardio</div>
+        <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Easy walk or bike</div><div class="mob-detail">20–30 min conversational pace — blood flow without fatigue</div><div class="mob-vol">Zone 1 only</div></div></div>
+      </div>
+      <div class="callout callout-gray">Goal: arrive at Friday's hex bar session completely fresh. If anything feels off, skip the cardio.</div>
+      <div class="spacer"></div>
+    </div>
+
+    <!-- FRI -->
+    <div class="day-screen" id="day-4">
+      <div style="padding:12px 16px 0"><span class="day-tag tag-lift">Lifting day</span></div>
+      <div class="section">
+        <div class="section-header">Hex bar deadlift &middot; primary lift</div>
+        <div class="lift-row"><div class="lift-label">Warm-up 1<div class="lift-sub">Pattern activation ~60% TM</div></div><span class="badge badge-warmup">5 reps</span><div class="lift-target">190 lbs</div></div>
+        <div class="lift-row"><div class="lift-label">Warm-up 2<div class="lift-sub">Bridge to working weight</div></div><span class="badge badge-warmup">2 reps</span><div class="lift-target">210 lbs</div></div>
+        <div class="lift-row"><div class="lift-label">Working set 1<div class="lift-sub">73% TM</div></div><span class="badge badge-work">5 reps</span><div class="lift-target">230 lbs</div></div>
+        <div class="lift-row"><div class="lift-label">Working set 2<div class="lift-sub">76% TM</div></div><span class="badge badge-work">5 reps</span><div class="lift-target">240 lbs</div></div>
+        <div class="lift-row"><div class="lift-label">Working set 3<div class="lift-sub">80% TM</div></div><span class="badge badge-work">5 reps</span><div class="lift-target">250 lbs</div></div>
+        <div class="lift-row"><div class="lift-label">Working set 4<div class="lift-sub">83% TM</div></div><span class="badge badge-work">5 reps</span><div class="lift-target">260 lbs</div></div>
+      </div>
+      <div class="section">
+        <div class="section-header">Accessories &middot; log your weights</div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Barbell hip thrust</span><span class="acc-meta">3 &times; 8</span><span class="acc-rec">rec: 135/155/175</span></div><div class="acc-cue">Drive through heels, pause 1s at top — glute max for jump height</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Barbell Hip Thrust" data-s="0" type="text" value="135"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Barbell Hip Thrust" data-s="1" type="text" value="155"></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Barbell Hip Thrust" data-s="2" type="text" value="175"></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Glute-ham raise</span><span class="acc-meta">3 &times; 6</span><span class="acc-rec">rec: BW</span></div><div class="acc-cue">Brace hard, lower as slow as possible — most effective knee flexor</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Glute Ham Raise" data-s="0" type="text" value="BW"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Glute Ham Raise" data-s="1" type="text" value="BW"></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Glute Ham Raise" data-s="2" type="text" value="BW"></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Back extension (45&deg;)</span><span class="acc-meta">3 &times; 12</span><span class="acc-rec">rec: BW/+25/+25</span></div><div class="acc-cue">Neutral spine, don't hyperextend at top — lumbar protection at 6'10"</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Back Extension" data-s="0" type="text" value="BW"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Back Extension" data-s="1" type="text" value="+25"></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Back Extension" data-s="2" type="text" value="+25"></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Suitcase carry</span><span class="acc-meta">3 &times; 30m ea</span><span class="acc-rec">rec: 70/80/80</span></div><div class="acc-cue">Tall spine, don't lean away from load — lateral core for VB movement</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Suitcase Carry" data-s="0" type="text" value="70"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Suitcase Carry" data-s="1" type="text" value="80"></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Suitcase Carry" data-s="2" type="text" value="80"></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Single-leg RDL</span><span class="acc-meta">3 &times; 10 ea</span><span class="acc-rec">rec: 30/35/35</span></div><div class="acc-cue">Hinge until hamstring pull, slow return — eccentric jump landing control</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Single Leg RDL" data-s="0" type="text" value="30"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Single Leg RDL" data-s="1" type="text" value="35"></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Single Leg RDL" data-s="2" type="text" value="35"></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Seated hip abduction</span><span class="acc-meta">2 &times; 20</span><span class="acc-rec">rec: light&rarr;med</span></div><div class="acc-cue">Controlled out and back — glute med for knee stability on jumps</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Hip Abduction" data-s="0" type="text" value="lgt"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Hip Abduction" data-s="1" type="text" value="med"></div></div></div>
+      </div>
+      <div class="section">
+        <div class="section-header">Power block &middot; explosiveness (15 min)</div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">VB approach jump</span><span class="acc-meta">4 &times; 5</span><span class="acc-rec">rec: BW, film it</span></div><div class="acc-cue">Full 3-step, 2-foot plant, max arm swing — measure height each week</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="VB Approach Jump" data-s="0" type="text" value="BW"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="VB Approach Jump" data-s="1" type="text" value="BW"></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="VB Approach Jump" data-s="2" type="text" value="BW"></div><div class="set-wrap"><span class="set-lbl">S4</span><input class="set-input" data-ex="VB Approach Jump" data-s="3" type="text" value="BW"></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Single-leg vertical (non-dom)</span><span class="acc-meta">3 &times; 4 ea</span><span class="acc-rec">rec: BW</span></div><div class="acc-cue">Drive knee up hard, full hip extension — reduce bilateral deficit</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Single Leg Vertical" data-s="0" type="text" value="BW"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Single Leg Vertical" data-s="1" type="text" value="BW"></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Single Leg Vertical" data-s="2" type="text" value="BW"></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Sled push 20m</span><span class="acc-meta">4 rounds</span><span class="acc-rec">rec: mod&rarr;heavy</span></div><div class="acc-cue">Low hips, drive through full hip extension — posterior chain endurance</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Sled Push" data-s="0" type="text" value="mod"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Sled Push" data-s="1" type="text" value="mod"></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Sled Push" data-s="2" type="text" value="hvy"></div><div class="set-wrap"><span class="set-lbl">S4</span><input class="set-input" data-ex="Sled Push" data-s="3" type="text" value="hvy"></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Assault bike sprints</span><span class="acc-meta">5 &times; 12s / 48s off</span><span class="acc-rec">rec: max effort</span></div><div class="acc-cue">Max output from first stroke — mirrors VB point energy system</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Assault Bike" data-s="0" type="text" value="max"></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Assault Bike" data-s="1" type="text" value="max"></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Assault Bike" data-s="2" type="text" value="max"></div><div class="set-wrap"><span class="set-lbl">S4</span><input class="set-input" data-ex="Assault Bike" data-s="3" type="text" value="max"></div><div class="set-wrap"><span class="set-lbl">S5</span><input class="set-input" data-ex="Assault Bike" data-s="4" type="text" value="max"></div></div></div>
+      </div>
+      <div class="callout callout-blue">Track your approach jump height today — compare to Week 1 baseline. This is your primary KPI.</div>
+      <div id="status-4"></div>
+      <button class="save-btn" id="btn-4" onclick="saveSession(4,'Week 3 - Friday - Hex Bar Deadlift')">Save session</button>
+      <div class="spacer"></div>
+    </div>
+
+    <!-- SAT -->
+    <div class="day-screen" id="day-5">
+      <div style="padding:12px 16px 0"><span class="day-tag tag-pump">Arm pump day</span></div>
+      <div class="callout callout-amber" style="margin-top:12px">No heavy loading, no leg work. Fun and upper body blood flow only. Leave 2–3 reps in the tank on everything.</div>
+      <div class="section">
+        <div class="section-header">Arm pump &middot; log your weights</div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">EZ bar curl</span><span class="acc-meta">4 &times; 10</span><span class="acc-rec">rec: moderate</span></div><div class="acc-cue">Full supination at top, slow eccentric — peak contraction focus</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="EZ Bar Curl" data-s="0" type="text" value=""></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="EZ Bar Curl" data-s="1" type="text" value=""></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="EZ Bar Curl" data-s="2" type="text" value=""></div><div class="set-wrap"><span class="set-lbl">S4</span><input class="set-input" data-ex="EZ Bar Curl" data-s="3" type="text" value=""></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Incline DB curl</span><span class="acc-meta">3 &times; 12</span><span class="acc-rec">rec: light-mod</span></div><div class="acc-cue">Full stretch at bottom — long head emphasis, great for arm size</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Incline DB Curl" data-s="0" type="text" value=""></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Incline DB Curl" data-s="1" type="text" value=""></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Incline DB Curl" data-s="2" type="text" value=""></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Hammer curl</span><span class="acc-meta">3 &times; 12</span><span class="acc-rec">rec: moderate</span></div><div class="acc-cue">Neutral grip, controlled — brachialis and forearm thickness</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Hammer Curl" data-s="0" type="text" value=""></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Hammer Curl" data-s="1" type="text" value=""></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Hammer Curl" data-s="2" type="text" value=""></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Tricep pushdown (rope)</span><span class="acc-meta">4 &times; 12</span><span class="acc-rec">rec: moderate</span></div><div class="acc-cue">Elbows pinned, flare at bottom — lateral head pump</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Tricep Pushdown Pump" data-s="0" type="text" value=""></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Tricep Pushdown Pump" data-s="1" type="text" value=""></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Tricep Pushdown Pump" data-s="2" type="text" value=""></div><div class="set-wrap"><span class="set-lbl">S4</span><input class="set-input" data-ex="Tricep Pushdown Pump" data-s="3" type="text" value=""></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Overhead tricep extension</span><span class="acc-meta">3 &times; 12</span><span class="acc-rec">rec: light-mod</span></div><div class="acc-cue">Full stretch overhead — long head, biggest part of the tricep</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="OHT Extension" data-s="0" type="text" value=""></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="OHT Extension" data-s="1" type="text" value=""></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="OHT Extension" data-s="2" type="text" value=""></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">DB lateral raise</span><span class="acc-meta">3 &times; 15</span><span class="acc-rec">rec: light</span></div><div class="acc-cue">Light weight, high reps — shoulder cap pump, keep it easy</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Lateral Raise Pump" data-s="0" type="text" value=""></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Lateral Raise Pump" data-s="1" type="text" value=""></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Lateral Raise Pump" data-s="2" type="text" value=""></div></div></div>
+        <div class="acc-row"><div class="acc-top"><span class="acc-name">Cable curl (single arm)</span><span class="acc-meta">3 &times; 12 ea</span><span class="acc-rec">rec: light-mod</span></div><div class="acc-cue">Constant tension throughout — finish with a hard squeeze at top</div><div class="set-inputs"><div class="set-wrap"><span class="set-lbl">S1</span><input class="set-input" data-ex="Cable Curl" data-s="0" type="text" value=""></div><div class="set-wrap"><span class="set-lbl">S2</span><input class="set-input" data-ex="Cable Curl" data-s="1" type="text" value=""></div><div class="set-wrap"><span class="set-lbl">S3</span><input class="set-input" data-ex="Cable Curl" data-s="2" type="text" value=""></div></div></div>
+      </div>
+      <div class="callout callout-amber">Keep it fun. No PRs today — just a good pump and get out in 45 min.</div>
+      <div id="status-5"></div>
+      <button class="save-btn" id="btn-5" onclick="saveSession(5,'Week 3 - Saturday - Arm Pump')">Save session</button>
+      <div class="spacer"></div>
+    </div>
+
+    <!-- SUN -->
+    <div class="day-screen" id="day-6">
+      <div style="padding:12px 16px 0"><span class="day-tag tag-rest">Full rest</span></div>
+      <div class="rest-hero">
+        <div class="rest-title">Rest day</div>
+        <div class="rest-body">Full recovery. No gym, no drills. Sleep, eat, hydrate.<br><br>At 6'10" and 240 lbs, your connective tissue needs this more than most. Adaptation happens during recovery — not the session.</div>
+      </div>
+      <div class="section" style="margin-top:12px">
+        <div class="section-header">Optional — if you feel like moving</div>
+        <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Easy walk</div><div class="mob-detail">20–30 min conversational pace — blood flow only</div><div class="mob-vol">Zone 1</div></div></div>
+        <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Hip + ankle mobility</div><div class="mob-detail">90/90s, ankle CARs, couch stretch — 10–15 min total</div><div class="mob-vol">Optional</div></div></div>
+      </div>
+      <div class="callout callout-gray" style="margin-top:12px">Monday is back squat day. Show up fresh.</div>
+      <div class="spacer"></div>
+    </div>
+
+  </div><!-- end program screen -->
+
+  <!-- ==================== HISTORY SCREEN ==================== -->
+  <div class="screen" id="screen-history">
+    <div class="screen-title">Session history</div>
+    <div id="history-content" style="margin-top:8px">
+      <div class="empty-state">Loading sessions...</div>
+    </div>
+  </div>
+
+  <!-- ==================== MAXES SCREEN ==================== -->
+  <div class="screen" id="screen-maxes">
+    <div class="screen-title">Training maxes</div>
+    <div class="section" style="margin-top:12px">
+      <div class="section-header">Current TMs &middot; update after PRs</div>
+      <div class="max-row"><div class="max-lbl">Back Squat</div><input class="max-input" id="tm-squat" type="text" value="230 lbs"></div>
+      <div class="max-row"><div class="max-lbl">Incline Bench</div><input class="max-input" id="tm-bench" type="text" value="185 lbs"></div>
+      <div class="max-row"><div class="max-lbl">Hex Bar Deadlift</div><input class="max-input" id="tm-dl" type="text" value="315 lbs"></div>
+      <div class="max-row"><div class="max-lbl">OHP (Strict)</div><input class="max-input" id="tm-ohp" type="text" value="115 lbs"></div>
+    </div>
+    <div id="maxes-status"></div>
+    <button class="save-btn" onclick="saveMaxes()">Save maxes to sheet</button>
+    <div class="callout callout-gray" style="margin-top:12px">When you finish the program, share your Google Sheet with me and I'll generate your next 8-week program from your logged data.</div>
+    <div class="spacer"></div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <button class="nav-btn" onclick="showScreen('program')">
+      <div class="nav-icon on" id="ni-program"></div>
+      <span class="nav-lbl on" id="nl-program">Program</span>
+    </button>
+    <button class="nav-btn" onclick="showScreen('history')">
+      <div class="nav-icon" id="ni-history"></div>
+      <span class="nav-lbl" id="nl-history">History</span>
+    </button>
+    <button class="nav-btn" onclick="showScreen('maxes')">
+      <div class="nav-icon" id="ni-maxes"></div>
+      <span class="nav-lbl" id="nl-maxes">Maxes</span>
+    </button>
+  </div>
+
+</div><!-- end app -->
+
+<script>
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzLuijUOxwOOV2NESQGajLZQwe4ZTf1d7xjdW5xXdBp6Oh7BFQ70pknZsLgaCGOEB47/exec';
+const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+function showDay(idx) {
+  document.querySelectorAll('.day-pill').forEach((p,i) => p.classList.toggle('active', i===idx));
+  document.querySelectorAll('.day-screen').forEach((s,i) => {
+    s.classList.toggle('active', i===idx);
+  });
+}
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.getElementById('programHeader').style.display = name === 'program' ? 'block' : 'none';
+  ['program','history','maxes'].forEach(n => {
+    document.getElementById('ni-' + n).className = 'nav-icon' + (n===name?' on':'');
+    document.getElementById('nl-' + n).className = 'nav-lbl' + (n===name?' on':'');
+  });
+  if (name === 'history') loadHistory();
+}
+
+function getInputs(dayIdx) {
+  const screen = document.getElementById('day-' + dayIdx);
+  if (!screen) return {};
+  const data = {};
+  screen.querySelectorAll('.set-input[data-ex]').forEach(inp => {
+    const ex = inp.getAttribute('data-ex');
+    const s = parseInt(inp.getAttribute('data-s'));
+    if (!data[ex]) data[ex] = [];
+    data[ex][s] = inp.value || '-';
+  });
+  return data;
+}
+
+async function saveSession(dayIdx, label) {
+  const btn = document.getElementById('btn-' + dayIdx);
+  const statusEl = document.getElementById('status-' + dayIdx);
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+  const inputs = getInputs(dayIdx);
+  const date = new Date().toLocaleDateString('en-US');
+  try {
+    for (const [ex, sets] of Object.entries(inputs)) {
+      const row = [date, 'Week 3', DAY_NAMES[dayIdx], ex, sets.length, '', ...sets];
+      await fetch(SHEET_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({tab:'Log', row})
+      });
+    }
+    if (statusEl) statusEl.innerHTML = '<div class="callout callout-success" style="margin-top:8px">Session saved to Google Sheets</div>';
+    btn.textContent = 'Saved';
+    setTimeout(() => { btn.disabled = false; btn.textContent = 'Save session'; }, 3000);
+  } catch(e) {
+    if (statusEl) statusEl.innerHTML = '<div class="callout callout-error" style="margin-top:8px">Save failed — check your connection</div>';
+    btn.disabled = false;
+    btn.textContent = 'Save session';
+  }
+}
+
+async function saveMaxes() {
+  const btn = event.target;
+  const statusEl = document.getElementById('maxes-status');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+  const date = new Date().toLocaleDateString('en-US');
+  const row = [date, document.getElementById('tm-squat').value, document.getElementById('tm-bench').value, document.getElementById('tm-dl').value, document.getElementById('tm-ohp').value];
+  try {
+    await fetch(SHEET_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({tab:'Maxes', row})
+    });
+    statusEl.innerHTML = '<div class="callout callout-success" style="margin-top:8px">Maxes saved to Google Sheets</div>';
+    btn.textContent = 'Saved';
+    setTimeout(() => { btn.disabled = false; btn.textContent = 'Save maxes to sheet'; }, 3000);
+  } catch(e) {
+    statusEl.innerHTML = '<div class="callout callout-error" style="margin-top:8px">Save failed — check your connection</div>';
+    btn.disabled = false;
+    btn.textContent = 'Save maxes to sheet';
+  }
+}
+
+async function loadHistory() {
+  const el = document.getElementById('history-content');
+  el.innerHTML = '<div class="empty-state">Loading...</div>';
+  try {
+    const res = await fetch(SHEET_URL + '?tab=Log');
+    const data = await res.json();
+    const rows = data.rows.slice(1);
+    if (!rows.length) {
+      el.innerHTML = '<div class="empty-state">No sessions logged yet.<br>Save your first session from the Program tab and it will appear here.</div>';
+      return;
+    }
+    const byDate = {};
+    rows.forEach(r => {
+      const key = r[0] + '|' + r[2];
+      if (!byDate[key]) byDate[key] = {date:r[0], day:r[2], week:r[1], exercises:[]};
+      byDate[key].exercises.push(r[3]);
+    });
+    el.innerHTML = Object.values(byDate).reverse().map(s => `
+      <div class="section" style="margin:12px 16px 0">
+        <div class="hist-row">
+          <div class="hist-date">${s.date} &middot; ${s.week}</div>
+          <div class="hist-title">${s.day}</div>
+          <div class="hist-detail">${s.exercises.slice(0,4).join(', ')}${s.exercises.length>4?' +' + (s.exercises.length-4) + ' more':''}</div>
+        </div>
+      </div>`).join('') + '<div class="spacer"></div>';
+  } catch(e) {
+    el.innerHTML = '<div class="empty-state">Could not load history.<br>Make sure you have an internet connection.</div>';
+  }
+}
+</script>
+</body>
+</html>
