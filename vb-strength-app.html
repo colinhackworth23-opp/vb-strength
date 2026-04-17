@@ -32,28 +32,34 @@
     --purple-bg: #1a1540; --purple: #a89cf7;
   }
 }
+
 body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; background: var(--bg3); color: var(--text); min-height: 100vh; }
 .app { max-width: 430px; margin: 0 auto; background: var(--bg3); min-height: 100vh; padding-bottom: 80px; }
 
-/* Header */
-.main-header { background: var(--bg); padding: env(safe-area-inset-top, 44px) 20px 0; border-bottom: 0.5px solid var(--border); position: sticky; top: 0; z-index: 20; }
+/* ── Header ── */
+.main-header { background: var(--bg); border-bottom: 0.5px solid var(--border); position: sticky; top: 0; z-index: 20; }
+.header-top { padding: env(safe-area-inset-top, 44px) 20px 0; }
 .week-strip { display: flex; overflow-x: auto; scrollbar-width: none; padding: 0 4px; }
 .week-strip::-webkit-scrollbar { display: none; }
-.week-pill { flex-shrink: 0; padding: 10px 10px; font-size: 11px; font-weight: 700; color: var(--text2); text-align: center; border-bottom: 2px solid transparent; cursor: pointer; background: none; border-left: none; border-right: none; border-top: none; white-space: nowrap; display: flex; flex-direction: column; align-items: center; gap: 2px; letter-spacing: 0.02em; }
+.week-pill { flex-shrink: 0; padding: 10px 10px; font-size: 11px; font-weight: 700; color: var(--text2); border-bottom: 2px solid transparent; cursor: pointer; background: none; border-left: none; border-right: none; border-top: none; white-space: nowrap; display: flex; flex-direction: column; align-items: center; gap: 2px; letter-spacing: 0.02em; }
 .week-pill.active { color: var(--text); border-bottom: 2px solid var(--text); }
-.week-pill .wdot { width: 5px; height: 5px; border-radius: 50%; background: var(--border2); margin-top: 1px; }
+.wdot { width: 5px; height: 5px; border-radius: 50%; background: var(--border2); margin-top: 1px; transition: background 0.2s; }
 .week-pill.done .wdot { background: var(--green); }
 .week-pill.current .wdot { background: var(--blue); }
-.week-pill.upcoming .wdot { background: var(--border2); }
 .week-pill.active .wdot { opacity: 0; }
-
-.week-info { padding: 10px 20px 12px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.week-title { font-size: 18px; font-weight: 700; color: var(--text); }
-.week-meta { font-size: 11px; color: var(--text2); }
+.week-info { padding: 8px 16px 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.week-title { font-size: 17px; font-weight: 700; color: var(--text); }
+.week-meta { font-size: 11px; color: var(--text2); flex: 1; }
 .done-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: var(--green-bg); color: var(--green); letter-spacing: 0.04em; text-transform: uppercase; }
 
+/* Progress bar */
+.progress-bar-wrap { padding: 0 16px 10px; }
+.progress-bar-track { height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
+.progress-bar-fill { height: 100%; background: var(--blue); border-radius: 2px; transition: width 0.4s ease; width: 0%; }
+.progress-label { font-size: 10px; color: var(--text3); margin-top: 4px; font-weight: 500; }
+
 /* Day strip */
-.day-strip { background: var(--bg); border-bottom: 0.5px solid var(--border); display: flex; overflow-x: auto; scrollbar-width: none; padding: 0 8px; }
+.day-strip { display: flex; overflow-x: auto; scrollbar-width: none; padding: 0 8px; border-top: 0.5px solid var(--border); }
 .day-strip::-webkit-scrollbar { display: none; }
 .day-pill { flex-shrink: 0; padding: 9px 12px; font-size: 12px; font-weight: 600; color: var(--text2); border-bottom: 2px solid transparent; cursor: pointer; background: none; border-left: none; border-right: none; border-top: none; white-space: nowrap; display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .day-pill.active { color: var(--text); border-bottom: 2px solid var(--text); }
@@ -62,11 +68,28 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif
 .vb-day .ddot { background: var(--green); }
 .pump-day .ddot { background: var(--amber); }
 .day-pill.active .ddot { opacity: 0; }
+.today-pill { position: relative; }
+.today-dot { position: absolute; top: 6px; right: 6px; width: 4px; height: 4px; border-radius: 50%; background: var(--blue); }
 
-/* Content */
+/* ── Rest Timer ── */
+.timer-overlay { display: none; position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 398px; background: var(--bg); border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 14px 16px; z-index: 50; box-shadow: 0 4px 24px rgba(0,0,0,0.12); }
+.timer-overlay.visible { display: flex; align-items: center; gap: 12px; }
+.timer-ring { width: 48px; height: 48px; flex-shrink: 0; }
+.timer-ring svg { transform: rotate(-90deg); }
+.timer-ring circle { fill: none; stroke-width: 3; }
+.timer-ring .track { stroke: var(--bg3); }
+.timer-ring .fill { stroke: var(--blue); stroke-dasharray: 132; stroke-dashoffset: 132; stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+.timer-info { flex: 1; }
+.timer-countdown { font-size: 22px; font-weight: 700; color: var(--text); line-height: 1; }
+.timer-label { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.timer-skip { font-size: 12px; font-weight: 600; color: var(--blue); cursor: pointer; background: none; border: none; padding: 4px 0; }
+
+/* ── Sections ── */
 .section { margin: 12px 16px 0; background: var(--bg); border-radius: var(--radius); border: 0.5px solid var(--border); overflow: hidden; }
 .section-header { padding: 9px 14px; border-bottom: 0.5px solid var(--border); font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text2); }
-.lift-row { padding: 10px 14px; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; gap: 8px; }
+
+/* Lift rows */
+.lift-row { padding: 11px 14px; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; gap: 8px; }
 .lift-row:last-child { border-bottom: none; }
 .lift-label { font-size: 13px; color: var(--text); font-weight: 500; flex: 1; min-width: 0; }
 .lift-sub { font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 1px; }
@@ -75,19 +98,36 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif
 .badge-wu { background: var(--bg3); color: var(--text2); }
 .badge-work { background: var(--blue-bg); color: var(--blue); }
 .badge-attempt { background: var(--purple-bg); color: var(--purple); }
-.acc-row { padding: 10px 14px; border-bottom: 0.5px solid var(--border); }
+
+/* ── Acc rows ── */
+.acc-row { border-bottom: 0.5px solid var(--border); transition: background 0.15s; }
 .acc-row:last-child { border-bottom: none; }
-.acc-top { display: flex; align-items: baseline; gap: 6px; margin-bottom: 3px; flex-wrap: wrap; }
+.acc-row.active-row { background: var(--blue-bg); }
+.acc-header { padding: 10px 14px 0; display: flex; align-items: center; gap: 0; cursor: pointer; }
+.acc-header-left { flex: 1; }
+.acc-top { display: flex; align-items: baseline; gap: 6px; margin-bottom: 2px; flex-wrap: wrap; }
 .acc-name { font-size: 13px; font-weight: 700; color: var(--text); }
 .acc-meta { font-size: 11px; color: var(--text2); }
 .acc-rec { font-size: 11px; color: var(--blue); font-weight: 600; }
-.acc-cue { font-size: 11px; color: var(--text2); margin-bottom: 7px; line-height: 1.45; }
-.set-inputs { display: flex; gap: 6px; flex-wrap: wrap; }
-.set-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.set-lbl { font-size: 10px; color: var(--text3); }
-.set-input { width: 52px; height: 32px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--bg2); font-size: 13px; font-weight: 600; text-align: center; color: var(--text); font-family: inherit; }
+.acc-chevron { font-size: 12px; color: var(--text3); padding: 0 4px; transition: transform 0.2s; flex-shrink: 0; }
+.acc-chevron.open { transform: rotate(180deg); }
+.acc-cue { font-size: 11px; color: var(--text2); line-height: 1.45; padding: 4px 14px 8px; display: none; }
+.acc-cue.visible { display: block; }
+.acc-body { padding: 6px 14px 10px; }
+.set-inputs { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+.set-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.set-lbl { font-size: 10px; color: var(--text3); font-weight: 500; }
+.set-input-row { display: flex; align-items: center; gap: 4px; }
+.set-input { width: 58px; height: 40px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--bg2); font-size: 15px; font-weight: 700; text-align: center; color: var(--text); font-family: inherit; transition: border-color 0.15s, background 0.15s; }
 .set-input:focus { outline: none; border-color: var(--blue); background: var(--bg); }
-.set-input:disabled { opacity: 0.5; background: var(--bg3); }
+.set-input.done { border-color: var(--green); background: var(--green-bg); color: var(--green); }
+.set-check { width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--border2); background: var(--bg2); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; }
+.set-check.checked { background: var(--green); border-color: var(--green); }
+.set-check::after { content: ''; width: 8px; height: 5px; border-left: 2px solid var(--bg); border-bottom: 2px solid var(--bg); transform: rotate(-45deg) translateY(-1px); display: none; }
+.set-check.checked::after { display: block; }
+.autofill-btn { font-size: 10px; color: var(--blue); font-weight: 600; background: none; border: none; cursor: pointer; padding: 4px 0; margin-left: 4px; white-space: nowrap; }
+
+/* Callouts */
 .callout { margin: 12px 16px 0; padding: 10px 14px; border-radius: var(--radius); font-size: 12px; line-height: 1.55; font-weight: 500; }
 .c-blue { background: var(--blue-bg); color: var(--blue); }
 .c-green { background: var(--green-bg); color: var(--green); }
@@ -96,32 +136,44 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif
 .c-success { background: var(--green-bg); color: var(--green); }
 .c-error { background: var(--red-bg); color: var(--red); }
 .c-purple { background: var(--purple-bg); color: var(--purple); }
+
+/* Checklist */
 .mob-row { padding: 10px 14px; border-bottom: 0.5px solid var(--border); display: flex; align-items: flex-start; gap: 10px; }
 .mob-row:last-child { border-bottom: none; }
-.mob-check { width: 20px; height: 20px; border-radius: 5px; border: 0.5px solid var(--border2); background: var(--bg2); flex-shrink: 0; margin-top: 1px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.mob-check { width: 22px; height: 22px; border-radius: 5px; border: 1.5px solid var(--border2); background: var(--bg2); flex-shrink: 0; margin-top: 1px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
 .mob-check.checked { background: var(--text); border-color: var(--text); }
 .mob-check.checked::after { content: ''; width: 9px; height: 5px; border-left: 2px solid var(--bg); border-bottom: 2px solid var(--bg); transform: rotate(-45deg) translateY(-1px); display: block; }
 .mob-info { flex: 1; }
 .mob-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
 .mob-detail { font-size: 11px; color: var(--text2); line-height: 1.4; }
 .mob-vol { font-size: 11px; color: var(--blue); font-weight: 600; margin-top: 2px; }
+
+/* Tags */
 .day-tag { display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 20px; margin-bottom: 8px; letter-spacing: 0.04em; text-transform: uppercase; }
 .tag-lift { background: var(--blue-bg); color: var(--blue); }
 .tag-vb { background: var(--green-bg); color: var(--green); }
 .tag-pump { background: var(--amber-bg); color: var(--amber); }
 .tag-rest { background: var(--bg2); color: var(--text2); }
 .tag-test { background: var(--purple-bg); color: var(--purple); }
-.save-btn { display: block; width: calc(100% - 32px); margin: 12px 16px 0; padding: 14px; background: var(--text); color: var(--bg); border: none; border-radius: var(--radius); font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; }
-.save-btn:disabled { opacity: 0.45; }
-.save-btn:active { opacity: 0.8; }
-.locked-banner { margin: 12px 16px 0; padding: 12px 14px; background: var(--green-bg); border-radius: var(--radius); display: flex; align-items: center; gap: 10px; }
+
+/* Buttons */
+.save-btn { display: block; width: calc(100% - 32px); margin: 12px 16px 0; padding: 15px; background: var(--text); color: var(--bg); border: none; border-radius: var(--radius); font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; transition: opacity 0.15s; }
+.save-btn:disabled { opacity: 0.4; }
+.save-btn:active { opacity: 0.75; }
+
+/* Locked banner */
+.locked-banner { margin: 12px 16px 0; padding: 12px 14px; background: var(--green-bg); border-radius: var(--radius); }
 .locked-banner span { font-size: 13px; font-weight: 600; color: var(--green); }
+
+/* Bottom nav */
 .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; background: var(--bg); border-top: 0.5px solid var(--border); display: flex; padding: 10px 0 env(safe-area-inset-bottom, 16px); z-index: 30; }
 .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: none; cursor: pointer; padding: 4px 0; }
-.nav-icon { width: 22px; height: 22px; border-radius: 5px; background: var(--border); }
+.nav-icon { width: 22px; height: 22px; border-radius: 5px; background: var(--border); transition: background 0.15s; }
 .nav-icon.on { background: var(--text); }
 .nav-lbl { font-size: 10px; color: var(--text2); font-weight: 500; }
 .nav-lbl.on { color: var(--text); font-weight: 700; }
+
+/* History / Maxes */
 .hist-row { padding: 12px 14px; border-bottom: 0.5px solid var(--border); }
 .hist-row:last-child { border-bottom: none; }
 .hist-date { font-size: 11px; color: var(--text2); margin-bottom: 3px; }
@@ -130,8 +182,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif
 .max-row { padding: 12px 14px; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; }
 .max-row:last-child { border-bottom: none; }
 .max-lbl { font-size: 14px; font-weight: 500; color: var(--text); flex: 1; }
-.max-input { width: 90px; height: 36px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--bg2); font-size: 14px; font-weight: 600; text-align: center; color: var(--text); font-family: inherit; }
+.max-input { width: 90px; height: 40px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--bg2); font-size: 14px; font-weight: 600; text-align: center; color: var(--text); font-family: inherit; }
 .max-input:focus { outline: none; border-color: var(--blue); }
+
+/* Rest / misc */
 .rest-hero { margin: 20px 16px 0; padding: 28px 20px; background: var(--bg); border-radius: var(--radius); border: 0.5px solid var(--border); text-align: center; }
 .rest-title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 10px; }
 .rest-body { font-size: 13px; color: var(--text2); line-height: 1.65; }
@@ -149,9 +203,30 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif
 
 <!-- MAIN HEADER -->
 <div class="main-header" id="mainHeader">
-  <div class="week-strip" id="weekStrip"></div>
-  <div class="week-info" id="weekInfo"></div>
+  <div class="header-top">
+    <div class="week-strip" id="weekStrip"></div>
+    <div class="week-info" id="weekInfo"></div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div>
+      <div class="progress-label" id="progressLabel">0 of 0 sets completed</div>
+    </div>
+  </div>
   <div class="day-strip" id="dayStrip"></div>
+</div>
+
+<!-- REST TIMER -->
+<div class="timer-overlay" id="timerOverlay">
+  <div class="timer-ring">
+    <svg width="48" height="48" viewBox="0 0 48 48">
+      <circle class="track" cx="24" cy="24" r="21"/>
+      <circle class="fill" id="timerArc" cx="24" cy="24" r="21"/>
+    </svg>
+  </div>
+  <div class="timer-info">
+    <div class="timer-countdown" id="timerCountdown">3:00</div>
+    <div class="timer-label" id="timerLabel">Rest — next set when ready</div>
+  </div>
+  <button class="timer-skip" onclick="stopTimer()">Skip</button>
 </div>
 
 <!-- PROGRAM SCREEN -->
@@ -192,122 +267,196 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif
 const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzLuijUOxwOOV2NESQGajLZQwe4ZTf1d7xjdW5xXdBp6Oh7BFQ70pknZsLgaCGOEB47/exec';
 const CURRENT_WEEK = 3;
 const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-
-function r5(n) { return Math.round(n/5)*5; }
 const TM = { squat:230, bench:185, dl:315, ohp:115 };
 
+function r5(n) { return Math.round(n/5)*5; }
+
+// ── Today detection ──
+function getTodayDayIdx() {
+  const d = new Date().getDay(); // 0=Sun
+  return [6,0,1,2,3,4,5][d]; // remap to Mon=0..Sun=6
+}
+function getTodayWeekIdx() {
+  // Week 3 starts Apr 14, 2026
+  const start = new Date('2026-04-14');
+  const today = new Date();
+  const diff = Math.floor((today - start) / (7 * 86400000));
+  const weekIdx = Math.max(0, Math.min(7, CURRENT_WEEK - 1 + diff));
+  return weekIdx;
+}
+
+// ── Timer ──
+let timerInterval = null;
+let timerTotal = 0;
+let timerLeft = 0;
+const circumference = 2 * Math.PI * 21;
+
+function startTimer(seconds, label) {
+  stopTimer();
+  timerTotal = seconds;
+  timerLeft = seconds;
+  document.getElementById('timerLabel').textContent = label;
+  const overlay = document.getElementById('timerOverlay');
+  overlay.classList.add('visible');
+  updateTimerDisplay();
+  timerInterval = setInterval(() => {
+    timerLeft--;
+    updateTimerDisplay();
+    if (timerLeft <= 0) stopTimer();
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(timerLeft / 60);
+  const s = timerLeft % 60;
+  document.getElementById('timerCountdown').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  const pct = timerLeft / timerTotal;
+  const offset = circumference * (1 - pct);
+  document.getElementById('timerArc').style.strokeDashoffset = offset;
+  document.getElementById('timerArc').style.strokeDasharray = circumference;
+}
+
+function stopTimer() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+  document.getElementById('timerOverlay').classList.remove('visible');
+}
+
+// ── Progress tracking ──
+function updateProgress() {
+  const checks = document.querySelectorAll('.set-check');
+  const done = document.querySelectorAll('.set-check.checked');
+  const total = checks.length;
+  const completed = done.length;
+  const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = `${completed} of ${total} sets completed`;
+}
+
+// ── Set check handler ──
+function handleSetCheck(checkEl, isWorkingSet) {
+  checkEl.classList.toggle('checked');
+  const inp = checkEl.closest('.set-input-row').querySelector('.set-input');
+  if (checkEl.classList.contains('checked')) {
+    inp.classList.add('done');
+    const restTime = isWorkingSet ? 180 : 90;
+    const label = isWorkingSet ? 'Rest — 3 min for primary lifts' : 'Rest — 90s for accessories';
+    startTimer(restTime, label);
+  } else {
+    inp.classList.remove('done');
+    stopTimer();
+  }
+  // Highlight active row
+  document.querySelectorAll('.acc-row').forEach(r => r.classList.remove('active-row'));
+  const row = checkEl.closest('.acc-row');
+  if (row && !checkEl.classList.contains('checked')) row.classList.add('active-row');
+  updateProgress();
+}
+
+// ── Autofill ──
+function autofill(btn) {
+  const body = btn.closest('.acc-body');
+  const inputs = body.querySelectorAll('.set-input');
+  if (inputs.length < 2) return;
+  const firstVal = inputs[0].value;
+  if (!firstVal) return;
+  inputs.forEach((inp, i) => { if (i > 0 && !inp.classList.contains('done')) inp.value = firstVal; });
+}
+
+// ── Toggle cue ──
+function toggleCue(header) {
+  const row = header.closest('.acc-row');
+  const cue = row.querySelector('.acc-cue');
+  const chevron = row.querySelector('.acc-chevron');
+  cue.classList.toggle('visible');
+  chevron.classList.toggle('open');
+}
+
+// ── Data ──
 const WEEKS = [
-  { n:1, phase:'Accumulation',    dates:'Mar 30 – Apr 4',   intensity:'65–76%', volume:'4×8', rpe:'6–7',  reps:8,  pcts:[0.65,0.70,0.74,0.76], done:true  },
-  { n:2, phase:'Accumulation',    dates:'Apr 7 – Apr 11',   intensity:'68–78%', volume:'4×7', rpe:'7',    reps:7,  pcts:[0.68,0.72,0.76,0.78], done:true  },
-  { n:3, phase:'Intensification', dates:'Apr 14 – Apr 18',  intensity:'73–83%', volume:'4×5', rpe:'7–8',  reps:5,  pcts:[0.73,0.76,0.80,0.83], done:false },
-  { n:4, phase:'Intensification', dates:'Apr 21 – Apr 25',  intensity:'76–85%', volume:'4×4', rpe:'8',    reps:4,  pcts:[0.76,0.80,0.83,0.85], done:false },
-  { n:5, phase:'Strength',        dates:'Apr 28 – May 2',   intensity:'81–88%', volume:'4×3', rpe:'8–9',  reps:3,  pcts:[0.81,0.84,0.86,0.88], done:false },
-  { n:6, phase:'Strength',        dates:'May 5 – May 9',    intensity:'83–89%', volume:'3×3', rpe:'9',    reps:3,  pcts:[0.83,0.86,0.88,0.89], done:false },
-  { n:7, phase:'Deload',          dates:'May 12 – May 16',  intensity:'55–65%', volume:'3×5', rpe:'5–6',  reps:5,  pcts:[0.55,0.60,0.63,0.65], done:false, deload:true },
+  { n:1, phase:'Accumulation',    dates:'Mar 30 – Apr 4',   intensity:'65–76%', volume:'4×8', rpe:'6–7', reps:8, pcts:[0.65,0.70,0.74,0.76], done:true },
+  { n:2, phase:'Accumulation',    dates:'Apr 7 – Apr 11',   intensity:'68–78%', volume:'4×7', rpe:'7',   reps:7, pcts:[0.68,0.72,0.76,0.78], done:true },
+  { n:3, phase:'Intensification', dates:'Apr 14 – Apr 18',  intensity:'73–83%', volume:'4×5', rpe:'7–8', reps:5, pcts:[0.73,0.76,0.80,0.83], done:false },
+  { n:4, phase:'Intensification', dates:'Apr 21 – Apr 25',  intensity:'76–85%', volume:'4×4', rpe:'8',   reps:4, pcts:[0.76,0.80,0.83,0.85], done:false },
+  { n:5, phase:'Strength',        dates:'Apr 28 – May 2',   intensity:'81–88%', volume:'4×3', rpe:'8–9', reps:3, pcts:[0.81,0.84,0.86,0.88], done:false },
+  { n:6, phase:'Strength',        dates:'May 5 – May 9',    intensity:'83–89%', volume:'3×3', rpe:'9',   reps:3, pcts:[0.83,0.86,0.88,0.89], done:false },
+  { n:7, phase:'Deload',          dates:'May 12 – May 16',  intensity:'55–65%', volume:'3×5', rpe:'5–6', reps:5, pcts:[0.55,0.60,0.63,0.65], done:false, deload:true },
   { n:8, phase:'Max Testing',     dates:'May 19 – May 23',  intensity:'88%→MAX',volume:'3 attempts', rpe:'MAX', reps:1, pcts:[0.88,0.93,0.97,1.00], done:false, testing:true },
 ];
 
-const WEEK_NOTES = {
-  1: ['Prioritize technique over load. Bar speed is the metric — every rep should look the same.', 'VB: Wednesday practice is your energy systems work. Track your standing reach and approach jump height now — this is your baseline.'],
-  2: ['Small load increases from Week 1. Same quality standard — if anything felt off, repeat Week 1 loads.', 'VB: Begin filming your approach jump. Use slow-mo — watch knee position and arm swing timing.'],
-  3: ['Volume drops, intensity rises. Rest 3+ min between working sets on primary lifts.', 'VB: This is where the work starts to feel real. Manage sleep aggressively. Depth drops begin this week — land softly, react immediately.'],
-  4: ['Top sets should feel like RPE 8 — challenging, not grinding. Stop a set if bar speed crashes.', 'VB: Measure your approach jump height — compare to Week 1 baseline.'],
-  5: ['Peak intensity week. Take full rest between sets (3–4 min). Bar speed may slow — that\'s ok at these loads.', 'VB: Peak plyometrics this week. Trap bar jumps are your primary power transfer exercise.'],
-  6: ['Last heavy week before deload. Protect your shoulders — no ego on the OHP.', 'VB: Max approach jump attempt this week. Film it for comparison.'],
-  7: ['Deload week. Cut volume, keep movement quality high. Single warm-up set only — no bridge needed at these loads.', 'VB: Recovery. Maintain jump pattern but don\'t chase height. Your body is supercompensating right now.'],
-  8: ['Max testing week. Attempt 1 = conservative opener (~88%). Attempt 2 = target (~93-97%). Attempt 3 = true max effort.', 'VB: New 1RMs today. New VB performance baseline. Film your approach jump and compare to Week 1.'],
-};
-
-const ACCESSORIES = {
-  monA: [
-    { name:'Bulgarian split squat', meta:'3 × 8 ea', cue:'Front shin vertical, drive through heel — unilateral VB takeoff pattern', sets:['30','40','50'] },
-    { name:'Nordic hamstring curl', meta:'3 × 5', cue:'Brace hard, lower as slow as possible — eccentric control is the stimulus', sets:['BW','BW','BW'] },
-    { name:'Seated calf raise', meta:'3 × 12', cue:'Full ROM, pause at bottom — soleus reactive ankle stiffness', sets:['100','100','110'] },
-    { name:'Standing calf raise', meta:'2 × 12', cue:'3s eccentric, full stretch at bottom — Achilles tendon loading', sets:['BW','BW'] },
-    { name:'Copenhagen plank', meta:'3 × 20s ea', cue:'Hips level, don\'t let bottom hip sag — adductor strength for lateral movement', sets:['BW','BW','BW'] },
-    { name:'Pallof press', meta:'2 × 10 ea', cue:'Tall spine, resist rotation — anti-rotation core for explosive push-off', sets:['30','35'] },
+const ACC = {
+  mon: [
+    { name:'Bulgarian split squat', meta:'3 × 8 ea', rec:'30/40/50', cue:'Front shin vertical, drive through heel — unilateral VB takeoff pattern', sets:['30','40','50'] },
+    { name:'Nordic hamstring curl', meta:'3 × 5', rec:'BW', cue:'Brace hard, lower as slow as possible — eccentric control is the stimulus', sets:['BW','BW','BW'] },
+    { name:'Seated calf raise', meta:'3 × 12', rec:'100/100/110', cue:'Full ROM, pause at bottom — soleus reactive ankle stiffness', sets:['100','100','110'] },
+    { name:'Standing calf raise', meta:'2 × 12', rec:'BW', cue:'3s eccentric, full stretch at bottom — Achilles tendon loading', sets:['BW','BW'] },
+    { name:'Copenhagen plank', meta:'3 × 20s ea', rec:'BW', cue:'Hips level, don\'t let bottom hip sag — adductor strength for lateral movement', sets:['BW','BW','BW'] },
+    { name:'Pallof press', meta:'2 × 10 ea', rec:'30/35', cue:'Tall spine, resist rotation — anti-rotation core for explosive push-off', sets:['30','35'] },
   ],
-  tueB: [
-    { name:'Weighted pull-up', meta:'4 × 5', cue:'Depress scapula before pulling, lead with elbows — lat torque for arm swing', sets:['BW','+10','+10','+10'] },
-    { name:'Single-arm DB row', meta:'3 × 10 ea', cue:'Chest tall, row to hip not armpit — thoracic posture at 6\'10"', sets:['70','80','85'] },
-    { name:'Facepull', meta:'3 × 15', cue:'Pull to forehead, elbows high, pause at end range — NON-NEGOTIABLE rear cuff', sets:['grn','grn','grn'] },
-    { name:'Serratus wall slide', meta:'2 × 10', cue:'Reach long at top, feel shoulder blade wrap around ribs — scapular upward rotation for blocking', sets:['BW','BW'] },
-    { name:'DB lateral raise', meta:'3 × 15', cue:'Lead with elbow, stop at shoulder height — medial delt stability', sets:['20','20','20'] },
-    { name:'Tricep pushdown (rope)', meta:'3 × 12', cue:'Elbows pinned, full extension at bottom — wrist snap at ball contact', sets:['50','60','65'] },
-    { name:'Wrist roller', meta:'2 × 30s', cue:'Slow and controlled both directions — forearm endurance through long sets', sets:['BW','BW'] },
+  tue: [
+    { name:'Weighted pull-up', meta:'4 × 5', rec:'BW/+10/+10', cue:'Depress scapula before pulling, lead with elbows — lat torque for arm swing', sets:['BW','+10','+10','+10'] },
+    { name:'Single-arm DB row', meta:'3 × 10 ea', rec:'70/80/85', cue:'Chest tall, row to hip not armpit — thoracic posture at 6\'10"', sets:['70','80','85'] },
+    { name:'Facepull', meta:'3 × 15', rec:'green band', cue:'Pull to forehead, elbows high, pause at end range — NON-NEGOTIABLE rear cuff', sets:['grn','grn','grn'] },
+    { name:'Serratus wall slide', meta:'2 × 10', rec:'BW', cue:'Reach long at top, feel shoulder blade wrap around ribs — scapular upward rotation for blocking', sets:['BW','BW'] },
+    { name:'DB lateral raise', meta:'3 × 15', rec:'20/20/20', cue:'Lead with elbow, stop at shoulder height — medial delt stability', sets:['20','20','20'] },
+    { name:'Tricep pushdown (rope)', meta:'3 × 12', rec:'50/60/65', cue:'Elbows pinned, full extension at bottom — wrist snap at ball contact', sets:['50','60','65'] },
+    { name:'Wrist roller', meta:'2 × 30s', rec:'BW', cue:'Slow and controlled both directions — forearm endurance through long sets', sets:['BW','BW'] },
   ],
-  friC: [
-    { name:'Barbell hip thrust', meta:'3 × 8', cue:'Drive through heels, pause 1s at top, squeeze hard — glute max for jump height', sets:['135','155','175'] },
-    { name:'Glute-ham raise', meta:'3 × 6', cue:'Brace hard, lower as slow as possible — most effective knee flexor', sets:['BW','BW','BW'] },
-    { name:'Back extension (45°)', meta:'3 × 12', cue:'Neutral spine throughout, don\'t hyperextend at top — lumbar protection at 6\'10"', sets:['BW','+25','+25'] },
-    { name:'Suitcase carry', meta:'3 × 30m ea', cue:'Tall spine, don\'t lean away from load — lateral core for VB movement', sets:['70','80','80'] },
-    { name:'Single-leg RDL', meta:'3 × 10 ea', cue:'Hinge until hamstring pull, slow return — eccentric jump landing control', sets:['30','35','35'] },
-    { name:'Seated hip abduction (band)', meta:'2 × 20', cue:'Controlled out and back, don\'t let band snap in — glute med for knee stability on jumps', sets:['lgt','med'] },
+  fri: [
+    { name:'Barbell hip thrust', meta:'3 × 8', rec:'135/155/175', cue:'Drive through heels, pause 1s at top, squeeze hard — glute max for jump height', sets:['135','155','175'] },
+    { name:'Glute-ham raise', meta:'3 × 6', rec:'BW', cue:'Brace hard, lower as slow as possible — most effective knee flexor', sets:['BW','BW','BW'] },
+    { name:'Back extension (45°)', meta:'3 × 12', rec:'BW/+25/+25', cue:'Neutral spine throughout, don\'t hyperextend at top — lumbar protection at 6\'10"', sets:['BW','+25','+25'] },
+    { name:'Suitcase carry', meta:'3 × 30m ea', rec:'70/80/80', cue:'Tall spine, don\'t lean away from load — lateral core for VB movement', sets:['70','80','80'] },
+    { name:'Single-leg RDL', meta:'3 × 10 ea', rec:'30/35/35', cue:'Hinge until hamstring pull, slow return — eccentric jump landing control', sets:['30','35','35'] },
+    { name:'Seated hip abduction (band)', meta:'2 × 20', rec:'light→med', cue:'Controlled out and back, don\'t let band snap in — glute med for knee stability on jumps', sets:['lgt','med'] },
   ],
 };
 
-const POWER_BLOCKS = {
+const PB = {
   monEarly: [
-    { name:'Box jump (step down)', vol:'4 × 4', cue:'Max height intent, step down — protect ankles at 240 lbs', sets:['BW','BW','BW','BW'] },
-    { name:'Broad jump → stick', vol:'3 × 5', cue:'Horizontal power, stick 2s — sand court landing mechanics', sets:['BW','BW','BW'] },
-    { name:'Ankle pogo (continuous)', vol:'3 × 15', cue:'Minimal knee bend, fast ground contact — reactive ankle stiffness', sets:['BW','BW','BW'] },
+    { name:'Box jump (step down)', vol:'4 × 4', rec:'BW', cue:'Max height intent, step down — protect ankles at 240 lbs', sets:['BW','BW','BW','BW'] },
+    { name:'Broad jump → stick', vol:'3 × 5', rec:'BW', cue:'Horizontal power, stick 2s — sand court landing mechanics', sets:['BW','BW','BW'] },
+    { name:'Ankle pogo (continuous)', vol:'3 × 15', rec:'BW', cue:'Minimal knee bend, fast ground contact — reactive ankle stiffness', sets:['BW','BW','BW'] },
   ],
   monLate: [
-    { name:'Depth drop → box jump', vol:'4 × 4', cue:'Drop, instant reaction — minimize ground contact time', sets:['BW','BW','BW','BW'] },
-    { name:'Single-leg bound → stick', vol:'3 × 5 ea', cue:'Drive knee up, stick 2s — mimics VB approach takeoff', sets:['BW','BW','BW'] },
-    { name:'Trap bar jump (50% TM)', vol:'4 × 4', cue:'Hinge back, explode through hips — transfers DL strength to power', sets:['155','155','155','155'] },
-    { name:'Ankle pogo (fast)', vol:'3 × 20', cue:'Minimal knee bend, fast ground contact — reactive ankle stiffness', sets:['BW','BW','BW'] },
+    { name:'Depth drop → box jump', vol:'4 × 4', rec:'BW', cue:'Drop, instant reaction — minimize ground contact time', sets:['BW','BW','BW','BW'] },
+    { name:'Single-leg bound → stick', vol:'3 × 5 ea', rec:'BW', cue:'Drive knee up, stick 2s — mimics VB approach takeoff', sets:['BW','BW','BW'] },
+    { name:'Trap bar jump', vol:'4 × 4', rec:'155 lbs', cue:'Hinge back, explode through hips — transfers DL strength to power', sets:['155','155','155','155'] },
+    { name:'Ankle pogo (fast)', vol:'3 × 20', rec:'BW', cue:'Minimal knee bend, fast ground contact — reactive ankle stiffness', sets:['BW','BW','BW'] },
   ],
   tueEarly: [
-    { name:'Med ball overhead slam', vol:'4 × 6', cue:'Overhead deceleration — mirrors spike follow-through mechanics', sets:['10','10','10','10'] },
-    { name:'Explosive push-up', vol:'4 × 5', cue:'Tight core, max push velocity — rate of force development', sets:['BW','BW','BW','BW'] },
-    { name:'Med ball rotational throw (wall)', vol:'3 × 6 ea', cue:'Hips before shoulders, max trunk rotation — primary hitting velocity driver', sets:['10','10','10'] },
+    { name:'Med ball overhead slam', vol:'4 × 6', rec:'10 lbs', cue:'Overhead deceleration — mirrors spike follow-through mechanics', sets:['10','10','10','10'] },
+    { name:'Explosive push-up', vol:'4 × 5', rec:'BW', cue:'Tight core, max push velocity — rate of force development', sets:['BW','BW','BW','BW'] },
+    { name:'Med ball rotational throw', vol:'3 × 6 ea', rec:'10 lbs', cue:'Hips before shoulders, max trunk rotation — primary hitting velocity driver', sets:['10','10','10'] },
   ],
   tueLate: [
-    { name:'Med ball spike sim (kneeling)', vol:'4 × 6', cue:'Full wind-up, accelerate through contact — direct arm swing pattern', sets:['10','10','10','10'] },
-    { name:'Band-resisted arm swing', vol:'3 × 10', cue:'Fast elbow drive, don\'t let band win — acceleration phase of spike', sets:['lgt','med','med'] },
-    { name:'Med ball rotational throw (wall)', vol:'4 × 6 ea', cue:'Hips before shoulders, max trunk rotation — primary hitting velocity driver', sets:['10','10','10','10'] },
-    { name:'Explosive push-up → plyo', vol:'3 × 5', cue:'Tight core, max push velocity — upper body RFD, protect shoulder at contact', sets:['BW','BW','BW'] },
+    { name:'Med ball spike sim (kneeling)', vol:'4 × 6', rec:'10 lbs', cue:'Full wind-up, accelerate through contact — direct arm swing pattern', sets:['10','10','10','10'] },
+    { name:'Band-resisted arm swing', vol:'3 × 10', rec:'light→med', cue:'Fast elbow drive, don\'t let band win — acceleration phase of spike', sets:['lgt','med','med'] },
+    { name:'Med ball rotational throw', vol:'4 × 6 ea', rec:'10 lbs', cue:'Hips before shoulders, max trunk rotation — primary hitting velocity driver', sets:['10','10','10','10'] },
+    { name:'Explosive push-up → plyo', vol:'3 × 5', rec:'BW', cue:'Tight core, max push velocity — upper body RFD, protect shoulder at contact', sets:['BW','BW','BW'] },
   ],
-  friBlock: [
-    { name:'VB approach jump (max effort)', vol:'4 × 5', cue:'Full 3-step, 2-foot plant, max arm swing — measure height, film if possible', sets:['BW','BW','BW','BW'] },
-    { name:'Single-leg vertical (non-dom)', vol:'3 × 4 ea', cue:'Drive knee up hard, full hip extension — reduce bilateral deficit', sets:['BW','BW','BW'] },
-    { name:'Sled push 20m', vol:'4 rounds', cue:'Low hips, drive through full hip extension — posterior chain power endurance', sets:['mod','mod','hvy','hvy'] },
-    { name:'Assault bike 12s / 48s off', vol:'5 rounds', cue:'Max output from first stroke, full recovery between — mirrors VB point energy system', sets:['max','max','max','max','max'] },
+  fri: [
+    { name:'VB approach jump (max effort)', vol:'4 × 5', rec:'BW — film it', cue:'Full 3-step, 2-foot plant, max arm swing — measure height each week', sets:['BW','BW','BW','BW'] },
+    { name:'Single-leg vertical (non-dom)', vol:'3 × 4 ea', rec:'BW', cue:'Drive knee up hard, full hip extension — reduce bilateral deficit', sets:['BW','BW','BW'] },
+    { name:'Sled push 20m', vol:'4 rounds', rec:'mod→heavy', cue:'Low hips, drive through full hip extension — posterior chain endurance', sets:['mod','mod','hvy','hvy'] },
+    { name:'Assault bike 12s / 48s off', vol:'5 rounds', rec:'max effort', cue:'Max output from first stroke, full recovery between — mirrors VB point energy system', sets:['max','max','max','max','max'] },
   ],
 };
 
-const PUMP_DAY = [
-  { name:'EZ bar curl', meta:'4 × 10', cue:'Full supination at top, slow eccentric — peak contraction focus', sets:['','','',''] },
-  { name:'Incline DB curl', meta:'3 × 12', cue:'Full stretch at bottom — long head emphasis, great for arm size', sets:['','',''] },
-  { name:'Hammer curl', meta:'3 × 12', cue:'Neutral grip, controlled — brachialis and forearm thickness', sets:['','',''] },
-  { name:'Tricep pushdown (rope)', meta:'4 × 12', cue:'Elbows pinned, flare at bottom — lateral head pump', sets:['','','',''] },
-  { name:'Overhead tricep extension', meta:'3 × 12', cue:'Full stretch overhead — long head, biggest part of the tricep', sets:['','',''] },
-  { name:'DB lateral raise', meta:'3 × 15', cue:'Light weight, high reps — shoulder cap pump, keep it easy', sets:['','',''] },
-  { name:'Cable curl (single arm)', meta:'3 × 12 ea', cue:'Constant tension throughout — finish with a hard squeeze at top', sets:['','',''] },
+const PUMP = [
+  { name:'EZ bar curl', meta:'4 × 10', rec:'moderate', cue:'Full supination at top, slow eccentric — peak contraction focus', sets:['','','',''] },
+  { name:'Incline DB curl', meta:'3 × 12', rec:'light-mod', cue:'Full stretch at bottom — long head emphasis, great for arm size', sets:['','',''] },
+  { name:'Hammer curl', meta:'3 × 12', rec:'moderate', cue:'Neutral grip, controlled — brachialis and forearm thickness', sets:['','',''] },
+  { name:'Tricep pushdown (rope)', meta:'4 × 12', rec:'moderate', cue:'Elbows pinned, flare at bottom — lateral head pump', sets:['','','',''] },
+  { name:'Overhead tricep extension', meta:'3 × 12', rec:'light-mod', cue:'Full stretch overhead — long head, biggest part of the tricep', sets:['','',''] },
+  { name:'DB lateral raise', meta:'3 × 15', rec:'light', cue:'Light weight, high reps — shoulder cap pump, keep it easy', sets:['','',''] },
+  { name:'Cable curl (single arm)', meta:'3 × 12 ea', rec:'light-mod', cue:'Constant tension throughout — finish with a hard squeeze at top', sets:['','',''] },
 ];
 
-let currentWeekIdx = CURRENT_WEEK - 1;
-let currentDayIdx = 0;
+let currentWeekIdx = getTodayWeekIdx();
+let currentDayIdx = getTodayDayIdx();
 
-function getPowerBlock(weekN, day) {
-  if (day === 0) return weekN <= 2 ? POWER_BLOCKS.monEarly : POWER_BLOCKS.monLate;
-  if (day === 1) return weekN <= 2 ? POWER_BLOCKS.tueEarly : POWER_BLOCKS.tueLate;
-  return POWER_BLOCKS.friBlock;
-}
-
-function getPowerBlockTitle(weekN, day) {
-  if (day === 0) return 'Power block · vertical jump (15 min)';
-  if (day === 1) return 'Power block · hitting power (15 min)';
-  return 'Power block · explosiveness (15 min)';
-}
-
-function getVBCallout(weekN, day) {
-  if (day === 0) return weekN <= 2 ? 'Box jumps: step down, never drop. At 240 lbs, landing stress accumulates fast on sand + court.' : 'Depth drops are new from Week 3. Land soft, react fast — don\'t pause at the bottom.';
-  if (day === 1) return 'Rotational throws are the most direct hitting power stimulus you can do in the gym. Full trunk wind-up every rep.';
-  return 'Track your approach jump height and compare to Week 1 baseline — this is your primary performance KPI.';
-}
-
+// ── Builders ──
 function calcLoads(weekN) {
   const w = WEEKS[weekN - 1];
   const out = {};
@@ -321,122 +470,154 @@ function calcLoads(weekN) {
   return out;
 }
 
-function liftRows(loads, liftKey, liftName, w) {
-  const { wu1, wu2, ws } = loads[liftKey];
-  const repLabel = w.testing ? 'Attempt' : 'Working set';
-  const badgeClass = w.testing ? 'badge-attempt' : 'badge-work';
-  const repsStr = w.testing ? '1 rep' : `${w.reps} reps`;
-  let html = `<div class="lift-row"><div class="lift-label">${liftName}<div class="lift-sub">Pattern activation ~60% TM</div></div><span class="badge badge-wu">${w.deload ? '3 reps' : '5 reps'}</span><div class="lift-target">${wu1} lbs</div></div>`;
-  if (wu2) html += `<div class="lift-row"><div class="lift-label">Warm-up 2<div class="lift-sub">Bridge to working weight</div></div><span class="badge badge-wu">2 reps</span><div class="lift-target">${wu2} lbs</div></div>`;
-  const pctLabels = w.testing ? ['88% TM','93% TM','97% TM','100% TM'] : [`${Math.round(w.pcts[0]*100)}% TM`,`${Math.round(w.pcts[1]*100)}% TM`,`${Math.round(w.pcts[2]*100)}% TM`,`${Math.round(w.pcts[3]*100)}% TM`];
+function liftRows(loads, key, name, w) {
+  const { wu1, wu2, ws } = loads[key];
+  const isTest = w.testing;
+  const rLabel = isTest ? 'Attempt' : 'Working set';
+  const bClass = isTest ? 'badge-attempt' : 'badge-work';
+  const rStr = isTest ? '1 rep' : `${w.reps} reps`;
+  const pLabels = isTest
+    ? ['88% TM','93% TM','97% TM','100% TM']
+    : w.pcts.map(p => `${Math.round(p*100)}% TM`);
+  let h = `<div class="lift-row"><div class="lift-label">${name}<div class="lift-sub">Pattern activation ~60% TM</div></div><span class="badge badge-wu">${w.deload?'3':'5'} reps</span><div class="lift-target">${wu1} lbs</div></div>`;
+  if (wu2) h += `<div class="lift-row"><div class="lift-label">Warm-up 2<div class="lift-sub">Bridge to working weight</div></div><span class="badge badge-wu">2 reps</span><div class="lift-target">${wu2} lbs</div></div>`;
   ws.forEach((wt, i) => {
-    html += `<div class="lift-row"><div class="lift-label">${repLabel} ${i+1}<div class="lift-sub">${pctLabels[i]}</div></div><span class="badge ${badgeClass}">${repsStr}</span><div class="lift-target">${wt} lbs</div></div>`;
+    h += `<div class="lift-row"><div class="lift-label">${rLabel} ${i+1}<div class="lift-sub">${pLabels[i]}</div></div><span class="badge ${bClass}">${rStr}</span><div class="lift-target">${wt} lbs</div></div>`;
   });
-  return html;
+  return h;
 }
 
-function accRows(accs, dayKey, weekN, dayIdx, locked) {
-  return accs.map((a, i) => {
-    const rec = a.sets.filter(s=>s).length ? 'rec: ' + a.sets.filter(s=>s).join('/') : 'log your weight';
-    const inputs = a.sets.map((v, si) =>
-      `<div class="set-wrap"><span class="set-lbl">S${si+1}</span><input class="${'set-input'}" data-week="${weekN}" data-day="${dayIdx}" data-ex="${a.name}" data-s="${si}" type="text" value="${v}" inputmode="text"${locked?' disabled':''}></div>`
-    ).join('');
-    return `<div class="acc-row"><div class="acc-top"><span class="acc-name">${a.name}</span><span class="acc-meta">${a.meta||a.vol}</span>${rec?`<span class="acc-rec">${rec}</span>`:''}</div><div class="acc-cue">${a.cue}</div><div class="set-inputs">${inputs}</div></div>`;
+function accRow(ex, weekN, dayN, isWorking, locked) {
+  const idBase = `w${weekN}d${dayN}${ex.name.replace(/\s/g,'').substring(0,8)}`;
+  const inputs = ex.sets.map((v, si) => {
+    const id = `${idBase}s${si}`;
+    const disAttr = locked ? ' disabled' : '';
+    const checkFn = isWorking ? `handleSetCheck(this,true)` : `handleSetCheck(this,false)`;
+    return `<div class="set-wrap">
+      <span class="set-lbl">S${si+1}</span>
+      <div class="set-input-row">
+        <input id="${id}" class="set-input" data-week="${weekN}" data-day="${dayN}" data-ex="${ex.name}" data-s="${si}" type="text" value="${v}" inputmode="text"${disAttr}>
+        ${!locked ? `<div class="set-check" onclick="${checkFn}"></div>` : ''}
+      </div>
+    </div>`;
   }).join('');
+  const autofillBtn = !locked && ex.sets.length > 1 ? `<button class="autofill-btn" onclick="autofill(this)">Copy to all</button>` : '';
+  return `<div class="acc-row">
+    <div class="acc-header" onclick="toggleCue(this)">
+      <div class="acc-header-left">
+        <div class="acc-top">
+          <span class="acc-name">${ex.name}</span>
+          <span class="acc-meta">${ex.meta||ex.vol}</span>
+          <span class="acc-rec">rec: ${ex.rec}</span>
+        </div>
+      </div>
+      <span class="acc-chevron">▾</span>
+    </div>
+    <div class="acc-cue">${ex.cue}</div>
+    <div class="acc-body">
+      <div class="set-inputs">${inputs}</div>
+      ${autofillBtn}
+    </div>
+  </div>`;
 }
 
-function buildLiftingDay(weekN, dayIdx, w, loads) {
+function accRows(arr, weekN, dayN, isWorking, locked) {
+  return arr.map(ex => accRow(ex, weekN, dayN, isWorking, locked)).join('');
+}
+
+function getPB(weekN, dayN) {
+  if (dayN === 0) return weekN <= 2 ? PB.monEarly : PB.monLate;
+  if (dayN === 1) return weekN <= 2 ? PB.tueEarly : PB.tueLate;
+  return PB.fri;
+}
+
+function getPBTitle(dayN) {
+  if (dayN === 0) return 'Power block · vertical jump (15 min)';
+  if (dayN === 1) return 'Power block · hitting power (15 min)';
+  return 'Power block · explosiveness (15 min)';
+}
+
+function getVBCallout(weekN, dayN) {
+  if (dayN === 0) return weekN <= 2 ? 'Box jumps: step down, never drop. At 240 lbs, landing stress accumulates fast on sand + court.' : 'Depth drops are new from Week 3. Land soft, react fast — don\'t pause at the bottom.';
+  if (dayN === 1) return 'Rotational throws are the most direct hitting power stimulus in the gym. Full trunk wind-up every rep.';
+  return 'Track your approach jump height and compare to Week 1 baseline — this is your primary performance KPI.';
+}
+
+function buildLiftDay(weekN, liftDayN, w, loads) {
   const locked = w.done;
   const liftNames = ['Back squat / safety bar','Incline bench','Hex bar deadlift'];
   const liftKeys = ['squat','bench','dl'];
   const liftTitles = ['Back squat · primary lift','Incline bench · primary lift','Hex bar deadlift · primary lift'];
-  const accessories = [ACCESSORIES.monA, ACCESSORIES.tueB, ACCESSORIES.friC];
-  const dayLabels = ['Day A — Monday · Back Squat', 'Day B — Tuesday · Incline Bench + OHP', 'Day C — Friday · Hex Bar Deadlift'];
-  const callouts = [
-    'Volume drops, intensity rises from Week 3. Rest 3+ min between working sets.',
-    'Facepulls are non-negotiable — overhead athletes who skip rear cuff work get hurt. Every single week.',
-    'Hip thrust directly trains the hip extension power that drives your vertical jump. Pause 1s at top.'
-  ];
-  const liftKey = liftKeys[dayIdx];
+  const accData = [ACC.mon, ACC.tue, ACC.fri];
+  const tags = ['Lifting day','Lifting day','Lifting day'];
 
-  let html = `<div style="padding:12px 16px 0"><span class="day-tag tag-lift">Lifting day</span></div>`;
-
-  if (locked) html += `<div class="locked-banner"><span>✓ Week ${weekN} completed — view only</span></div>`;
-
-  html += `<div class="section"><div class="section-header">${liftTitles[dayIdx]}</div>${liftRows(loads, liftKey, liftNames[dayIdx], w)}</div>`;
-
-  // OHP on Tuesday
-  if (dayIdx === 1) {
-    html += `<div class="section"><div class="section-header">OHP · primary lift</div>${liftRows(loads, 'ohp', 'Overhead press (strict)', w)}</div>`;
-  }
-
-  html += `<div class="section"><div class="section-header">Accessories · log your weights</div>${accRows(accessories[dayIdx], dayIdx, weekN, dayIdx, locked)}</div>`;
-
-  const pb = getPowerBlock(weekN, dayIdx);
-  html += `<div class="section"><div class="section-header">${getPowerBlockTitle(weekN, dayIdx)}</div>${accRows(pb, dayIdx, weekN, dayIdx, locked)}</div>`;
-
-  html += `<div class="callout c-blue">${getVBCallout(weekN, dayIdx)}</div>`;
-
+  let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-lift">${tags[liftDayN]}</span></div>`;
+  if (locked) h += `<div class="locked-banner"><span>✓ Week ${weekN} completed — view only</span></div>`;
+  h += `<div class="section"><div class="section-header">${liftTitles[liftDayN]}</div>${liftRows(loads, liftKeys[liftDayN], liftNames[liftDayN], w)}</div>`;
+  if (liftDayN === 1) h += `<div class="section"><div class="section-header">OHP · primary lift</div>${liftRows(loads, 'ohp', 'Overhead press (strict)', w)}</div>`;
+  h += `<div class="section"><div class="section-header">Accessories · tap name for cues</div>${accRows(accData[liftDayN], weekN, liftDayN, false, locked)}</div>`;
+  h += `<div class="section"><div class="section-header">${getPBTitle(liftDayN)}</div>${accRows(getPB(weekN, liftDayN), weekN, liftDayN, true, locked)}</div>`;
+  h += `<div class="callout c-blue">${getVBCallout(weekN, liftDayN)}</div>`;
   if (!locked) {
-    html += `<div id="status-${weekN}-${dayIdx}"></div>`;
-    html += `<button class="save-btn" onclick="saveSession(${weekN},${dayIdx})">Save session</button>`;
+    h += `<div id="status-${weekN}-${liftDayN}"></div>`;
+    h += `<button class="save-btn" onclick="saveSession(${weekN},${liftDayN})">Save session to Google Sheets</button>`;
   }
-
-  html += `<div class="spacer"></div>`;
-  return html;
+  return h + `<div class="spacer"></div>`;
 }
 
-function buildWedDay(weekN, locked) {
-  let html = `<div style="padding:12px 16px 0"><span class="day-tag tag-vb">VB practice tonight</span></div>`;
-  if (locked) html += `<div class="locked-banner"><span>✓ Week ${weekN} completed — view only</span></div>`;
-  html += `<div class="callout c-green" style="margin-top:12px">Practice 8–10:30pm. No lifting today. Do this pre-practice prep 30–45 min before you play.</div>`;
-  html += `<div class="section"><div class="section-header">Pre-practice activation · 20–25 min</div>
-    <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Assault bike easy</div><div class="mob-detail">Low intensity — raise core temp without spiking HR</div><div class="mob-vol">5 min</div></div></div>
-    <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Hip 90/90 switches</div><div class="mob-detail">Full ROM both sides — hip capsule prep for lateral movement</div><div class="mob-vol">2 × 8 each</div></div></div>
-    <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Ankle CARs + heel raise</div><div class="mob-detail">Dorsiflexion — directly limits jump landing depth if stiff</div><div class="mob-vol">2 × 10 each</div></div></div>
-    <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Adductor rock-back</div><div class="mob-detail">Groin prep — lateral VB movement protection</div><div class="mob-vol">2 × 8 each</div></div></div>
-    <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Band pull-apart</div><div class="mob-detail">Rear cuff activation — mandatory before spiking and blocking</div><div class="mob-vol">3 × 15</div></div></div>
-    <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Prone Y-T-W</div><div class="mob-detail">Lower trap + scapular control — overhead hitting mechanics</div><div class="mob-vol">2 × 8 each</div></div></div>
-    <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Ankle pogo (small, fast)</div><div class="mob-detail">Achilles stiffness — biggest factor in reactive jump height</div><div class="mob-vol">2 × 20</div></div></div>
-    <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Approach jumps at 70%</div><div class="mob-detail">Pattern warm-up — don't go max effort before practice</div><div class="mob-vol">3–4 reps</div></div></div>
-  </div>`;
-  html += `<div class="callout c-green">VB practice is your energy systems work tonight. Don't add any gym sessions after.</div><div class="spacer"></div>`;
-  return html;
+function buildWed(weekN, locked) {
+  let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-vb">VB practice tonight</span></div>`;
+  if (locked) h += `<div class="locked-banner"><span>✓ Week ${weekN} completed — view only</span></div>`;
+  h += `<div class="callout c-green" style="margin-top:12px">Practice 8–10:30pm. No lifting today. Do this pre-practice prep 30–45 min before you play.</div>`;
+  h += `<div class="section"><div class="section-header">Pre-practice activation · 20–25 min</div>`;
+  [['Assault bike easy','Low intensity — raise core temp without spiking HR','5 min'],
+   ['Hip 90/90 switches','Full ROM both sides — hip capsule prep for lateral movement','2 × 8 each'],
+   ['Ankle CARs + heel raise','Dorsiflexion — directly limits jump landing depth if stiff','2 × 10 each'],
+   ['Adductor rock-back','Groin prep — lateral VB movement protection','2 × 8 each'],
+   ['Band pull-apart','Rear cuff activation — mandatory before spiking and blocking','3 × 15'],
+   ['Prone Y-T-W','Lower trap + scapular control — overhead hitting mechanics','2 × 8 each'],
+   ['Ankle pogo (small, fast)','Achilles stiffness — biggest factor in reactive jump height','2 × 20'],
+   ['Approach jumps at 70%','Pattern warm-up — don\'t go max effort before practice','3–4 reps'],
+  ].forEach(([n,d,v]) => {
+    h += `<div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">${n}</div><div class="mob-detail">${d}</div><div class="mob-vol">${v}</div></div></div>`;
+  });
+  h += `</div><div class="callout c-green">VB practice is your energy systems work tonight. Don't add any gym sessions after.</div><div class="spacer"></div>`;
+  return h;
 }
 
-function buildThuDay(weekN, locked) {
-  let html = `<div style="padding:12px 16px 0"><span class="day-tag tag-rest">Recovery day</span></div>`;
-  if (locked) html += `<div class="locked-banner"><span>✓ Week ${weekN} completed — view only</span></div>`;
-  html += `<div class="callout c-gray" style="margin-top:12px">Between VB practice last night and heavy hex bar tomorrow — protect Friday's session. Keep everything easy.</div>`;
-  html += `<div class="section"><div class="section-header">Mobility flow · 20–30 min</div>
-    <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Hip 90/90 + thoracic rotation</div><div class="mob-detail">Hip capsule + t-spine — two biggest limiters at 6'10"</div><div class="mob-vol">3 × 8 each, slow</div></div></div>
-    <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Couch stretch</div><div class="mob-detail">Hip flexor — critical for DL setup, gets compressed sitting</div><div class="mob-vol">2 min each side</div></div></div>
-    <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Adductor side-lying stretch</div><div class="mob-detail">Groin recovery from lateral VB movement last night</div><div class="mob-vol">90s each side</div></div></div>
-    <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Ankle CARs (slow)</div><div class="mob-detail">Full circles — Achilles + ankle joint recovery</div><div class="mob-vol">2 × 10 each</div></div></div>
-    <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Dead bug (slow)</div><div class="mob-detail">Anterior core — re-establish brace without loading the back</div><div class="mob-vol">2 × 6 each side</div></div></div>
-    <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Cat-cow + child's pose</div><div class="mob-detail">Lumbar decompression after VB lateral loading</div><div class="mob-vol">2 min</div></div></div>
-  </div>`;
-  html += `<div class="section"><div class="section-header">Optional light cardio</div>
-    <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Easy walk or bike</div><div class="mob-detail">20–30 min conversational pace — blood flow without fatigue</div><div class="mob-vol">Zone 1 only</div></div></div>
-  </div>`;
-  html += `<div class="callout c-gray">Goal: arrive at Friday's hex bar session completely fresh. If anything feels off, skip the cardio.</div><div class="spacer"></div>`;
-  return html;
+function buildThu(weekN, locked) {
+  let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-rest">Recovery day</span></div>`;
+  if (locked) h += `<div class="locked-banner"><span>✓ Week ${weekN} completed — view only</span></div>`;
+  h += `<div class="callout c-gray" style="margin-top:12px">Between VB practice last night and heavy hex bar tomorrow — protect Friday's session. Keep everything easy.</div>`;
+  h += `<div class="section"><div class="section-header">Mobility flow · 20–30 min</div>`;
+  [['Hip 90/90 + thoracic rotation','Hip capsule + t-spine — two biggest limiters at 6\'10"','3 × 8 each, slow'],
+   ['Couch stretch','Hip flexor — critical for DL setup, gets compressed sitting','2 min each side'],
+   ['Adductor side-lying stretch','Groin recovery from lateral VB movement last night','90s each side'],
+   ['Ankle CARs (slow)','Full circles — Achilles + ankle joint recovery','2 × 10 each'],
+   ['Dead bug (slow)','Anterior core — re-establish brace without loading the back','2 × 6 each side'],
+   ['Cat-cow + child\'s pose','Lumbar decompression after VB lateral loading','2 min'],
+  ].forEach(([n,d,v]) => {
+    h += `<div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">${n}</div><div class="mob-detail">${d}</div><div class="mob-vol">${v}</div></div></div>`;
+  });
+  h += `</div><div class="section"><div class="section-header">Optional light cardio</div>`;
+  h += `<div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Easy walk or bike</div><div class="mob-detail">20–30 min conversational pace — blood flow without fatigue</div><div class="mob-vol">Zone 1 only</div></div></div></div>`;
+  h += `<div class="callout c-gray">Goal: arrive at Friday's hex bar session completely fresh.</div><div class="spacer"></div>`;
+  return h;
 }
 
-function buildSatDay(weekN, locked) {
-  let html = `<div style="padding:12px 16px 0"><span class="day-tag tag-pump">Arm pump day</span></div>`;
-  if (locked) html += `<div class="locked-banner"><span>✓ Week ${weekN} completed — view only</span></div>`;
-  html += `<div class="callout c-amber" style="margin-top:12px">No heavy loading, no leg work. Fun and upper body blood flow only. Leave 2–3 reps in the tank on everything.</div>`;
-  html += `<div class="section"><div class="section-header">Arm pump · log your weights</div>${accRows(PUMP_DAY, 5, weekN, 5, locked)}</div>`;
-  html += `<div class="callout c-amber">Keep it fun. No PRs today — just a good pump and get out in 45 min.</div>`;
+function buildSat(weekN, locked) {
+  let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-pump">Arm pump day</span></div>`;
+  if (locked) h += `<div class="locked-banner"><span>✓ Week ${weekN} completed — view only</span></div>`;
+  h += `<div class="callout c-amber" style="margin-top:12px">No heavy loading, no leg work. Fun and upper body blood flow only. Leave 2–3 reps in the tank.</div>`;
+  h += `<div class="section"><div class="section-header">Arm pump · tap name for cues</div>${accRows(PUMP, weekN, 5, false, locked)}</div>`;
+  h += `<div class="callout c-amber">Keep it fun. No PRs today — just a good pump and get out in 45 min.</div>`;
   if (!locked) {
-    html += `<div id="status-${weekN}-5"></div><button class="save-btn" onclick="saveSession(${weekN},5)">Save session</button>`;
+    h += `<div id="status-${weekN}-5"></div><button class="save-btn" onclick="saveSession(${weekN},5)">Save session to Google Sheets</button>`;
   }
-  html += `<div class="spacer"></div>`;
-  return html;
+  return h + `<div class="spacer"></div>`;
 }
 
-function buildSunDay() {
+function buildSun() {
   return `<div style="padding:12px 16px 0"><span class="day-tag tag-rest">Full rest</span></div>
   <div class="rest-hero">
     <div class="rest-title">Rest day</div>
@@ -451,73 +632,63 @@ function buildSunDay() {
   <div class="spacer"></div>`;
 }
 
+const LIFT_DAY_MAP = [0, 1, null, null, 2, null, null]; // Mon=0, Tue=1, Fri=2
+
 function buildWeekContent(weekIdx) {
   const w = WEEKS[weekIdx];
   const loads = calcLoads(w.n);
-  const dayBuilders = [
-    () => buildLiftingDay(w.n, 0, w, loads),
-    () => buildLiftingDay(w.n, 1, w, loads),
-    () => buildWedDay(w.n, w.done),
-    () => buildThuDay(w.n, w.done),
-    () => buildLiftingDay(w.n, 4, w, loads),  // dayIdx 4 = fri, maps to liftKeys[2]=dl
-    () => buildSatDay(w.n, w.done),
-    () => buildSunDay(),
-  ];
-
-  // Override dayIdx for lifting days — need to map 0→Mon, 1→Tue, 4→Fri to accessory sets 0,1,2
-  const liftDayMap = [0, 1, null, null, 2, null, null];
-
   let html = '';
   for (let d = 0; d < 7; d++) {
-    const liftIdx = liftDayMap[d];
+    const liftIdx = LIFT_DAY_MAP[d];
     let content;
-    if (liftIdx !== null) {
-      content = buildLiftingDay(w.n, liftIdx, w, loads);
-    } else {
-      content = dayBuilders[d]();
-    }
-    html += `<div class="day-screen${d === currentDayIdx ? ' active' : ''}" id="day-${weekIdx}-${d}">${content}</div>`;
+    if (d === 2) content = buildWed(w.n, w.done);
+    else if (d === 3) content = buildThu(w.n, w.done);
+    else if (d === 5) content = buildSat(w.n, w.done);
+    else if (d === 6) content = buildSun();
+    else content = buildLiftDay(w.n, liftIdx, w, loads);
+    const isActive = d === currentDayIdx;
+    html += `<div class="day-screen${isActive?' active':''}" id="day-${weekIdx}-${d}">${content}</div>`;
   }
   return html;
 }
 
+// ── Render ──
 function renderWeekStrip() {
-  const strip = document.getElementById('weekStrip');
-  strip.innerHTML = WEEKS.map((w, i) => {
+  document.getElementById('weekStrip').innerHTML = WEEKS.map((w, i) => {
     const cls = w.done ? 'done' : (w.n === CURRENT_WEEK ? 'current' : 'upcoming');
-    return `<button class="week-pill ${cls}${i === currentWeekIdx ? ' active' : ''}" onclick="switchWeek(${i})">W${w.n}<div class="wdot"></div></button>`;
+    return `<button class="week-pill ${cls}${i===currentWeekIdx?' active':''}" onclick="switchWeek(${i})">W${w.n}<div class="wdot"></div></button>`;
   }).join('');
 }
 
 function renderWeekInfo() {
   const w = WEEKS[currentWeekIdx];
-  const doneBadge = w.done ? '<span class="done-badge">Completed</span>' : '';
-  document.getElementById('weekInfo').innerHTML = `<span class="week-title">${w.phase}</span><span class="week-meta">${w.dates} &middot; ${w.intensity} &middot; ${w.volume}</span>${doneBadge}`;
+  const badge = w.done ? '<span class="done-badge">Completed</span>' : '';
+  document.getElementById('weekInfo').innerHTML = `<span class="week-title">${w.phase}</span><span class="week-meta">${w.dates} &middot; ${w.intensity} &middot; ${w.volume}</span>${badge}`;
 }
 
 function renderDayStrip() {
-  const w = WEEKS[currentWeekIdx];
+  const todayDayIdx = getTodayDayIdx();
+  const todayWeekIdx = getTodayWeekIdx();
   const days = [
-    { label:'Mon', cls:'lift-day' },
-    { label:'Tue', cls:'lift-day' },
-    { label:'Wed', cls:'vb-day' },
-    { label:'Thu', cls:'' },
-    { label:'Fri', cls:'lift-day' },
-    { label:'Sat', cls:'pump-day' },
-    { label:'Sun', cls:'' },
+    {label:'Mon',cls:'lift-day'},{label:'Tue',cls:'lift-day'},{label:'Wed',cls:'vb-day'},
+    {label:'Thu',cls:''},{label:'Fri',cls:'lift-day'},{label:'Sat',cls:'pump-day'},{label:'Sun',cls:''},
   ];
-  document.getElementById('dayStrip').innerHTML = days.map((d, i) =>
-    `<button class="day-pill ${d.cls}${i === currentDayIdx ? ' active' : ''}" onclick="switchDay(${i})">${d.label}<div class="ddot"></div></button>`
-  ).join('');
+  document.getElementById('dayStrip').innerHTML = days.map((d, i) => {
+    const isToday = i === todayDayIdx && currentWeekIdx === todayWeekIdx;
+    const todayMarker = isToday ? '<div class="today-dot"></div>' : '';
+    return `<button class="day-pill ${d.cls}${i===currentDayIdx?' active':''}${isToday?' today-pill':''}" onclick="switchDay(${i})">${d.label}<div class="ddot"></div>${todayMarker}</button>`;
+  }).join('');
 }
 
 function renderContent() {
   document.getElementById('programContent').innerHTML = buildWeekContent(currentWeekIdx);
+  setTimeout(updateProgress, 50);
 }
 
 function switchWeek(idx) {
   currentWeekIdx = idx;
   currentDayIdx = 0;
+  stopTimer();
   renderWeekStrip();
   renderWeekInfo();
   renderDayStrip();
@@ -526,24 +697,27 @@ function switchWeek(idx) {
 
 function switchDay(idx) {
   currentDayIdx = idx;
-  document.querySelectorAll('.day-pill').forEach((p, i) => p.classList.toggle('active', i === idx));
-  document.querySelectorAll('.day-screen').forEach((s, i) => s.classList.toggle('active', i === idx));
+  document.querySelectorAll('.day-pill').forEach((p,i) => p.classList.toggle('active', i===idx));
+  document.querySelectorAll('.day-screen').forEach((s,i) => s.classList.toggle('active', i===idx));
+  stopTimer();
+  setTimeout(updateProgress, 50);
 }
 
 function showScreen(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-' + name).classList.add('active');
-  document.getElementById('mainHeader').style.display = name === 'program' ? 'block' : 'none';
+  document.getElementById('screen-'+name).classList.add('active');
+  document.getElementById('mainHeader').style.display = name==='program' ? 'block' : 'none';
   ['program','history','maxes'].forEach(n => {
-    document.getElementById('ni-' + n).className = 'nav-icon' + (n===name?' on':'');
-    document.getElementById('nl-' + n).className = 'nav-lbl' + (n===name?' on':'');
+    document.getElementById('ni-'+n).className = 'nav-icon'+(n===name?' on':'');
+    document.getElementById('nl-'+n).className = 'nav-lbl'+(n===name?' on':'');
   });
-  if (name === 'history') loadHistory();
+  if (name==='history') loadHistory();
 }
 
-function getInputsForDay(weekN, dayIdx) {
+// ── Google Sheets ──
+function getInputsForDay(weekN, dayN) {
   const data = {};
-  document.querySelectorAll(`.set-input[data-week="${weekN}"][data-day="${dayIdx}"]`).forEach(inp => {
+  document.querySelectorAll(`.set-input[data-week="${weekN}"][data-day="${dayN}"]`).forEach(inp => {
     const ex = inp.getAttribute('data-ex');
     const s = parseInt(inp.getAttribute('data-s'));
     if (!data[ex]) data[ex] = [];
@@ -552,69 +726,68 @@ function getInputsForDay(weekN, dayIdx) {
   return data;
 }
 
-async function saveSession(weekN, dayIdx) {
-  const statusEl = document.getElementById(`status-${weekN}-${dayIdx}`);
-  const btns = document.querySelectorAll('.save-btn');
-  btns.forEach(b => { if (b.getAttribute('onclick') === `saveSession(${weekN},${dayIdx})`) { b.disabled = true; b.textContent = 'Saving...'; } });
-  const inputs = getInputsForDay(weekN, dayIdx);
+async function saveSession(weekN, dayN) {
+  const statusEl = document.getElementById(`status-${weekN}-${dayN}`);
+  const btn = document.querySelector(`button[onclick="saveSession(${weekN},${dayN})"]`);
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+  const inputs = getInputsForDay(weekN, dayN);
   const date = new Date().toLocaleDateString('en-US');
-  const dayLabel = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][dayIdx];
+  const dayLabel = DAY_NAMES[dayN];
   try {
     for (const [ex, sets] of Object.entries(inputs)) {
       await fetch(SHEET_URL, {
-        method: 'POST', mode: 'no-cors',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({tab:'Log', row:[date,`Week ${weekN}`,dayLabel,ex,sets.length,'',...sets]})
+        method:'POST', mode:'no-cors',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({tab:'Log', row:[date,`Week ${weekN}`,dayLabel,ex,sets.length,'',...sets]})
       });
     }
     if (statusEl) statusEl.innerHTML = `<div class="callout c-success" style="margin-top:8px">Session saved to Google Sheets</div>`;
-    btns.forEach(b => { if (b.getAttribute('onclick') === `saveSession(${weekN},${dayIdx})`) { b.textContent = 'Saved'; setTimeout(() => { b.disabled = false; b.textContent = 'Save session'; }, 3000); } });
+    if (btn) { btn.textContent = 'Saved ✓'; setTimeout(()=>{ btn.disabled=false; btn.textContent='Save session to Google Sheets'; }, 3000); }
   } catch(e) {
     if (statusEl) statusEl.innerHTML = `<div class="callout c-error" style="margin-top:8px">Save failed — check your connection</div>`;
-    btns.forEach(b => { if (b.getAttribute('onclick') === `saveSession(${weekN},${dayIdx})`) { b.disabled = false; b.textContent = 'Save session'; } });
+    if (btn) { btn.disabled=false; btn.textContent='Save session to Google Sheets'; }
   }
 }
 
 async function saveMaxes() {
   const btn = event.target;
   const statusEl = document.getElementById('maxes-status');
-  btn.disabled = true; btn.textContent = 'Saving...';
-  const date = new Date().toLocaleDateString('en-US');
-  const row = [date, document.getElementById('tm-squat').value, document.getElementById('tm-bench').value, document.getElementById('tm-dl').value, document.getElementById('tm-ohp').value];
+  btn.disabled=true; btn.textContent='Saving...';
+  const row = [new Date().toLocaleDateString('en-US'), document.getElementById('tm-squat').value, document.getElementById('tm-bench').value, document.getElementById('tm-dl').value, document.getElementById('tm-ohp').value];
   try {
-    await fetch(SHEET_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify({tab:'Maxes', row}) });
-    statusEl.innerHTML = '<div class="callout c-success" style="margin-top:8px">Maxes saved to Google Sheets</div>';
-    btn.textContent = 'Saved';
-    setTimeout(() => { btn.disabled = false; btn.textContent = 'Save maxes to sheet'; }, 3000);
+    await fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({tab:'Maxes',row})});
+    statusEl.innerHTML='<div class="callout c-success" style="margin-top:8px">Maxes saved to Google Sheets</div>';
+    btn.textContent='Saved ✓';
+    setTimeout(()=>{btn.disabled=false;btn.textContent='Save maxes to sheet';},3000);
   } catch(e) {
-    statusEl.innerHTML = '<div class="callout c-error" style="margin-top:8px">Save failed — check your connection</div>';
-    btn.disabled = false; btn.textContent = 'Save maxes to sheet';
+    statusEl.innerHTML='<div class="callout c-error" style="margin-top:8px">Save failed — check your connection</div>';
+    btn.disabled=false; btn.textContent='Save maxes to sheet';
   }
 }
 
 async function loadHistory() {
   const el = document.getElementById('history-content');
-  el.innerHTML = '<div class="empty-state">Loading...</div>';
+  el.innerHTML='<div class="empty-state">Loading...</div>';
   try {
-    const res = await fetch(SHEET_URL + '?tab=Log');
+    const res = await fetch(SHEET_URL+'?tab=Log');
     const data = await res.json();
     const rows = data.rows.slice(1);
-    if (!rows.length) { el.innerHTML = '<div class="empty-state">No sessions logged yet.<br>Save your first session and it will appear here.</div>'; return; }
+    if (!rows.length) { el.innerHTML='<div class="empty-state">No sessions logged yet.<br>Complete your first session and save it.</div>'; return; }
     const byDate = {};
     rows.forEach(r => {
-      const key = r[0]+'|'+r[2];
-      if (!byDate[key]) byDate[key] = {date:r[0],day:r[2],week:r[1],exercises:[]};
+      const key=r[0]+'|'+r[2];
+      if (!byDate[key]) byDate[key]={date:r[0],day:r[2],week:r[1],exercises:[]};
       byDate[key].exercises.push(r[3]);
     });
     el.innerHTML = Object.values(byDate).reverse().map(s =>
-      `<div class="section" style="margin:12px 16px 0"><div class="hist-row"><div class="hist-date">${s.date} &middot; ${s.week}</div><div class="hist-title">${s.day}</div><div class="hist-detail">${s.exercises.slice(0,4).join(', ')}${s.exercises.length>4?' +' + (s.exercises.length-4)+' more':''}</div></div></div>`
-    ).join('') + '<div class="spacer"></div>';
+      `<div class="section" style="margin:12px 16px 0"><div class="hist-row"><div class="hist-date">${s.date} &middot; ${s.week}</div><div class="hist-title">${s.day}</div><div class="hist-detail">${s.exercises.slice(0,4).join(', ')}${s.exercises.length>4?' +'+(s.exercises.length-4)+' more':''}</div></div></div>`
+    ).join('')+'<div class="spacer"></div>';
   } catch(e) {
-    el.innerHTML = '<div class="empty-state">Could not load history.<br>Make sure you have an internet connection.</div>';
+    el.innerHTML='<div class="empty-state">Could not load history.<br>Check your internet connection.</div>';
   }
 }
 
-// Init
+// ── Init ──
 renderWeekStrip();
 renderWeekInfo();
 renderDayStrip();
