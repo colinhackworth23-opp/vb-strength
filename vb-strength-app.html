@@ -200,6 +200,25 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif
 .spacer { height: 16px; }
 .screen-title { padding: 18px 16px 4px; font-size: 20px; font-weight: 700; color: var(--text); }
 .empty-state { padding: 48px 20px; text-align: center; color: var(--text2); font-size: 13px; line-height: 1.65; }
+
+/* Plate calculator */
+.plate-fab { position: fixed; bottom: calc(80px + env(safe-area-inset-bottom,16px)); right: 16px; width: 48px; height: 48px; border-radius: 50%; background: var(--text); color: var(--bg); display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 40; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+.plate-fab:active { opacity: 0.8; }
+.plate-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 60; padding: 20px; align-items: flex-end; justify-content: center; }
+.plate-modal.visible { display: flex; }
+.plate-card { background: var(--bg); border-radius: var(--radius); padding: 16px; width: 100%; max-width: 400px; margin-bottom: calc(100px + env(safe-area-inset-bottom,16px)); }
+.bar-btn { flex: 1; padding: 8px 10px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--bg2); font-size: 11px; font-weight: 600; color: var(--text2); cursor: pointer; font-family: inherit; min-width: 0; }
+.bar-active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+/* Report */
+.report-hero { margin: 12px 16px 0; padding: 20px 18px; background: var(--blue-bg); border-radius: var(--radius); }
+.report-title { font-size: 17px; font-weight: 700; color: var(--blue); margin-bottom: 6px; }
+.report-body { font-size: 13px; color: var(--blue); line-height: 1.6; }
+.report-stat { padding: 10px 14px; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.report-stat:last-child { border-bottom: none; }
+.report-stat-label { font-size: 13px; color: var(--text); font-weight: 500; }
+.report-stat-val { font-size: 15px; font-weight: 700; color: var(--text); }
+.report-delta { font-size: 11px; color: var(--green); font-weight: 600; margin-left: 8px; }
 </style>
 </head>
 <body>
@@ -354,12 +373,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif
 <!-- MAXES SCREEN -->
 <div class="screen" id="screen-maxes">
   <div class="screen-title">Training maxes</div>
+  <div class="callout c-blue" style="margin-top:12px">Adjusting a TM immediately recalculates every week of your program. Drop a number if a lift feels too heavy; raise it after a PR.</div>
   <div class="section" style="margin-top:12px">
-    <div class="section-header">Current TMs &middot; update after PRs</div>
-    <div class="max-row"><div class="max-lbl">Back Squat</div><input class="max-input" id="tm-squat" type="text" value="230 lbs"></div>
-    <div class="max-row"><div class="max-lbl">Incline Bench</div><input class="max-input" id="tm-bench" type="text" value="185 lbs"></div>
-    <div class="max-row"><div class="max-lbl">Hex Bar Deadlift</div><input class="max-input" id="tm-dl" type="text" value="315 lbs"></div>
-    <div class="max-row"><div class="max-lbl">OHP (Strict)</div><input class="max-input" id="tm-ohp" type="text" value="115 lbs"></div>
+    <div class="section-header">Current TMs &middot; tap a number to edit</div>
+    <div class="max-row"><div class="max-lbl">Back Squat</div><input class="max-input" id="tm-squat" type="number" inputmode="numeric" onchange="updateTM('squat',this.value)"><span style="font-size:13px;color:var(--text2);margin-left:6px">lbs</span></div>
+    <div class="max-row"><div class="max-lbl">Incline Bench</div><input class="max-input" id="tm-bench" type="number" inputmode="numeric" onchange="updateTM('bench',this.value)"><span style="font-size:13px;color:var(--text2);margin-left:6px">lbs</span></div>
+    <div class="max-row"><div class="max-lbl">Hex Bar Deadlift</div><input class="max-input" id="tm-dl" type="number" inputmode="numeric" onchange="updateTM('dl',this.value)"><span style="font-size:13px;color:var(--text2);margin-left:6px">lbs</span></div>
+    <div class="max-row"><div class="max-lbl">OHP (Strict)</div><input class="max-input" id="tm-ohp" type="number" inputmode="numeric" onchange="updateTM('ohp',this.value)"><span style="font-size:13px;color:var(--text2);margin-left:6px">lbs</span></div>
   </div>
   <div id="maxes-status"></div>
   <button class="save-btn" onclick="saveMaxes()">Save maxes to sheet</button>
@@ -367,9 +387,56 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif
   <div class="spacer"></div>
 </div>
 
+<!-- WARM-UP SCREEN -->
+<div class="screen" id="screen-warmup">
+  <div class="screen-title">Warm-up protocol</div>
+  <div class="callout c-gray" style="margin-top:12px">Use every session — 20 minutes. Shift emphasis: more hip/ankle for Back Squat days, more shoulder/scap for Bench/OHP days.</div>
+  <div class="section" style="margin-top:12px">
+    <div class="section-header">Universal warm-up &middot; 20 min</div>
+    <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Assault bike / row</div><div class="mob-detail">Core temp + aerobic primer — don't spike HR</div><div class="mob-vol">5 min</div></div></div>
+    <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Leg swings (sagittal + frontal)</div><div class="mob-detail">Hip flexor + adductor ROM — long levers need full range</div><div class="mob-vol">2 × 10 each</div></div></div>
+    <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Hip 90/90 switches</div><div class="mob-detail">Hip capsule mobility — essential for squat depth at 6'10"</div><div class="mob-vol">2 × 8 each</div></div></div>
+    <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Ankle CARs + heel raise</div><div class="mob-detail">Dorsiflexion — limits squat mechanics AND jump landing depth</div><div class="mob-vol">2 × 10 each</div></div></div>
+    <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Adductor rock-back</div><div class="mob-detail">Groin prep — lateral VB movement protection</div><div class="mob-vol">2 × 8 each</div></div></div>
+    <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Goblet squat (BW or 25 lbs)</div><div class="mob-detail">Pattern check — assess depth, torso angle, knee track</div><div class="mob-vol">2 × 6</div></div></div>
+    <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Band pull-apart</div><div class="mob-detail">Rear cuff activation — mandatory before pressing AND spiking</div><div class="mob-vol">3 × 15</div></div></div>
+    <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Prone Y-T-W</div><div class="mob-detail">Lower trap / scapular control — overhead hitting mechanics</div><div class="mob-vol">2 × 8 each</div></div></div>
+    <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Dead bug (slow)</div><div class="mob-detail">Anterior core — protect lumbar in DL; brace for VB landings</div><div class="mob-vol">2 × 6 each</div></div></div>
+    <div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Ankle pogo (small, fast)</div><div class="mob-detail">Achilles tendon stiffness — key for reactive jump height</div><div class="mob-vol">2 × 20</div></div></div>
+  </div>
+  <div class="callout c-blue" style="margin-top:12px">Primary lift warm-up sets: always ramp 60% × 5, then bridge to working weight × 2 before first working set. Never skip.</div>
+  <div class="callout c-amber" style="margin-top:12px">Ankle pogos are mandatory — Achilles tendon stiffness is the single biggest factor in reactive jump height.</div>
+  <div class="spacer"></div>
+</div>
+
+<!-- PLATE CALCULATOR (floating button reveals modal) -->
+<div class="plate-fab" onclick="togglePlateCalc()">
+  <span style="font-size:16px;font-weight:700">kg</span>
+</div>
+<div class="plate-modal" id="plateModal">
+  <div class="plate-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-size:17px;font-weight:700">Plate calculator</div>
+      <button onclick="togglePlateCalc()" style="background:none;border:none;font-size:18px;color:var(--text2);cursor:pointer">×</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <span style="font-size:13px;color:var(--text2)">Target</span>
+      <input id="plateInput" type="number" inputmode="numeric" placeholder="225" oninput="calcPlates()" style="flex:1;height:40px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg2);font-size:15px;font-weight:700;text-align:center;color:var(--text);font-family:inherit">
+      <span style="font-size:13px;color:var(--text2)">lbs</span>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+      <button onclick="setBar(45)" id="bar45" class="bar-btn bar-active">45 lb bar</button>
+      <button onclick="setBar(35)" id="bar35" class="bar-btn">35 lb bar</button>
+      <button onclick="setBar(55)" id="bar55" class="bar-btn">Trap bar (55)</button>
+    </div>
+    <div id="plateResult" style="font-size:13px;color:var(--text)">Enter a target weight above.</div>
+  </div>
+</div>
+
 <!-- BOTTOM NAV -->
 <div class="bottom-nav">
   <button class="nav-btn" onclick="showScreen('program')"><div class="nav-icon on" id="ni-program"></div><span class="nav-lbl on" id="nl-program">Program</span></button>
+  <button class="nav-btn" onclick="showScreen('warmup')"><div class="nav-icon" id="ni-warmup"></div><span class="nav-lbl" id="nl-warmup">Warm-up</span></button>
   <button class="nav-btn" onclick="showScreen('history')"><div class="nav-icon" id="ni-history"></div><span class="nav-lbl" id="nl-history">History</span></button>
   <button class="nav-btn" onclick="showScreen('maxes')"><div class="nav-icon" id="ni-maxes"></div><span class="nav-lbl" id="nl-maxes">Maxes</span></button>
 </div>
@@ -381,6 +448,95 @@ const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'
 const TM = { squat:230, bench:185, dl:315, ohp:115 };
 
 function r5(n) { return Math.round(n/5)*5; }
+
+// ── Haptics ──
+function haptic(ms) {
+  if (navigator.vibrate) navigator.vibrate(ms || 10);
+}
+
+// ── Wake lock — keep screen on during workouts ──
+let wakeLock = null;
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+    }
+  } catch(e) { /* fallback: browser doesn't support, ignore */ }
+}
+async function releaseWakeLock() {
+  if (wakeLock) { try { await wakeLock.release(); } catch(e){} wakeLock = null; }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && !wakeLock) requestWakeLock();
+});
+
+// ── Live TM adjustment ──
+function updateTM(lift, value) {
+  const n = parseInt(value);
+  if (isNaN(n) || n < 50 || n > 800) return;
+  TM[lift] = n;
+  haptic(8);
+  renderContent();
+}
+
+function renderMaxesInputs() {
+  document.getElementById('tm-squat').value = TM.squat;
+  document.getElementById('tm-bench').value = TM.bench;
+  document.getElementById('tm-dl').value = TM.dl;
+  document.getElementById('tm-ohp').value = TM.ohp;
+}
+
+// ── Plate calculator ──
+let currentBar = 45;
+function togglePlateCalc() {
+  const m = document.getElementById('plateModal');
+  m.classList.toggle('visible');
+  if (m.classList.contains('visible')) {
+    haptic(8);
+    setTimeout(() => document.getElementById('plateInput').focus(), 50);
+  }
+}
+function setBar(weight) {
+  currentBar = weight;
+  document.querySelectorAll('.bar-btn').forEach(b => b.classList.remove('bar-active'));
+  document.getElementById('bar' + weight).classList.add('bar-active');
+  calcPlates();
+}
+function calcPlates() {
+  const target = parseFloat(document.getElementById('plateInput').value);
+  const resultEl = document.getElementById('plateResult');
+  if (!target || target < currentBar) {
+    resultEl.innerHTML = target ? `<span style="color:var(--red)">Target must be at least ${currentBar} lbs (bar weight).</span>` : 'Enter a target weight above.';
+    return;
+  }
+  const perSide = (target - currentBar) / 2;
+  if (perSide < 0) { resultEl.innerHTML = '<span style="color:var(--red)">Target is less than bar weight.</span>'; return; }
+  const plates = [45, 35, 25, 10, 5, 2.5];
+  let remaining = perSide;
+  const loaded = [];
+  plates.forEach(p => {
+    const count = Math.floor(remaining / p);
+    if (count > 0) {
+      loaded.push({ weight: p, count });
+      remaining -= count * p;
+    }
+  });
+  const leftover = remaining > 0.01 ? remaining : 0;
+  let html = `<div style="font-size:13px;color:var(--text2);margin-bottom:8px">Per side (${perSide} lbs):</div>`;
+  if (loaded.length === 0) {
+    html += `<div style="color:var(--text2)">Just the bar.</div>`;
+  } else {
+    html += '<div style="display:flex;flex-wrap:wrap;gap:6px">';
+    loaded.forEach(p => {
+      html += `<div style="background:var(--blue-bg);color:var(--blue);padding:6px 10px;border-radius:var(--radius-sm);font-size:14px;font-weight:700">${p.count} × ${p.weight}</div>`;
+    });
+    html += '</div>';
+  }
+  if (leftover > 0) {
+    html += `<div style="font-size:12px;color:var(--amber);margin-top:8px">Note: ${leftover.toFixed(1)} lbs short — can't be loaded with standard plates.</div>`;
+  }
+  resultEl.innerHTML = html;
+}
 
 // ── Today detection ──
 function getTodayDayIdx() {
@@ -449,12 +605,14 @@ function updateProgress() {
 // ── Set check handler ──
 function handleSetCheck(checkEl, isWorkingSet) {
   checkEl.classList.toggle('checked');
+  haptic(checkEl.classList.contains('checked') ? 12 : 6);
   const inp = checkEl.closest('.set-input-row').querySelector('.set-input');
   if (checkEl.classList.contains('checked')) {
     inp.classList.add('done');
     const restTime = isWorkingSet ? 180 : 90;
     const label = isWorkingSet ? 'Rest — 3 min for primary lifts' : 'Rest — 90s for accessories';
     startTimer(restTime, label);
+    requestWakeLock();
   } else {
     inp.classList.remove('done');
     stopTimer();
@@ -675,7 +833,32 @@ function buildLiftDay(weekN, liftDayN, w, loads) {
     h += `<div id="status-${weekN}-${liftDayN}"></div>`;
     h += `<button class="save-btn" onclick="saveSession(${weekN},${liftDayN})">Save session to Google Sheets</button>`;
   }
+  // End-of-program report on Week 8 Friday
+  if (w.testing && liftDayN === 2) {
+    h += buildEndReport();
+  }
   return h + `<div class="spacer"></div>`;
+}
+
+function buildEndReport() {
+  const estStartTM = { squat: 230, bench: 185, dl: 315, ohp: 115 };
+  const gains = {};
+  ['squat','bench','dl','ohp'].forEach(k => { gains[k] = TM[k] - estStartTM[k]; });
+  return `
+  <div class="section" style="margin-top:20px">
+    <div class="section-header">Program complete · end-of-program report</div>
+    <div class="report-hero">
+      <div class="report-title">🏐 8 weeks in the books</div>
+      <div class="report-body">You finished. Now let's hand this data off so your next program is built on what actually happened, not a template.</div>
+    </div>
+    <div style="padding:4px 0">
+      <div class="report-stat"><span class="report-stat-label">Back Squat TM</span><span><span class="report-stat-val">${TM.squat} lbs</span>${gains.squat !== 0 ? `<span class="report-delta" style="color:${gains.squat > 0 ? 'var(--green)' : 'var(--red)'}">${gains.squat > 0 ? '+' : ''}${gains.squat}</span>` : ''}</span></div>
+      <div class="report-stat"><span class="report-stat-label">Incline Bench TM</span><span><span class="report-stat-val">${TM.bench} lbs</span>${gains.bench !== 0 ? `<span class="report-delta" style="color:${gains.bench > 0 ? 'var(--green)' : 'var(--red)'}">${gains.bench > 0 ? '+' : ''}${gains.bench}</span>` : ''}</span></div>
+      <div class="report-stat"><span class="report-stat-label">Hex Bar Deadlift TM</span><span><span class="report-stat-val">${TM.dl} lbs</span>${gains.dl !== 0 ? `<span class="report-delta" style="color:${gains.dl > 0 ? 'var(--green)' : 'var(--red)'}">${gains.dl > 0 ? '+' : ''}${gains.dl}</span>` : ''}</span></div>
+      <div class="report-stat"><span class="report-stat-label">OHP TM</span><span><span class="report-stat-val">${TM.ohp} lbs</span>${gains.ohp !== 0 ? `<span class="report-delta" style="color:${gains.ohp > 0 ? 'var(--green)' : 'var(--red)'}">${gains.ohp > 0 ? '+' : ''}${gains.ohp}</span>` : ''}</span></div>
+    </div>
+  </div>
+  <div class="callout c-blue" style="margin-top:12px">Next step: open your Google Sheet (the Log tab has every set you logged). Share it with me in chat and I'll build your next 8-week program from your actual data, not estimates.</div>`;
 }
 
 function buildWed(weekN, locked) {
@@ -821,11 +1004,14 @@ function showScreen(name) {
   document.getElementById('screen-'+name).classList.add('active');
   document.getElementById('mainHeader').style.display = name==='program' ? 'block' : 'none';
   document.getElementById('appBanner').style.display = name==='program' ? 'block' : 'none';
-  ['program','history','maxes'].forEach(n => {
-    document.getElementById('ni-'+n).className = 'nav-icon'+(n===name?' on':'');
-    document.getElementById('nl-'+n).className = 'nav-lbl'+(n===name?' on':'');
+  ['program','warmup','history','maxes'].forEach(n => {
+    const icon = document.getElementById('ni-'+n);
+    const lbl = document.getElementById('nl-'+n);
+    if (icon) icon.className = 'nav-icon'+(n===name?' on':'');
+    if (lbl) lbl.className = 'nav-lbl'+(n===name?' on':'');
   });
   if (name==='history') loadHistory();
+  if (name==='maxes') renderMaxesInputs();
 }
 
 // ── Google Sheets ──
@@ -907,5 +1093,6 @@ renderWeekInfo();
 renderDayStrip();
 renderContent();
 </script>
+</div>
 </body>
 </html>
