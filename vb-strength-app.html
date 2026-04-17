@@ -42,7 +42,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif
 
 /* ── Header ── */
 .main-header { background: var(--bg); border-bottom: 0.5px solid var(--border); position: sticky; top: 0; z-index: 20; }
-.header-top { padding: 0 20px 0; }
+.header-top { padding: 6px 20px 0; }
 .week-strip { display: flex; overflow-x: auto; scrollbar-width: none; padding: 0 4px; }
 .week-strip::-webkit-scrollbar { display: none; }
 .week-pill { flex-shrink: 0; padding: 10px 10px; font-size: 11px; font-weight: 700; color: var(--text2); border-bottom: 2px solid transparent; cursor: pointer; background: none; border-left: none; border-right: none; border-top: none; white-space: nowrap; display: flex; flex-direction: column; align-items: center; gap: 2px; letter-spacing: 0.02em; }
@@ -205,10 +205,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif
 <body>
 <div class="app">
 
-<!-- MAIN HEADER -->
-<div class="main-header" id="mainHeader">
-  <div class="banner-wrap">
-    <svg viewBox="0 0 680 200" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;padding-top:env(safe-area-inset-top,44px);box-sizing:content-box;">
+<!-- BANNER — outside sticky header so Safari renders it correctly -->
+<div class="banner-wrap" id="appBanner">
+    <svg viewBox="0 0 680 200" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;padding-top:env(safe-area-inset-top,44px);box-sizing:content-box;background:#08111f;">
       <rect x="0" y="0" width="680" height="200" fill="#08111f"/>
       <rect x="0" y="95" width="680" height="45" fill="#0c1e3a"/>
       <circle fill="#fff" opacity=".6" cx="30" cy="10" r=".8"/><circle fill="#fff" opacity=".4" cx="70" cy="6" r=".6"/><circle fill="#fff" opacity=".7" cx="110" cy="14" r=".7"/><circle fill="#fff" opacity=".5" cx="160" cy="8" r=".6"/><circle fill="#fff" opacity=".6" cx="220" cy="12" r=".8"/><circle fill="#fff" opacity=".4" cx="300" cy="5" r=".7"/><circle fill="#fff" opacity=".5" cx="380" cy="9" r=".6"/><circle fill="#fff" opacity=".7" cx="450" cy="15" r=".7"/><circle fill="#fff" opacity=".4" cx="520" cy="7" r=".8"/><circle fill="#fff" opacity=".6" cx="580" cy="11" r=".6"/><circle fill="#fff" opacity=".5" cx="640" cy="8" r=".7"/>
@@ -311,7 +310,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif
       <line x1="40" y1="98" x2="320" y2="98" stroke="#f0c850" stroke-width="1.5" opacity=".8"/>
       <text x="41" y="114" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="11" font-weight="700" fill="#e8d5a3" letter-spacing="2">Chicago · 8-week volleyball performance program</text>
     </svg>
-  </div>
+</div>
+
+<!-- MAIN HEADER — sticky, sits below banner -->
+<div class="main-header" id="mainHeader">
   <div class="header-top">
     <div class="week-strip" id="weekStrip"></div>
     <div class="week-info" id="weekInfo"></div>
@@ -818,6 +820,7 @@ function showScreen(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
   document.getElementById('mainHeader').style.display = name==='program' ? 'block' : 'none';
+  document.getElementById('appBanner').style.display = name==='program' ? 'block' : 'none';
   ['program','history','maxes'].forEach(n => {
     document.getElementById('ni-'+n).className = 'nav-icon'+(n===name?' on':'');
     document.getElementById('nl-'+n).className = 'nav-lbl'+(n===name?' on':'');
