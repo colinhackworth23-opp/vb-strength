@@ -324,8 +324,10 @@ function stopTimer() {
 
 // ── Progress tracking ──
 function updateProgress() {
-  const checks = document.querySelectorAll('.set-check');
-  const done = document.querySelectorAll('.set-check.checked');
+  const activeDay = document.querySelector('.day-screen.active');
+  if (!activeDay) return;
+  const checks = activeDay.querySelectorAll('.set-check');
+  const done = activeDay.querySelectorAll('.set-check.checked');
   const total = checks.length;
   const completed = done.length;
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
