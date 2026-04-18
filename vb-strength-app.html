@@ -102,6 +102,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif
 .badge-wu { background: var(--bg3); color: var(--text2); }
 .badge-work { background: var(--blue-bg); color: var(--blue); }
 .badge-attempt { background: var(--purple-bg); color: var(--purple); }
+.lift-input { height: 32px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--bg2); font-size: 13px; font-weight: 700; text-align: center; color: var(--text); font-family: inherit; padding: 0; }
+.lift-input:focus { outline: none; border-color: var(--blue); background: var(--bg); }
+.lift-input-reps { width: 36px; }
+.lift-input-weight { width: 52px; }
+.lift-unit { font-size: 11px; color: var(--text2); }
 
 /* ── Acc rows ── */
 .acc-row { border-bottom: 0.5px solid var(--border); transition: background 0.15s; }
@@ -741,19 +746,25 @@ function calcLoads(weekN) {
   return out;
 }
 
-function liftRows(loads, key, name, w) {
+function liftRows(loads, key, name, w, dayN, locked) {
   const { wu1, wu2, ws } = loads[key];
   const isTest = w.testing;
   const rLabel = isTest ? 'Attempt' : 'Working set';
   const bClass = isTest ? 'badge-attempt' : 'badge-work';
-  const rStr = isTest ? '1 rep' : `${w.reps} reps`;
+  const rCount = isTest ? 1 : w.reps;
   const pLabels = isTest
     ? ['88% TM','93% TM','97% TM','100% TM']
     : w.pcts.map(p => `${Math.round(p*100)}% TM`);
   let h = `<div class="lift-row"><div class="lift-label">${name}<div class="lift-sub">Pattern activation ~60% TM</div></div><span class="badge badge-wu">${w.deload?'3':'5'} reps</span><div class="lift-target">${wu1} lbs</div></div>`;
   if (wu2) h += `<div class="lift-row"><div class="lift-label">Warm-up 2<div class="lift-sub">Bridge to working weight</div></div><span class="badge badge-wu">2 reps</span><div class="lift-target">${wu2} lbs</div></div>`;
   ws.forEach((wt, i) => {
-    h += `<div class="lift-row"><div class="lift-label">${rLabel} ${i+1}<div class="lift-sub">${pLabels[i]}</div></div><span class="badge ${bClass}">${rStr}</span><div class="lift-target">${wt} lbs</div></div>`;
+    const disAttr = locked ? ' disabled' : '';
+    const exKey = `${name}__${key}`;
+    h += `<div class="lift-row"><div class="lift-label">${rLabel} ${i+1}<div class="lift-sub">${pLabels[i]}</div></div>` +
+      `<input class="lift-input lift-input-reps" data-week="${w.n}" data-day="${dayN}" data-ex="${exKey}" data-s="${i}" data-type="reps" type="text" inputmode="numeric" value="${rCount}"${disAttr}>` +
+      `<span class="lift-unit">reps</span>` +
+      `<input class="lift-input lift-input-weight" data-week="${w.n}" data-day="${dayN}" data-ex="${exKey}" data-s="${i}" data-type="weight" type="text" inputmode="numeric" value="${wt}"${disAttr}>` +
+      `<span class="lift-unit">lbs</span></div>`;
   });
   return h;
 }
@@ -824,8 +835,8 @@ function buildLiftDay(weekN, liftDayN, w, loads) {
 
   let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-lift">${tags[liftDayN]}</span></div>`;
   if (locked) h += `<div class="locked-banner"><span>✓ Week ${weekN} completed — view only</span></div>`;
-  h += `<div class="section"><div class="section-header">${liftTitles[liftDayN]}</div>${liftRows(loads, liftKeys[liftDayN], liftNames[liftDayN], w)}</div>`;
-  if (liftDayN === 1) h += `<div class="section"><div class="section-header">OHP · primary lift</div>${liftRows(loads, 'ohp', 'Overhead press (strict)', w)}</div>`;
+  h += `<div class="section"><div class="section-header">${liftTitles[liftDayN]}</div>${liftRows(loads, liftKeys[liftDayN], liftNames[liftDayN], w, liftDayN, locked)}</div>`;
+  if (liftDayN === 1) h += `<div class="section"><div class="section-header">OHP · primary lift</div>${liftRows(loads, 'ohp', 'Overhead press (strict)', w, liftDayN, locked)}</div>`;
   h += `<div class="section"><div class="section-header">Accessories · tap name for cues</div>${accRows(accData[liftDayN], weekN, liftDayN, false, locked)}</div>`;
   h += `<div class="section"><div class="section-header">${getPBTitle(liftDayN)}</div>${accRows(getPB(weekN, liftDayN), weekN, liftDayN, true, locked)}</div>`;
   h += `<div class="callout c-blue">${getVBCallout(weekN, liftDayN)}</div>`;
@@ -1017,11 +1028,25 @@ function showScreen(name) {
 // ── Google Sheets ──
 function getInputsForDay(weekN, dayN) {
   const data = {};
+  // Accessories
   document.querySelectorAll(`.set-input[data-week="${weekN}"][data-day="${dayN}"]`).forEach(inp => {
     const ex = inp.getAttribute('data-ex');
     const s = parseInt(inp.getAttribute('data-s'));
     if (!data[ex]) data[ex] = [];
     data[ex][s] = inp.value || '-';
+  });
+  // Primary lifts — combine reps × weight per set
+  const liftData = {};
+  document.querySelectorAll(`.lift-input[data-week="${weekN}"][data-day="${dayN}"]`).forEach(inp => {
+    const ex = inp.getAttribute('data-ex');
+    const s = parseInt(inp.getAttribute('data-s'));
+    const type = inp.getAttribute('data-type');
+    if (!liftData[ex]) liftData[ex] = {};
+    if (!liftData[ex][s]) liftData[ex][s] = {};
+    liftData[ex][s][type] = inp.value || '-';
+  });
+  Object.entries(liftData).forEach(([ex, sets]) => {
+    data[ex] = Object.values(sets).map(s => `${s.weight || '-'}×${s.reps || '-'}`);
   });
   return data;
 }
