@@ -455,6 +455,58 @@ const CURRENT_WEEK = 3;
 const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const TM = { squat:230, bench:185, dl:315, ohp:115 };
 
+// ── Local cache — convenience layer, Google Sheets remains source of truth ──
+const CACHE_KEY = 'vb-strength-cache-v1';
+function loadCache() {
+  try { return JSON.parse(localStorage.getItem(CACHE_KEY)) || {}; } catch(e) { return {}; }
+}
+function saveCache(data) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch(e) { /* quota exceeded or storage blocked — fail silently */ }
+}
+function saveInputToCache(key, value) {
+  const cache = loadCache();
+  if (!cache.inputs) cache.inputs = {};
+  cache.inputs[key] = value;
+  saveCache(cache);
+}
+function saveTMToCache() {
+  const cache = loadCache();
+  cache.tms = { ...TM };
+  saveCache(cache);
+}
+function applyCachedTMs() {
+  const cache = loadCache();
+  if (cache.tms) {
+    Object.keys(TM).forEach(k => {
+      if (typeof cache.tms[k] === 'number' && cache.tms[k] > 0) TM[k] = cache.tms[k];
+    });
+  }
+}
+function applyCachedInputs() {
+  const cache = loadCache();
+  if (!cache.inputs) return;
+  Object.entries(cache.inputs).forEach(([key, value]) => {
+    const el = document.querySelector(`[data-cache-key="${key}"]`);
+    if (el) el.value = value;
+  });
+}
+// Wire up input change listeners — run after each render
+function attachCacheListeners() {
+  document.querySelectorAll('.lift-input, .set-input').forEach(inp => {
+    if (inp.dataset.cacheWired) return;
+    inp.dataset.cacheWired = '1';
+    // Build a stable cache key from data attributes
+    const w = inp.getAttribute('data-week');
+    const d = inp.getAttribute('data-day');
+    const ex = inp.getAttribute('data-ex');
+    const s = inp.getAttribute('data-s');
+    const type = inp.getAttribute('data-type') || 'val';
+    const key = `w${w}d${d}:${ex}:s${s}:${type}`;
+    inp.setAttribute('data-cache-key', key);
+    inp.addEventListener('change', () => saveInputToCache(key, inp.value));
+  });
+}
+
 function r5(n) { return Math.round(n/5)*5; }
 
 // ── Haptics ──
@@ -483,6 +535,7 @@ function updateTM(lift, value) {
   const n = parseInt(value);
   if (isNaN(n) || n < 50 || n > 800) return;
   TM[lift] = n;
+  saveTMToCache();
   haptic(8);
   renderContent();
 }
@@ -1032,6 +1085,8 @@ function renderDayStrip() {
 
 function renderContent() {
   document.getElementById('programContent').innerHTML = buildWeekContent(currentWeekIdx);
+  applyCachedInputs();
+  attachCacheListeners();
   setTimeout(updateProgress, 50);
 }
 
@@ -1156,6 +1211,7 @@ async function loadHistory() {
 }
 
 // ── Init ──
+applyCachedTMs();
 renderWeekStrip();
 renderWeekInfo();
 renderDayStrip();
