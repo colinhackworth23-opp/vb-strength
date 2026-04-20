@@ -109,6 +109,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif
 .lift-input-reps { width: 36px; }
 .lift-input-weight { width: 52px; }
 .lift-unit { font-size: 11px; color: var(--text2); }
+.lift-check { margin-left: 4px; flex-shrink: 0; }
+.lift-row.active-row { background: var(--blue-bg); }
 
 /* ── Acc rows ── */
 .acc-row { border-bottom: 0.5px solid var(--border); transition: background 0.15s; }
@@ -550,11 +552,14 @@ function getTodayDayIdx() {
   return [6,0,1,2,3,4,5][d]; // remap to Mon=0..Sun=6
 }
 function getTodayWeekIdx() {
-  // Week 3 starts Apr 14, 2026
-  const start = new Date('2026-04-14');
+  // Week 1 started Mar 30, 2026 (Monday). Parse as LOCAL time with Y,M,D args.
+  const start = new Date(2026, 2, 30); // Monday Mar 30 2026 (month is 0-indexed)
   const today = new Date();
-  const diff = Math.floor((today - start) / (7 * 86400000));
-  const weekIdx = Math.max(0, Math.min(7, CURRENT_WEEK - 1 + diff));
+  // Normalize both to midnight local so DST and hour-of-day don't skew the math
+  const startMid = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+  const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const diffDays = Math.floor((todayMid - startMid) / 86400000);
+  const weekIdx = Math.max(0, Math.min(7, Math.floor(diffDays / 7)));
   return weekIdx;
 }
 
@@ -563,6 +568,26 @@ let timerInterval = null;
 let timerTotal = 0;
 let timerLeft = 0;
 const circumference = 2 * Math.PI * 21;
+
+// ── Audio beep for timer countdown ──
+let audioCtx = null;
+function beep(freq, durationMs) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // Resume context if suspended (iOS Safari requires this)
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.frequency.value = freq;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + durationMs / 1000);
+    osc.start();
+    osc.stop(audioCtx.currentTime + durationMs / 1000);
+  } catch(e) { /* audio may be blocked — silently fail */ }
+}
 
 function startTimer(seconds, label) {
   stopTimer();
@@ -575,7 +600,16 @@ function startTimer(seconds, label) {
   timerInterval = setInterval(() => {
     timerLeft--;
     updateTimerDisplay();
-    if (timerLeft <= 0) stopTimer();
+    // Countdown beeps: short at 5,4,3,2; longer higher beep at 1/end
+    if (timerLeft === 5 || timerLeft === 4 || timerLeft === 3 || timerLeft === 2) {
+      beep(660, 100);
+    } else if (timerLeft === 1) {
+      beep(880, 200);
+    }
+    if (timerLeft <= 0) {
+      beep(990, 350);
+      stopTimer();
+    }
   }, 1000);
 }
 
@@ -612,21 +646,26 @@ function updateProgress() {
 function handleSetCheck(checkEl, isWorkingSet) {
   checkEl.classList.toggle('checked');
   haptic(checkEl.classList.contains('checked') ? 12 : 6);
-  const inp = checkEl.closest('.set-input-row').querySelector('.set-input');
-  if (checkEl.classList.contains('checked')) {
-    inp.classList.add('done');
+  const checked = checkEl.classList.contains('checked');
+  // Find the input to mark "done" — accessories have .set-input inside .set-input-row, primary lifts have .lift-input-weight in the row
+  const inputRow = checkEl.closest('.set-input-row');
+  const liftRow = checkEl.closest('.lift-row');
+  const inp = inputRow ? inputRow.querySelector('.set-input') : (liftRow ? liftRow.querySelector('.lift-input-weight') : null);
+  if (checked) {
+    if (inp) inp.classList.add('done');
     const restTime = isWorkingSet ? 180 : 90;
     const label = isWorkingSet ? 'Rest — 3 min for primary lifts' : 'Rest — 90s for accessories';
     startTimer(restTime, label);
     requestWakeLock();
   } else {
-    inp.classList.remove('done');
+    if (inp) inp.classList.remove('done');
     stopTimer();
   }
-  // Highlight active row
-  document.querySelectorAll('.acc-row').forEach(r => r.classList.remove('active-row'));
-  const row = checkEl.closest('.acc-row');
-  if (row && !checkEl.classList.contains('checked')) row.classList.add('active-row');
+  // Clear all active-row highlights
+  document.querySelectorAll('.acc-row, .lift-row').forEach(r => r.classList.remove('active-row'));
+  // Highlight current row only when unchecking (mid-exercise state)
+  const row = checkEl.closest('.acc-row') || checkEl.closest('.lift-row');
+  if (row && !checked) row.classList.add('active-row');
   updateProgress();
 }
 
@@ -761,11 +800,14 @@ function liftRows(loads, key, name, w, dayN, locked) {
   ws.forEach((wt, i) => {
     const disAttr = locked ? ' disabled' : '';
     const exKey = `${name}__${key}`;
+    const checkHTML = locked ? '' : `<div class="set-check lift-check" onclick="handleSetCheck(this,true)"></div>`;
     h += `<div class="lift-row"><div class="lift-label">${rLabel} ${i+1}<div class="lift-sub">${pLabels[i]}</div></div>` +
       `<input class="lift-input lift-input-reps" data-week="${w.n}" data-day="${dayN}" data-ex="${exKey}" data-s="${i}" data-type="reps" type="text" inputmode="numeric" value="${rCount}"${disAttr}>` +
       `<span class="lift-unit">reps</span>` +
       `<input class="lift-input lift-input-weight" data-week="${w.n}" data-day="${dayN}" data-ex="${exKey}" data-s="${i}" data-type="weight" type="text" inputmode="numeric" value="${wt}"${disAttr}>` +
-      `<span class="lift-unit">lbs</span></div>`;
+      `<span class="lift-unit">lbs</span>` +
+      checkHTML +
+      `</div>`;
   });
   return h;
 }
@@ -839,7 +881,7 @@ function buildLiftDay(weekN, liftDayN, w, loads) {
   h += `<div class="section"><div class="section-header">${liftTitles[liftDayN]}</div>${liftRows(loads, liftKeys[liftDayN], liftNames[liftDayN], w, liftDayN, locked)}</div>`;
   if (liftDayN === 1) h += `<div class="section"><div class="section-header">OHP · primary lift</div>${liftRows(loads, 'ohp', 'Overhead press (strict)', w, liftDayN, locked)}</div>`;
   h += `<div class="section"><div class="section-header">Accessories · tap name for cues</div>${accRows(accData[liftDayN], weekN, liftDayN, false, locked)}</div>`;
-  h += `<div class="section"><div class="section-header">${getPBTitle(liftDayN)}</div>${accRows(getPB(weekN, liftDayN), weekN, liftDayN, true, locked)}</div>`;
+  h += `<div class="section"><div class="section-header">${getPBTitle(liftDayN)}</div>${accRows(getPB(weekN, liftDayN), weekN, liftDayN, false, locked)}</div>`;
   h += `<div class="callout c-blue">${getVBCallout(weekN, liftDayN)}</div>`;
   if (!locked) {
     h += `<div id="status-${weekN}-${liftDayN}"></div>`;
