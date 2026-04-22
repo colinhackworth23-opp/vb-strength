@@ -482,12 +482,20 @@ function applyCachedTMs() {
     });
   }
 }
+function buildCacheKey(inp) {
+  const w = inp.getAttribute('data-week');
+  const d = inp.getAttribute('data-day');
+  const ex = inp.getAttribute('data-ex');
+  const s = inp.getAttribute('data-s');
+  const type = inp.getAttribute('data-type') || 'val';
+  return `w${w}d${d}:${ex}:s${s}:${type}`;
+}
 function applyCachedInputs() {
   const cache = loadCache();
   if (!cache.inputs) return;
-  Object.entries(cache.inputs).forEach(([key, value]) => {
-    const el = document.querySelector(`[data-cache-key="${key}"]`);
-    if (el) el.value = value;
+  document.querySelectorAll('.lift-input, .set-input').forEach(inp => {
+    const key = buildCacheKey(inp);
+    if (cache.inputs[key] !== undefined) inp.value = cache.inputs[key];
   });
 }
 // Wire up input change listeners — run after each render
@@ -495,14 +503,7 @@ function attachCacheListeners() {
   document.querySelectorAll('.lift-input, .set-input').forEach(inp => {
     if (inp.dataset.cacheWired) return;
     inp.dataset.cacheWired = '1';
-    // Build a stable cache key from data attributes
-    const w = inp.getAttribute('data-week');
-    const d = inp.getAttribute('data-day');
-    const ex = inp.getAttribute('data-ex');
-    const s = inp.getAttribute('data-s');
-    const type = inp.getAttribute('data-type') || 'val';
-    const key = `w${w}d${d}:${ex}:s${s}:${type}`;
-    inp.setAttribute('data-cache-key', key);
+    const key = buildCacheKey(inp);
     inp.addEventListener('change', () => saveInputToCache(key, inp.value));
   });
 }
@@ -624,10 +625,29 @@ const circumference = 2 * Math.PI * 21;
 
 // ── Audio beep for timer countdown ──
 let audioCtx = null;
-function beep(freq, durationMs) {
+let audioUnlocked = false;
+function unlockAudio() {
+  // Must run inside a real user-gesture handler (tap/click). iOS blocks
+  // programmatic audio until the context is initialized + resumed during a gesture.
   try {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    // Resume context if suspended (iOS Safari requires this)
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    if (!audioUnlocked) {
+      // Play a silent tick to fully activate the audio graph on iOS
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.01);
+      audioUnlocked = true;
+    }
+  } catch(e) { /* audio blocked — silently fail */ }
+}
+function beep(freq, durationMs) {
+  try {
+    if (!audioCtx) return;
     if (audioCtx.state === 'suspended') audioCtx.resume();
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
@@ -639,7 +659,7 @@ function beep(freq, durationMs) {
     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + durationMs / 1000);
     osc.start();
     osc.stop(audioCtx.currentTime + durationMs / 1000);
-  } catch(e) { /* audio may be blocked — silently fail */ }
+  } catch(e) { /* silently fail */ }
 }
 
 function startTimer(seconds, label) {
@@ -697,6 +717,7 @@ function updateProgress() {
 
 // ── Set check handler ──
 function handleSetCheck(checkEl, isWorkingSet) {
+  unlockAudio();
   checkEl.classList.toggle('checked');
   haptic(checkEl.classList.contains('checked') ? 12 : 6);
   const checked = checkEl.classList.contains('checked');
