@@ -1788,31 +1788,53 @@ let timerLeft = 0;
 const circumference = 2 * Math.PI * 21;
 
 // ── Audio beep for timer countdown ──
+// iOS Safari (especially in standalone/PWA mode) has strict rules about Web Audio:
+//   1. AudioContext must be created inside a user gesture handler
+//   2. resume() returns a Promise and the context may linger in 'suspended' state
+//   3. If the first gesture doesn't fully unlock it, subsequent scheduled sounds silently fail
+// This implementation re-attempts unlock on every tap until the context is confirmed running.
 let audioCtx = null;
 let audioUnlocked = false;
 function unlockAudio() {
-  // Must run inside a real user-gesture handler (tap/click). iOS blocks
-  // programmatic audio until the context is initialized + resumed during a gesture.
+  // Must run inside a real user-gesture handler (tap/click).
   try {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    if (!audioUnlocked) {
-      // Play a silent tick to fully activate the audio graph on iOS
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.01);
+    if (!audioCtx) {
+      const Ctor = window.AudioContext || window.webkitAudioContext;
+      if (!Ctor) return;
+      audioCtx = new Ctor();
+    }
+    // Always try to resume — even if previously "unlocked", iOS can re-suspend
+    // the context when the PWA backgrounds and returns.
+    if (audioCtx.state === 'suspended') {
+      const p = audioCtx.resume();
+      if (p && typeof p.then === 'function') {
+        p.then(() => { audioUnlocked = (audioCtx.state === 'running'); }).catch(() => {});
+      }
+    } else if (audioCtx.state === 'running') {
       audioUnlocked = true;
     }
+    // Play a silent priming tick inside the gesture — fully activates the audio graph on iOS.
+    // We do this on every tap (it's cheap) so that if the first attempt failed, later taps recover.
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.01);
   } catch(e) { /* audio blocked — silently fail */ }
 }
 function beep(freq, durationMs) {
   try {
     if (!audioCtx) return;
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    // Attempt to resume if the context has been suspended (e.g. by backgrounding).
+    // This won't unlock a never-unlocked context, but it will wake a sleeping one.
+    if (audioCtx.state === 'suspended') {
+      const p = audioCtx.resume();
+      if (p && typeof p.then === 'function') p.catch(() => {});
+    }
+    // If we can't produce sound, bail before creating nodes (prevents leaks).
+    if (audioCtx.state !== 'running') return;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.connect(gain);
