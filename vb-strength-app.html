@@ -712,6 +712,25 @@ body {
   display: block;
   animation: fadeIn var(--t-mid) var(--ease);
 }
+.acc-last {
+  font-family: var(--f-num);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink-3);
+  padding: 0 var(--s4) var(--s2);
+  display: none;
+  font-variant-numeric: tabular-nums;
+}
+.acc-last.visible {
+  display: block;
+  animation: fadeIn var(--t-mid) var(--ease);
+}
+.acc-last-date {
+  color: var(--ink-4);
+  font-weight: 500;
+  margin-left: var(--s2);
+}
 @keyframes fadeIn { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: translateY(0); } }
 
 .acc-body { padding: var(--s2) var(--s4) var(--s3); }
@@ -1686,6 +1705,46 @@ function attachCacheListeners() {
 
 function r5(n) { return Math.round(n/5)*5; }
 
+// ── Last-time lookup — populated from Google Sheets on app load ──
+// Maps exercise name (lowercased, trimmed) → { date, sets: [s1, s2, s3, ...] }
+// Most recent occurrence wins, regardless of week/phase.
+const LAST_TIME = {};
+async function loadLastTimeData() {
+  try {
+    const res = await fetch(SHEET_URL + '?tab=Log');
+    const data = await res.json();
+    if (!data.rows || data.rows.length < 2) return;
+    const rows = data.rows.slice(1); // skip header
+    // Walk rows; for each exercise, keep the most recent entry by parsed date.
+    rows.forEach(r => {
+      const date = r[0]; // M/D/YYYY
+      const exRaw = (r[3] || '').toString();
+      if (!date || !exRaw) return;
+      // Primary lifts store as "name__key" (e.g. "Back squat / safety bar__squat") — strip the suffix
+      const exName = exRaw.split('__')[0].trim().toLowerCase();
+      const sets = r.slice(6).filter(v => v !== '' && v != null && v !== undefined);
+      if (!sets.length) return;
+      const parsed = new Date(date);
+      const prev = LAST_TIME[exName];
+      if (!prev || new Date(prev.date) < parsed) {
+        LAST_TIME[exName] = { date, sets };
+      }
+    });
+  } catch(e) {
+    // Silently fail — last-time display will simply not render
+  }
+}
+function getLastTime(exerciseName) {
+  const key = (exerciseName || '').trim().toLowerCase();
+  return LAST_TIME[key] || null;
+}
+function formatLastTime(exerciseName) {
+  const data = getLastTime(exerciseName);
+  if (!data) return '';
+  const setsStr = data.sets.join(' / ');
+  return `<div class="acc-last"><span>Last: ${setsStr}</span><span class="acc-last-date">${data.date}</span></div>`;
+}
+
 // ── Haptics ──
 function haptic(ms) {
   if (navigator.vibrate) navigator.vibrate(ms || 10);
@@ -1955,8 +2014,10 @@ function autofill(btn) {
 function toggleCue(header) {
   const row = header.closest('.acc-row');
   const cue = row.querySelector('.acc-cue');
+  const last = row.querySelector('.acc-last');
   const chevron = row.querySelector('.acc-chevron');
   cue.classList.toggle('visible');
+  if (last) last.classList.toggle('visible');
   chevron.classList.toggle('open');
 }
 
@@ -2113,6 +2174,7 @@ function accRow(ex, weekN, dayN, isWorking, locked) {
       </div>
       <span class="acc-chevron">▾</span>
     </div>
+    ${formatLastTime(ex.name)}
     <div class="acc-cue">${ex.cue}</div>
     <div class="acc-body">
       <div class="set-inputs">${inputs}</div>
@@ -2401,6 +2463,8 @@ async function saveSession(weekN, dayN) {
       markWeekDone(weekN);
       renderWeekStrip();
     }
+    // Refresh last-time data in background so future sessions see this one
+    loadLastTimeData();
   } catch(e) {
     if (statusEl) statusEl.innerHTML = `<div class="callout c-error" style="margin-top:8px">Save failed — check your connection</div>`;
     if (btn) { btn.disabled=false; btn.textContent='Save session to Google Sheets'; }
@@ -2478,6 +2542,8 @@ renderWeekStrip();
 renderWeekInfo();
 renderDayStrip();
 renderContent();
+// Fetch last-time data in background — re-render once available so values appear without blocking the initial paint
+loadLastTimeData().then(() => renderContent());
 </script>
 </div>
 </body>
