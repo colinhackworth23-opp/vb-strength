@@ -1488,7 +1488,7 @@ body {
       <rect x="125" y="35" width="350" height="7" rx="1" fill="#f5f0e8" opacity=".92"/>
       <text x="40" y="88" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace" font-size="38" font-weight="700" fill="#fafaf7" letter-spacing="-0.8">VB STRENGTH</text>
       <line x1="40" y1="98" x2="320" y2="98" stroke="#e8a33d" stroke-width="1.5" opacity=".9"/>
-      <text x="41" y="114" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace" font-size="10" font-weight="600" fill="#bfb8a8" letter-spacing="1.6">CHICAGO · 8-WEEK VOLLEYBALL PERFORMANCE BLOCK</text>
+      <text x="41" y="114" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace" font-size="10" font-weight="600" fill="#bfb8a8" letter-spacing="1.6">CHICAGO · 9-WEEK BEACH SEASON BLOCK</text>
     </svg>
 </div>
 
@@ -1558,7 +1558,7 @@ body {
   </div>
   <div id="maxes-status"></div>
   <button class="save-btn" onclick="saveMaxes()">Save maxes to sheet</button>
-  <div class="callout c-gray" style="margin-top:12px">When you finish Week 8, share your Google Sheet with me and I'll generate your next program from your logged data.</div>
+  <div class="callout c-gray" style="margin-top:12px">When you finish Week 9, share your Google Sheet with me and I'll generate your next program from your logged data.</div>
   <div class="spacer"></div>
 </div>
 
@@ -1615,12 +1615,12 @@ body {
 
 <script>
 const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzLuijUOxwOOV2NESQGajLZQwe4ZTf1d7xjdW5xXdBp6Oh7BFQ70pknZsLgaCGOEB47/exec';
-const CURRENT_WEEK = 4;
+const CURRENT_WEEK = 1;
 const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-const TM = { squat:230, bench:185, dl:315, ohp:115 };
+const TM = { squat:230, bench:170, dl:315, ohp:115 };
 
 // ── Local cache — convenience layer, Google Sheets remains source of truth ──
-const CACHE_KEY = 'vb-strength-cache-v1';
+const CACHE_KEY = 'vb-strength-cache-v2';
 function loadCache() {
   try { return JSON.parse(localStorage.getItem(CACHE_KEY)) || {}; } catch(e) { return {}; }
 }
@@ -1637,6 +1637,18 @@ function saveTMToCache() {
   const cache = loadCache();
   cache.tms = { ...TM };
   saveCache(cache);
+}
+function markWeekDone(weekN) {
+  const cache = loadCache();
+  if (!cache.doneWeeks) cache.doneWeeks = [];
+  if (!cache.doneWeeks.includes(weekN)) cache.doneWeeks.push(weekN);
+  saveCache(cache);
+}
+function isWeekDone(weekN) {
+  const w = WEEKS[weekN - 1];
+  if (w && w.done) return true; // hardcoded fallback
+  const cache = loadCache();
+  return cache.doneWeeks ? cache.doneWeeks.includes(weekN) : false;
 }
 function applyCachedTMs() {
   const cache = loadCache();
@@ -1770,14 +1782,14 @@ function getTodayDayIdx() {
   return [6,0,1,2,3,4,5][d]; // remap to Mon=0..Sun=6
 }
 function getTodayWeekIdx() {
-  // Week 1 started Mar 30, 2026 (Monday). Parse as LOCAL time with Y,M,D args.
-  const start = new Date(2026, 2, 30); // Monday Mar 30 2026 (month is 0-indexed)
+  // Week 1 started May 25, 2026 (Monday). Parse as LOCAL time with Y,M,D args.
+  const start = new Date(2026, 4, 25); // Monday May 25 2026 (month is 0-indexed)
   const today = new Date();
   // Normalize both to midnight local so DST and hour-of-day don't skew the math
   const startMid = new Date(start.getFullYear(), start.getMonth(), start.getDate());
   const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const diffDays = Math.floor((todayMid - startMid) / 86400000);
-  const weekIdx = Math.max(0, Math.min(7, Math.floor(diffDays / 7)));
+  const weekIdx = Math.max(0, Math.min(8, Math.floor(diffDays / 7)));
   return weekIdx;
 }
 
@@ -1950,40 +1962,43 @@ function toggleCue(header) {
 
 // ── Data ──
 const WEEKS = [
-  { n:1, phase:'Accumulation',    dates:'Mar 30 – Apr 4',   intensity:'65–76%', volume:'4×8', rpe:'6–7', reps:8, pcts:[0.65,0.70,0.74,0.76], done:true },
-  { n:2, phase:'Accumulation',    dates:'Apr 7 – Apr 11',   intensity:'68–78%', volume:'4×7', rpe:'7',   reps:7, pcts:[0.68,0.72,0.76,0.78], done:true },
-  { n:3, phase:'Intensification', dates:'Apr 14 – Apr 18',  intensity:'73–83%', volume:'4×5', rpe:'7–8', reps:5, pcts:[0.73,0.76,0.80,0.83], done:true },
-  { n:4, phase:'Intensification', dates:'Apr 21 – Apr 25',  intensity:'76–85%', volume:'4×4', rpe:'8',   reps:4, pcts:[0.76,0.80,0.83,0.85], done:false },
-  { n:5, phase:'Strength',        dates:'Apr 28 – May 2',   intensity:'81–88%', volume:'4×3', rpe:'8–9', reps:3, pcts:[0.81,0.84,0.86,0.88], done:false },
-  { n:6, phase:'Strength',        dates:'May 5 – May 9',    intensity:'83–89%', volume:'3×3', rpe:'9',   reps:3, pcts:[0.83,0.86,0.88,0.89], done:false },
-  { n:7, phase:'Deload',          dates:'May 12 – May 16',  intensity:'55–65%', volume:'3×5', rpe:'5–6', reps:5, pcts:[0.55,0.60,0.63,0.65], done:false, deload:true },
-  { n:8, phase:'Max Testing',     dates:'May 19 – May 23',  intensity:'88%→MAX',volume:'3 attempts', rpe:'MAX', reps:1, pcts:[0.88,0.93,0.97,1.00], done:false, testing:true },
+  { n:1, phase:'Deload / Re-entry', dates:'May 25 – Jun 1',  intensity:'60–70%', volume:'3×5', rpe:'5–6', reps:5, pcts:[0.65,0.65,0.65,0.65], done:false, deload:true, tournament:'May 30' },
+  { n:2, phase:'Build',             dates:'Jun 2 – Jun 8',   intensity:'73–83%', volume:'4×5', rpe:'7–8', reps:5, pcts:[0.73,0.76,0.80,0.83], done:false },
+  { n:3, phase:'Taper',             dates:'Jun 9 – Jun 15',  intensity:'70–75%', volume:'3×5', rpe:'6–7', reps:5, pcts:[0.70,0.73,0.75,0.75], done:false, taper:true, tournament:'Jun 13' },
+  { n:4, phase:'Build',             dates:'Jun 16 – Jun 22', intensity:'76–86%', volume:'4×5', rpe:'7–8', reps:5, pcts:[0.76,0.79,0.83,0.86], done:false },
+  { n:5, phase:'Taper',             dates:'Jun 23 – Jun 29', intensity:'70–75%', volume:'3×5', rpe:'6–7', reps:5, pcts:[0.70,0.73,0.75,0.75], done:false, taper:true, tournament:'Jun 27' },
+  { n:6, phase:'Peak Intensity',    dates:'Jun 30 – Jul 6',  intensity:'80–90%', volume:'4×3', rpe:'8–9', reps:3, pcts:[0.80,0.83,0.86,0.90], done:false },
+  { n:7, phase:'Build / Maintain',  dates:'Jul 7 – Jul 13',  intensity:'83–90%', volume:'4×3', rpe:'8–9', reps:3, pcts:[0.83,0.86,0.88,0.90], done:false },
+  { n:8, phase:'Build → Taper',     dates:'Jul 14 – Jul 20', intensity:'76–83%', volume:'4×5', rpe:'7–8', reps:5, pcts:[0.76,0.79,0.83,0.83], done:false, tournament:'Jul 18' },
+  { n:9, phase:'Easy / Recovery',   dates:'Jul 21 – Jul 27', intensity:'60–65%', volume:'2×5', rpe:'5–6', reps:5, pcts:[0.63,0.65,0.65,0.65], done:false, deload:true, tournament:'Jul 25' },
 ];
 
 const ACC = {
   mon: [
-    { name:'Bulgarian split squat', meta:'3 × 8 ea', rec:'30/40/50', cue:'Front shin vertical, drive through heel — unilateral VB takeoff pattern', sets:['30','40','50'] },
-    { name:'Nordic hamstring curl', meta:'3 × 5', rec:'BW', cue:'Brace hard, lower as slow as possible — eccentric control is the stimulus', sets:['BW','BW','BW'] },
-    { name:'Seated calf raise', meta:'3 × 12', rec:'100/100/110', cue:'Full ROM, pause at bottom — soleus reactive ankle stiffness', sets:['100','100','110'] },
-    { name:'Standing calf raise', meta:'2 × 12', rec:'BW', cue:'3s eccentric, full stretch at bottom — Achilles tendon loading', sets:['BW','BW'] },
+    { name:'Romanian deadlift (barbell)', meta:'3 × 8', rec:'95–125', cue:'Hips back first, neutral spine throughout, 3s eccentric — building the back weakness that limited hex bar max. If your lower back rounds, the weight is too heavy.', sets:['95','105','115'] },
+    { name:'Bulgarian split squat', meta:'3 × 8 ea', rec:'40/50/55', cue:'Front shin vertical, drive through heel — unilateral VB takeoff pattern', sets:['40','50','55'] },
+    { name:'Nordic hamstring curl', meta:'3 × 5', rec:'BW', cue:'Brace hard, lower as slow as possible — eccentric hamstring endurance helps prevent tournament cramping', sets:['BW','BW','BW'] },
+    { name:'Seated calf raise', meta:'3 × 12', rec:'100/100/110', cue:'Full ROM, pause at bottom — soleus endurance, cramp prevention priority', sets:['100','100','110'] },
+    { name:'Standing calf raise', meta:'3 × 12', rec:'BW', cue:'3s eccentric, full stretch at bottom — gastrocnemius endurance, cramp prevention', sets:['BW','BW','BW'] },
     { name:'Copenhagen plank', meta:'3 × 20s ea', rec:'BW', cue:'Hips level, don\'t let bottom hip sag — adductor strength for lateral movement', sets:['BW','BW','BW'] },
     { name:'Pallof press', meta:'2 × 10 ea', rec:'30/35', cue:'Tall spine, resist rotation — anti-rotation core for explosive push-off', sets:['30','35'] },
   ],
   tue: [
-    { name:'Weighted pull-up', meta:'4 × 5', rec:'BW/+10/+10', cue:'Depress scapula before pulling, lead with elbows — lat torque for arm swing', sets:['BW','+10','+10','+10'] },
+    { name:'Weighted pull-up', meta:'4 × 5', rec:'BW/+15/+25', cue:'Depress scapula before pulling, lead with elbows — lat torque for arm swing', sets:['BW','+15','+25','+25'] },
     { name:'Single-arm DB row', meta:'3 × 10 ea', rec:'70/80/85', cue:'Chest tall, row to hip not armpit — thoracic posture at 6\'10"', sets:['70','80','85'] },
-    { name:'Facepull', meta:'3 × 15', rec:'green band', cue:'Pull to forehead, elbows high, pause at end range — NON-NEGOTIABLE rear cuff', sets:['grn','grn','grn'] },
+    { name:'Facepull', meta:'3 × 15', rec:'green band', cue:'Pull to forehead, elbows high, pause at end range — NON-NEGOTIABLE rear cuff longevity', sets:['grn','grn','grn'] },
+    { name:'Band external rotation', meta:'3 × 15 ea', rec:'light→med', cue:'Side-lying or standing, slow and controlled, full ROM — direct rotator cuff strengthening, addresses #1 tournament risk. Never skip.', sets:['lgt','lgt','med'] },
     { name:'Serratus wall slide', meta:'2 × 10', rec:'BW', cue:'Reach long at top, feel shoulder blade wrap around ribs — scapular upward rotation for blocking', sets:['BW','BW'] },
     { name:'DB lateral raise', meta:'3 × 15', rec:'20/20/20', cue:'Lead with elbow, stop at shoulder height — medial delt stability', sets:['20','20','20'] },
     { name:'Tricep pushdown (rope)', meta:'3 × 12', rec:'50/60/65', cue:'Elbows pinned, full extension at bottom — wrist snap at ball contact', sets:['50','60','65'] },
     { name:'Wrist roller', meta:'2 × 30s', rec:'BW', cue:'Slow and controlled both directions — forearm endurance through long sets', sets:['BW','BW'] },
   ],
   fri: [
-    { name:'Barbell hip thrust', meta:'3 × 8', rec:'135/155/175', cue:'Drive through heels, pause 1s at top, squeeze hard — glute max for jump height', sets:['135','155','175'] },
+    { name:'Good mornings (barbell)', meta:'3 × 8', rec:'65–95', cue:'Hips back first (not down), neutral spine throughout, 3s eccentric, chest proud — erector strength, direct fix for DL limiting factor. Start embarrassingly light. If lower back rounds, stop.', sets:['65','75','85'] },
+    { name:'Barbell hip thrust', meta:'3 × 8', rec:'225/275/300', cue:'Drive through heels, pause 1s at top, squeeze glutes hard — glute max for jump height', sets:['225','275','300'] },
     { name:'Glute-ham raise', meta:'3 × 6', rec:'BW', cue:'Brace hard, lower as slow as possible — most effective knee flexor', sets:['BW','BW','BW'] },
-    { name:'Back extension (45°)', meta:'3 × 12', rec:'BW/+25/+25', cue:'Neutral spine throughout, don\'t hyperextend at top — lumbar protection at 6\'10"', sets:['BW','+25','+25'] },
-    { name:'Suitcase carry', meta:'3 × 30m ea', rec:'70/80/80', cue:'Tall spine, don\'t lean away from load — lateral core for VB movement', sets:['70','80','80'] },
-    { name:'Single-leg RDL', meta:'3 × 10 ea', rec:'30/35/35', cue:'Hinge until hamstring pull, slow return — eccentric jump landing control', sets:['30','35','35'] },
+    { name:'Suitcase carry', meta:'3 × 30m ea', rec:'70/80/80', cue:'Tall spine, don\'t lean away from load — lateral core for VB lateral movement power', sets:['70','80','80'] },
+    { name:'Single-leg RDL', meta:'3 × 10 ea', rec:'30/35/35', cue:'Hinge until hamstring pull, slow return — eccentric strength for jump landing', sets:['30','35','35'] },
     { name:'Seated hip abduction (band)', meta:'2 × 20', rec:'light→med', cue:'Controlled out and back, don\'t let band snap in — glute med for knee stability on jumps', sets:['lgt','med'] },
   ],
 };
@@ -2111,8 +2126,8 @@ function accRows(arr, weekN, dayN, isWorking, locked) {
 }
 
 function getPB(weekN, dayN) {
-  if (dayN === 0) return weekN <= 2 ? PB.monEarly : PB.monLate;
-  if (dayN === 1) return weekN <= 2 ? PB.tueEarly : PB.tueLate;
+  if (dayN === 0) return weekN <= 1 ? PB.monEarly : PB.monLate;
+  if (dayN === 1) return weekN <= 1 ? PB.tueEarly : PB.tueLate;
   return PB.fri;
 }
 
@@ -2123,13 +2138,13 @@ function getPBTitle(dayN) {
 }
 
 function getVBCallout(weekN, dayN) {
-  if (dayN === 0) return weekN <= 2 ? 'Box jumps: step down, never drop. At 240 lbs, landing stress accumulates fast on sand + court.' : 'Depth drops are new from Week 3. Land soft, react fast — don\'t pause at the bottom.';
+  if (dayN === 0) return weekN <= 2 ? 'RDLs and calf work today directly target your two tournament challenges — back strength and cramp prevention. Hydration and sodium this week matter as much as this session.' : 'Depth drops and trap bar jumps are your peak plyometric stimulus. Track your approach jump height every Friday — that\'s your primary performance KPI.';
   if (dayN === 1) return 'Rotational throws are the most direct hitting power stimulus in the gym. Full trunk wind-up every rep.';
   return 'Track your approach jump height and compare to Week 1 baseline — this is your primary performance KPI.';
 }
 
 function buildLiftDay(weekN, liftDayN, w, loads) {
-  const locked = w.done;
+  const locked = isWeekDone(weekN);
   const liftNames = ['Back squat / safety bar','Incline bench','Hex bar deadlift'];
   const liftKeys = ['squat','bench','dl'];
   const liftTitles = ['Back squat · primary lift','Incline bench · primary lift','Hex bar deadlift · primary lift'];
@@ -2138,16 +2153,16 @@ function buildLiftDay(weekN, liftDayN, w, loads) {
 
   let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-lift">${tags[liftDayN]}</span></div>`;
   if (locked) h += `<div class="locked-banner"><span>✓ Week ${weekN} completed — view only</span></div>`;
+  h += `<div class="callout c-blue">${getVBCallout(weekN, liftDayN)}</div>`;
   h += `<div class="section"><div class="section-header">${liftTitles[liftDayN]}</div>${liftRows(loads, liftKeys[liftDayN], liftNames[liftDayN], w, liftDayN, locked)}</div>`;
   if (liftDayN === 1) h += `<div class="section"><div class="section-header">OHP · primary lift</div>${liftRows(loads, 'ohp', 'Overhead press (strict)', w, liftDayN, locked)}</div>`;
   h += `<div class="section"><div class="section-header">Accessories · tap name for cues</div>${accRows(accData[liftDayN], weekN, liftDayN, false, locked)}</div>`;
   h += `<div class="section"><div class="section-header">${getPBTitle(liftDayN)}</div>${accRows(getPB(weekN, liftDayN), weekN, liftDayN, false, locked)}</div>`;
-  h += `<div class="callout c-blue">${getVBCallout(weekN, liftDayN)}</div>`;
   if (!locked) {
     h += `<div id="status-${weekN}-${liftDayN}"></div>`;
     h += `<button class="save-btn" onclick="saveSession(${weekN},${liftDayN})">Save session to Google Sheets</button>`;
   }
-  // End-of-program report on Week 8 Friday
+  // End-of-program report on Week 9 Friday
   if (w.testing && liftDayN === 2) {
     h += buildEndReport();
   }
@@ -2155,15 +2170,15 @@ function buildLiftDay(weekN, liftDayN, w, loads) {
 }
 
 function buildEndReport() {
-  const estStartTM = { squat: 230, bench: 185, dl: 315, ohp: 115 };
+  const estStartTM = { squat: 230, bench: 170, dl: 315, ohp: 115 };
   const gains = {};
   ['squat','bench','dl','ohp'].forEach(k => { gains[k] = TM[k] - estStartTM[k]; });
   return `
   <div class="section" style="margin-top:20px">
     <div class="section-header">Program complete · end-of-program report</div>
     <div class="report-hero">
-      <div class="report-title">🏐 8 weeks in the books</div>
-      <div class="report-body">You finished. Now let's hand this data off so your next program is built on what actually happened, not a template.</div>
+      <div class="report-title">🏐 9-week beach season complete</div>
+      <div class="report-body">You finished. Now let's build the next block from your actual data.</div>
     </div>
     <div style="padding:4px 0">
       <div class="report-stat"><span class="report-stat-label">Back Squat TM</span><span><span class="report-stat-val">${TM.squat} lbs</span>${gains.squat !== 0 ? `<span class="report-delta" style="color:${gains.squat > 0 ? 'var(--green)' : 'var(--red)'}">${gains.squat > 0 ? '+' : ''}${gains.squat}</span>` : ''}</span></div>
@@ -2172,12 +2187,16 @@ function buildEndReport() {
       <div class="report-stat"><span class="report-stat-label">OHP TM</span><span><span class="report-stat-val">${TM.ohp} lbs</span>${gains.ohp !== 0 ? `<span class="report-delta" style="color:${gains.ohp > 0 ? 'var(--green)' : 'var(--red)'}">${gains.ohp > 0 ? '+' : ''}${gains.ohp}</span>` : ''}</span></div>
     </div>
   </div>
-  <div class="callout c-blue" style="margin-top:12px">Next step: open your Google Sheet (the Log tab has every set you logged). Share it with me in chat and I'll build your next 8-week program from your actual data, not estimates.</div>`;
+  <div class="callout c-blue" style="margin-top:12px">9-week beach season block complete. Share your Google Sheet with me and I'll build the next program from your actual data.</div>`;
 }
 
 function buildWed(weekN, locked) {
+  const w = WEEKS[weekN - 1];
   let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-vb">VB practice tonight</span></div>`;
   if (locked) h += `<div class="locked-banner"><span>✓ Week ${weekN} completed — view only</span></div>`;
+  if (w && w.tournament) {
+    h += `<div class="callout c-amber" style="margin-top:12px">🏐 Tournament this ${w.n === 8 ? 'Friday' : 'Saturday'}: ${w.tournament}. Keep everything easy this week — you're tapering.</div>`;
+  }
   h += `<div class="callout c-green" style="margin-top:12px">Practice 8–10:30pm. No lifting today. Do this pre-practice prep 30–45 min before you play.</div>`;
   h += `<div class="section"><div class="section-header">Pre-practice activation · 20–25 min</div>`;
   [['Assault bike easy','Low intensity — raise core temp without spiking HR','5 min'],
@@ -2247,13 +2266,14 @@ const LIFT_DAY_MAP = [0, 1, null, null, 2, null, null]; // Mon=0, Tue=1, Fri=2
 function buildWeekContent(weekIdx) {
   const w = WEEKS[weekIdx];
   const loads = calcLoads(w.n);
+  const locked = isWeekDone(w.n);
   let html = '';
   for (let d = 0; d < 7; d++) {
     const liftIdx = LIFT_DAY_MAP[d];
     let content;
-    if (d === 2) content = buildWed(w.n, w.done);
-    else if (d === 3) content = buildThu(w.n, w.done);
-    else if (d === 5) content = buildSat(w.n, w.done);
+    if (d === 2) content = buildWed(w.n, locked);
+    else if (d === 3) content = buildThu(w.n, locked);
+    else if (d === 5) content = buildSat(w.n, locked);
     else if (d === 6) content = buildSun();
     else content = buildLiftDay(w.n, liftIdx, w, loads);
     const isActive = d === currentDayIdx;
@@ -2265,17 +2285,18 @@ function buildWeekContent(weekIdx) {
 // ── Render ──
 function renderWeekStrip() {
   document.getElementById('weekStrip').innerHTML = WEEKS.map((w, i) => {
-    const cls = w.done ? 'done' : (w.n === CURRENT_WEEK ? 'current' : 'upcoming');
+    const done = isWeekDone(w.n);
+    const cls = done ? 'done' : (w.n === CURRENT_WEEK ? 'current' : 'upcoming');
     return `<button class="week-pill ${cls}${i===currentWeekIdx?' active':''}" onclick="switchWeek(${i})">W${w.n}<div class="wdot"></div></button>`;
   }).join('');
 }
 
 function renderWeekInfo() {
   const w = WEEKS[currentWeekIdx];
-  const badge = w.done ? '<span class="done-badge">Completed</span>' : '';
+  const badge = isWeekDone(w.n) ? '<span class="done-badge">Completed</span>' : '';
   document.getElementById('weekInfo').innerHTML = `<span class="week-title">${w.phase}</span><span class="week-meta">${w.dates} &middot; ${w.intensity} &middot; ${w.volume}</span>${badge}`;
   const heroLbl = document.getElementById('heroWeekLabel');
-  if (heroLbl) heroLbl.textContent = `Week ${w.n} of 8`;
+  if (heroLbl) heroLbl.textContent = `Week ${w.n} of 9`;
 }
 
 function renderDayStrip() {
@@ -2375,6 +2396,11 @@ async function saveSession(weekN, dayN) {
     }
     if (statusEl) statusEl.innerHTML = `<div class="callout c-success" style="margin-top:8px">Session saved to Google Sheets</div>`;
     if (btn) { btn.textContent = 'Saved ✓'; setTimeout(()=>{ btn.disabled=false; btn.textContent='Save session to Google Sheets'; }, 3000); }
+    // Mark week as done when Friday session is saved
+    if (dayN === 2) {
+      markWeekDone(weekN);
+      renderWeekStrip();
+    }
   } catch(e) {
     if (statusEl) statusEl.innerHTML = `<div class="callout c-error" style="margin-top:8px">Save failed — check your connection</div>`;
     if (btn) { btn.disabled=false; btn.textContent='Save session to Google Sheets'; }
