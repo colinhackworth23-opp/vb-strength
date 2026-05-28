@@ -1303,6 +1303,142 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* ── PR CELEBRATION ── */
+.pr-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: radial-gradient(ellipse at center, rgba(20, 18, 14, 0.97), rgba(8, 8, 6, 0.99));
+  display: none;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.pr-overlay.visible {
+  display: flex;
+  opacity: 1;
+}
+.pr-confetti {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.pr-burst {
+  position: relative;
+  text-align: center;
+  padding: 24px 32px;
+  z-index: 1;
+}
+@keyframes pr-bounce-in {
+  0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+  50% { transform: scale(1.15) rotate(8deg); opacity: 1; }
+  70% { transform: scale(0.92) rotate(-3deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes pr-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes pr-spin-in {
+  0% { transform: scale(0) rotate(0deg); opacity: 0; }
+  100% { transform: scale(1) rotate(720deg); opacity: 1; }
+}
+@keyframes pr-fade-up {
+  0% { transform: translateY(20px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.pr-overlay.visible .pr-emoji {
+  animation: pr-spin-in 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both, pr-bounce 1.5s 0.7s ease-in-out infinite;
+}
+.pr-overlay.visible .pr-kicker {
+  animation: pr-fade-up 0.5s 0.4s ease-out both;
+}
+.pr-overlay.visible .pr-headline {
+  animation: pr-bounce-in 0.7s 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.pr-overlay.visible .pr-weight {
+  animation: pr-bounce-in 0.7s 0.85s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.pr-overlay.visible .pr-subtype {
+  animation: pr-fade-up 0.5s 1.1s ease-out both;
+}
+.pr-overlay.visible .pr-prev {
+  animation: pr-fade-up 0.5s 1.3s ease-out both;
+}
+.pr-overlay.visible .pr-tap {
+  animation: pr-fade-up 0.5s 1.6s ease-out both;
+}
+.pr-emoji {
+  font-size: 72px;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 4px 20px rgba(232, 163, 61, 0.5));
+}
+.pr-kicker {
+  font-family: var(--f-num);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.4em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  text-shadow: 0 0 24px rgba(232, 163, 61, 0.6);
+}
+.pr-headline {
+  font-family: var(--f-num);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #fafaf7;
+  margin-bottom: 16px;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+}
+.pr-weight {
+  font-family: var(--f-num);
+  font-size: 64px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #e8a33d 0%, #f5c870 50%, #e8a33d 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+  line-height: 1;
+  text-shadow: 0 0 40px rgba(232, 163, 61, 0.4);
+}
+.pr-subtype {
+  font-family: var(--f-num);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: #bfb8a8;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+.pr-prev {
+  font-family: var(--f-num);
+  font-size: 13px;
+  font-weight: 500;
+  color: #8a8478;
+  margin-bottom: 32px;
+}
+.pr-prev strong {
+  color: #bfb8a8;
+  font-weight: 700;
+}
+.pr-tap {
+  font-family: var(--f-num);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  color: #6a6458;
+  text-transform: uppercase;
+}
+
 /* ── END-OF-PROGRAM REPORT ── */
 .report-hero {
   margin: var(--s3) var(--s4) 0;
@@ -1624,6 +1760,20 @@ body {
   </div>
 </div>
 
+<!-- PR CELEBRATION OVERLAY -->
+<div class="pr-overlay" id="prOverlay" onclick="dismissPR()">
+  <canvas class="pr-confetti" id="prConfetti"></canvas>
+  <div class="pr-burst">
+    <div class="pr-emoji" id="prEmoji">🎉</div>
+    <div class="pr-kicker" id="prKicker">NEW PR</div>
+    <div class="pr-headline" id="prHeadline">Hex Bar Deadlift</div>
+    <div class="pr-weight" id="prWeight">372 lbs</div>
+    <div class="pr-subtype" id="prSubtype">Estimated 1RM</div>
+    <div class="pr-prev" id="prPrev"></div>
+    <div class="pr-tap">tap to continue</div>
+  </div>
+</div>
+
 <!-- BOTTOM NAV -->
 <div class="bottom-nav">
   <button class="nav-btn" onclick="showScreen('program')"><div class="nav-icon on" id="ni-program"></div><span class="nav-lbl on" id="nl-program">Program</span></button>
@@ -1756,28 +1906,65 @@ function r5(n) { return Math.round(n/5)*5; }
 // Most recent occurrence wins, regardless of week/phase.
 const LAST_TIME = {};
 let LAST_TIME_LOADED = false;
+// PR tracking — primary lifts only. Maps lift key → { e1rm: number, repMaxes: { 1: maxWeight, 3: maxWeight, ... } }
+const PR_HISTORY = { squat: null, bench: null, dl: null, ohp: null };
+const PR_LIFT_NAMES = { squat: 'Back Squat', bench: 'Incline Bench', dl: 'Hex Bar Deadlift', ohp: 'Overhead Press' };
+function epleyE1RM(weight, reps) {
+  if (!weight || !reps || reps < 1) return 0;
+  if (reps === 1) return weight;
+  return Math.round(weight * (1 + reps / 30));
+}
+function matchPrimaryLiftKey(exNameRaw) {
+  const name = (exNameRaw || '').toLowerCase();
+  if (name.includes('__squat') || name.includes('back squat') || name.includes('safety bar')) return 'squat';
+  if (name.includes('__bench') || name.includes('incline bench')) return 'bench';
+  if (name.includes('__dl') || name.includes('hex bar deadlift') || name.includes('hex deadlift')) return 'dl';
+  if (name.includes('__ohp') || name.includes('overhead press') || name.startsWith('ohp')) return 'ohp';
+  return null;
+}
+function parseSetCell(val) {
+  if (val === null || val === undefined || val === '' || val === '-') return null;
+  const s = val.toString().trim();
+  if (s === 'BW') return null;
+  const m = s.match(/^(\d+(?:\.\d+)?)\s*[x×]\s*(\d+)$/i);
+  if (m) return { weight: parseFloat(m[1]), reps: parseInt(m[2], 10) };
+  const numOnly = parseFloat(s);
+  if (!isNaN(numOnly)) return { weight: numOnly, reps: 1 };
+  return null;
+}
 async function loadLastTimeData() {
   try {
     const res = await fetch(SHEET_URL + '?tab=Log');
     const data = await res.json();
     if (!data.rows || data.rows.length < 2) return;
     const rows = data.rows.slice(1); // skip header
-    // Walk rows; for each exercise, keep the most recent entry by parsed date.
+    // Reset PR history before re-populating (handles re-fetch after a save)
+    Object.keys(PR_HISTORY).forEach(k => PR_HISTORY[k] = { e1rm: 0, repMaxes: {} });
     rows.forEach(r => {
-      const dateRaw = r[0]; // ISO string or M/D/YYYY
+      const dateRaw = r[0];
       const exRaw = (r[3] || '').toString();
       if (!dateRaw || !exRaw) return;
-      // Primary lifts store as "name__key" (e.g. "Back squat / safety bar__squat") — strip the suffix
       const exName = exRaw.split('__')[0].trim().toLowerCase();
-      // Sets data starts at index 6; filter out empty strings, nulls, undefined
       const sets = r.slice(6).filter(v => v !== '' && v !== null && v !== undefined);
       if (!sets.length) return;
       const parsed = new Date(dateRaw);
-      if (isNaN(parsed.getTime())) return; // invalid date — skip
+      if (isNaN(parsed.getTime())) return;
       const displayDate = `${parsed.getMonth()+1}/${parsed.getDate()}`;
       const prev = LAST_TIME[exName];
       if (!prev || new Date(prev.dateRaw) < parsed) {
         LAST_TIME[exName] = { dateRaw, displayDate, sets };
+      }
+      // PR tracking — only primary lifts
+      const liftKey = matchPrimaryLiftKey(exRaw);
+      if (liftKey && PR_HISTORY[liftKey]) {
+        sets.forEach(cell => {
+          const setData = parseSetCell(cell);
+          if (!setData || !setData.weight || !setData.reps) return;
+          const e1rm = epleyE1RM(setData.weight, setData.reps);
+          if (e1rm > PR_HISTORY[liftKey].e1rm) PR_HISTORY[liftKey].e1rm = e1rm;
+          const rm = PR_HISTORY[liftKey].repMaxes;
+          if (!rm[setData.reps] || setData.weight > rm[setData.reps]) rm[setData.reps] = setData.weight;
+        });
       }
     });
     LAST_TIME_LOADED = true;
@@ -1794,6 +1981,190 @@ function formatLastTime(exerciseName) {
   if (!data) return '';
   const setsStr = data.sets.join(' / ');
   return `<div class="acc-last"><span>Last: ${setsStr}</span><span class="acc-last-date">${data.displayDate}</span></div>`;
+}
+
+// ── PR detection + celebration ──
+// Build a snapshot of historical PRs BEFORE saving, then compare against this session's lifts.
+function snapshotPRs() {
+  const snap = {};
+  Object.keys(PR_HISTORY).forEach(k => {
+    if (!PR_HISTORY[k]) { snap[k] = { e1rm: 0, repMaxes: {} }; return; }
+    snap[k] = { e1rm: PR_HISTORY[k].e1rm, repMaxes: { ...PR_HISTORY[k].repMaxes } };
+  });
+  return snap;
+}
+// Parse the just-saved session's primary lift data from DOM.
+// Returns array of { liftKey, weight, reps } — best set per lift only (highest weight).
+function getSessionLiftBests(weekN, dayN) {
+  const liftRaw = {};
+  document.querySelectorAll(`.lift-input[data-week="${weekN}"][data-day="${dayN}"]`).forEach(inp => {
+    const exKey = inp.getAttribute('data-ex'); // "Back squat / safety bar__squat"
+    const s = parseInt(inp.getAttribute('data-s'));
+    const type = inp.getAttribute('data-type');
+    if (!liftRaw[exKey]) liftRaw[exKey] = {};
+    if (!liftRaw[exKey][s]) liftRaw[exKey][s] = {};
+    liftRaw[exKey][s][type] = inp.value;
+  });
+  const sessionLifts = [];
+  Object.entries(liftRaw).forEach(([exKey, sets]) => {
+    const liftKey = matchPrimaryLiftKey(exKey);
+    if (!liftKey) return;
+    // Find the best e1rm-producing set across this session for this lift
+    let best = null;
+    Object.values(sets).forEach(set => {
+      const w = parseFloat(set.weight);
+      const r = parseInt(set.reps);
+      if (isNaN(w) || isNaN(r) || w <= 0 || r <= 0) return;
+      const e1rm = epleyE1RM(w, r);
+      if (!best || e1rm > best.e1rm) best = { weight: w, reps: r, e1rm };
+    });
+    if (best) sessionLifts.push({ liftKey, ...best });
+  });
+  return sessionLifts;
+}
+// Compare session lifts against snapshot and return queue of PR events.
+function detectPRs(snapshot, sessionLifts) {
+  const prs = [];
+  sessionLifts.forEach(lift => {
+    const prev = snapshot[lift.liftKey] || { e1rm: 0, repMaxes: {} };
+    // e1RM PR — only if there was a prior baseline (skip first-ever logged session for a lift)
+    if (prev.e1rm > 0 && lift.e1rm > prev.e1rm) {
+      prs.push({
+        type: 'e1rm',
+        liftKey: lift.liftKey,
+        liftName: PR_LIFT_NAMES[lift.liftKey],
+        value: lift.e1rm,
+        prev: prev.e1rm,
+        repsContext: `${lift.weight} × ${lift.reps}`,
+      });
+    }
+    // Rep-max PR at this rep range
+    const prevRM = prev.repMaxes[lift.reps] || 0;
+    if (prevRM > 0 && lift.weight > prevRM) {
+      prs.push({
+        type: 'repmax',
+        liftKey: lift.liftKey,
+        liftName: PR_LIFT_NAMES[lift.liftKey],
+        value: lift.weight,
+        prev: prevRM,
+        reps: lift.reps,
+      });
+    }
+  });
+  return prs;
+}
+
+// ── Confetti engine ──
+let confettiAnimId = null;
+function startConfetti() {
+  const canvas = document.getElementById('prConfetti');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = window.innerWidth * dpr;
+  canvas.height = window.innerHeight * dpr;
+  canvas.style.width = window.innerWidth + 'px';
+  canvas.style.height = window.innerHeight + 'px';
+  ctx.scale(dpr, dpr);
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  const colors = ['#e8a33d', '#f5c870', '#fafaf7', '#bfb8a8', '#d97757', '#7a9b76'];
+  const pieces = [];
+  for (let i = 0; i < 140; i++) {
+    pieces.push({
+      x: Math.random() * W,
+      y: -20 - Math.random() * H * 0.5,
+      vx: (Math.random() - 0.5) * 3,
+      vy: 2 + Math.random() * 4,
+      w: 6 + Math.random() * 8,
+      h: 10 + Math.random() * 8,
+      rot: Math.random() * Math.PI * 2,
+      vrot: (Math.random() - 0.5) * 0.2,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      shape: Math.random() < 0.5 ? 'rect' : 'circle',
+    });
+  }
+  function frame() {
+    ctx.clearRect(0, 0, W, H);
+    pieces.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.rot += p.vrot;
+      p.vy += 0.05; // slight gravity acceleration
+      if (p.y > H + 50) {
+        p.y = -20;
+        p.x = Math.random() * W;
+        p.vy = 2 + Math.random() * 4;
+      }
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      if (p.shape === 'rect') {
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      } else {
+        ctx.beginPath();
+        ctx.arc(0, 0, p.w / 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    });
+    confettiAnimId = requestAnimationFrame(frame);
+  }
+  frame();
+}
+function stopConfetti() {
+  if (confettiAnimId) {
+    cancelAnimationFrame(confettiAnimId);
+    confettiAnimId = null;
+  }
+  const canvas = document.getElementById('prConfetti');
+  if (canvas) {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+}
+
+// ── PR queue + display ──
+let PR_QUEUE = [];
+function celebratePRs(prs) {
+  if (!prs || !prs.length) return;
+  PR_QUEUE = prs.slice();
+  showNextPR();
+}
+function showNextPR() {
+  if (!PR_QUEUE.length) return;
+  const pr = PR_QUEUE.shift();
+  const overlay = document.getElementById('prOverlay');
+  if (!overlay) return;
+  const emojis = ['🎉', '💪', '🔥', '⚡', '🏆', '🚀'];
+  document.getElementById('prEmoji').textContent = emojis[Math.floor(Math.random() * emojis.length)];
+  document.getElementById('prKicker').textContent = pr.type === 'e1rm' ? 'NEW ESTIMATED 1RM' : `NEW ${pr.reps}-REP MAX`;
+  document.getElementById('prHeadline').textContent = pr.liftName;
+  document.getElementById('prWeight').textContent = pr.value + ' lbs';
+  document.getElementById('prSubtype').textContent = pr.type === 'e1rm'
+    ? `From ${pr.repsContext}`
+    : `At ${pr.reps} reps`;
+  document.getElementById('prPrev').innerHTML = pr.prev > 0
+    ? `Previous best: <strong>${pr.prev} lbs</strong> &nbsp;·&nbsp; <strong>+${pr.value - pr.prev} lbs</strong>`
+    : '';
+  // Reset animations by removing & re-adding visible class
+  overlay.classList.remove('visible');
+  // Force reflow so animations restart on the next add
+  void overlay.offsetWidth;
+  overlay.classList.add('visible');
+  haptic(40);
+  setTimeout(() => haptic(60), 500);
+  setTimeout(() => haptic(80), 1100);
+  startConfetti();
+}
+function dismissPR() {
+  const overlay = document.getElementById('prOverlay');
+  if (!overlay) return;
+  overlay.classList.remove('visible');
+  stopConfetti();
+  // Brief delay before showing next so the transition feels distinct
+  setTimeout(showNextPR, 400);
 }
 
 // ── Haptics ──
@@ -2505,6 +2876,9 @@ async function saveSession(weekN, dayN) {
   const statusEl = document.getElementById(`status-${weekN}-${dayN}`);
   const btn = document.querySelector(`button[onclick="saveSession(${weekN},${dayN})"]`);
   if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+  // Snapshot PRs BEFORE saving so we can compare this session against history
+  const prSnapshot = snapshotPRs();
+  const sessionLifts = (dayN === 0 || dayN === 1 || dayN === 2) ? getSessionLiftBests(weekN, dayN) : [];
   const inputs = getInputsForDay(weekN, dayN);
   const date = new Date().toLocaleDateString('en-US');
   const dayLabel = DAY_NAMES[dayN];
@@ -2524,7 +2898,13 @@ async function saveSession(weekN, dayN) {
       clearChecksForWeek(weekN);
       renderWeekStrip();
     }
-    // Refresh last-time data in background so future sessions see this one
+    // Detect PRs against the pre-save snapshot
+    const prs = detectPRs(prSnapshot, sessionLifts);
+    if (prs.length) {
+      // Slight delay so the "Saved ✓" feedback registers before the celebration
+      setTimeout(() => celebratePRs(prs), 600);
+    }
+    // Refresh last-time + PR data in background so future sessions see this one
     loadLastTimeData();
   } catch(e) {
     if (statusEl) statusEl.innerHTML = `<div class="callout c-error" style="margin-top:8px">Save failed — check your connection</div>`;
