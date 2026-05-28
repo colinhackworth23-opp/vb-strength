@@ -1669,6 +1669,52 @@ function isWeekDone(weekN) {
   const cache = loadCache();
   return cache.doneWeeks ? cache.doneWeeks.includes(weekN) : false;
 }
+
+// ── Set-check persistence ──
+// Stored under cache.checks as a flat object keyed by `w{N}d{N}{exName}s{N}` → true
+function checkKey(weekN, dayN, exName, setIdx) {
+  return `w${weekN}d${dayN}${exName}s${setIdx}`;
+}
+function saveCheck(weekN, dayN, exName, setIdx, checked) {
+  const cache = loadCache();
+  if (!cache.checks) cache.checks = {};
+  const k = checkKey(weekN, dayN, exName, setIdx);
+  if (checked) cache.checks[k] = true;
+  else delete cache.checks[k];
+  saveCache(cache);
+}
+function isChecked(weekN, dayN, exName, setIdx) {
+  const cache = loadCache();
+  if (!cache.checks) return false;
+  return !!cache.checks[checkKey(weekN, dayN, exName, setIdx)];
+}
+function clearChecksForWeek(weekN) {
+  const cache = loadCache();
+  if (!cache.checks) return;
+  const prefix = `w${weekN}d`;
+  Object.keys(cache.checks).forEach(k => {
+    if (k.startsWith(prefix)) delete cache.checks[k];
+  });
+  saveCache(cache);
+}
+// Restore all checkmark visuals after a re-render
+function restoreCheckmarks() {
+  document.querySelectorAll('.set-check').forEach(checkEl => {
+    // Find associated input to read the week/day/ex/s identifiers
+    const inputRow = checkEl.closest('.set-input-row');
+    const liftRow = checkEl.closest('.lift-row');
+    const inp = inputRow ? inputRow.querySelector('.set-input') : (liftRow ? liftRow.querySelector('.lift-input-weight') : null);
+    if (!inp) return;
+    const w = parseInt(inp.dataset.week, 10);
+    const d = parseInt(inp.dataset.day, 10);
+    const ex = inp.dataset.ex;
+    const s = parseInt(inp.dataset.s, 10);
+    if (isChecked(w, d, ex, s)) {
+      checkEl.classList.add('checked');
+      inp.classList.add('done');
+    }
+  });
+}
 function applyCachedTMs() {
   const cache = loadCache();
   if (cache.tms) {
@@ -1996,6 +2042,14 @@ function handleSetCheck(checkEl, isWorkingSet) {
   } else {
     if (inp) inp.classList.remove('done');
     stopTimer();
+  }
+  // Persist check state
+  if (inp) {
+    const w = parseInt(inp.dataset.week, 10);
+    const d = parseInt(inp.dataset.day, 10);
+    const ex = inp.dataset.ex;
+    const s = parseInt(inp.dataset.s, 10);
+    if (!isNaN(w) && !isNaN(d) && ex && !isNaN(s)) saveCheck(w, d, ex, s, checked);
   }
   // Clear all active-row highlights
   document.querySelectorAll('.acc-row, .lift-row').forEach(r => r.classList.remove('active-row'));
@@ -2384,6 +2438,7 @@ function renderContent() {
   document.getElementById('programContent').innerHTML = buildWeekContent(currentWeekIdx);
   applyCachedInputs();
   attachCacheListeners();
+  restoreCheckmarks();
   setTimeout(updateProgress, 50);
 }
 
@@ -2466,6 +2521,7 @@ async function saveSession(weekN, dayN) {
     // Mark week as done when Friday session is saved
     if (dayN === 2) {
       markWeekDone(weekN);
+      clearChecksForWeek(weekN);
       renderWeekStrip();
     }
     // Refresh last-time data in background so future sessions see this one
