@@ -1198,9 +1198,14 @@ body {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
+  animation: lb-bounce 1.8s ease-in-out infinite;
   transition: transform var(--t-fast) var(--ease);
 }
-.plate-fab:active { transform: scale(0.92); }
+.plate-fab:active { transform: scale(0.92); animation-play-state: paused; }
+@keyframes lb-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
 
 .plate-modal {
   display: none;
@@ -1301,6 +1306,349 @@ body {
   font-size: 13px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+
+/* ── VB FAB — bouncing volleyball button ── */
+.vb-fab-wrap {
+  position: fixed;
+  right: var(--s4);
+  bottom: calc(96px + env(safe-area-inset-bottom, 12px));
+  width: 60px;
+  height: 78px;
+  display: none;
+  align-items: flex-start;
+  justify-content: center;
+  z-index: 90;
+  pointer-events: auto;
+}
+.vb-fab {
+  width: 60px;
+  height: 60px;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  cursor: pointer;
+  border: none;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.25));
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  animation: vb-bounce 1.8s ease-in-out infinite;
+  transition: transform 0.15s ease;
+  padding: 0;
+}
+.vb-fab:active { transform: scale(0.92); }
+.vb-shadow {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  width: 48px;
+  height: 8px;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.3), rgba(0,0,0,0));
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translateX(-50%);
+  animation: vb-shadow 1.8s ease-in-out infinite;
+}
+@keyframes vb-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes vb-shadow {
+  0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.4; }
+  50% { transform: translateX(-50%) scale(0.7); opacity: 0.2; }
+}
+
+/* ── VB MODAL ── */
+.vb-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(20, 18, 14, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.vb-modal.visible {
+  display: flex;
+  opacity: 1;
+}
+.vb-modal-card {
+  background: var(--bg);
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  border-radius: 20px 20px 0 0;
+  padding: var(--s5) var(--s4) calc(var(--s5) + env(safe-area-inset-bottom, 0));
+  overflow-y: auto;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.vb-modal.visible .vb-modal-card {
+  transform: translateY(0);
+}
+.vb-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--s5);
+}
+.vb-modal-title {
+  font-family: var(--f-num);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.vb-modal-sub {
+  font-family: var(--f-num);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-3);
+  margin-top: 4px;
+  letter-spacing: 0.02em;
+}
+.vb-modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: var(--ink-3);
+  cursor: pointer;
+  padding: 0 var(--s2);
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+}
+.vb-modal-section {
+  margin-bottom: var(--s5);
+}
+.vb-modal-label {
+  font-family: var(--f-num);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: var(--s3);
+}
+.vb-modal-optional {
+  text-transform: none;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+  color: var(--ink-4);
+  margin-left: 6px;
+}
+.vb-chip-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s2);
+}
+.vb-chip {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  font-family: var(--f-num);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.vb-chip:active { transform: scale(0.97); }
+.vb-chip.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #2a2520;
+  font-weight: 700;
+}
+.vb-feel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s2);
+}
+.vb-feel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.vb-feel:active { transform: scale(0.97); }
+.vb-feel-emoji {
+  font-size: 32px;
+}
+.vb-feel-lbl {
+  font-family: var(--f-num);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.vb-feel.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.vb-feel.selected .vb-feel-lbl {
+  color: #2a2520;
+  font-weight: 700;
+}
+.vb-pain-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.vb-pain-chip {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-family: var(--f-num);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.vb-pain-chip:active { transform: scale(0.95); }
+.vb-pain-chip.selected {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg);
+}
+.vb-notes {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  font-family: var(--f-sans, -apple-system), sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+  resize: vertical;
+  min-height: 80px;
+  -webkit-tap-highlight-color: transparent;
+}
+.vb-notes:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  border-color: var(--accent);
+}
+.vb-save-btn {
+  width: 100%;
+  background: var(--accent);
+  color: #2a2520;
+  border: none;
+  border-radius: 14px;
+  padding: 16px;
+  font-family: var(--f-num);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.vb-save-btn:active { transform: scale(0.98); }
+.vb-save-btn:disabled {
+  background: var(--line);
+  color: var(--ink-3);
+  cursor: not-allowed;
+}
+
+/* ── ACTIVITY FEED ── */
+.activity-group-label {
+  font-family: var(--f-num);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: var(--s5) var(--s4) var(--s2);
+}
+.activity-row {
+  display: flex;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  margin: 0 var(--s4) var(--s2);
+  background: var(--surface);
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+.activity-row-vb {
+  background: linear-gradient(135deg, var(--surface) 0%, rgba(232, 163, 61, 0.05) 100%);
+}
+.activity-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+  width: 32px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 2px;
+}
+.activity-body {
+  flex: 1;
+  min-width: 0;
+}
+.activity-headline {
+  font-family: var(--f-num);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+.activity-sub {
+  font-family: var(--f-num);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+.activity-detail {
+  font-size: 12px;
+  color: var(--ink-3);
+  line-height: 1.4;
+}
+.activity-pain-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.activity-pain-chip {
+  display: inline-block;
+  background: rgba(217, 119, 87, 0.12);
+  color: #b85d3d;
+  font-family: var(--f-num);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+.activity-notes {
+  font-size: 12px;
+  color: var(--ink-3);
+  font-style: italic;
+  margin-top: 6px;
+  line-height: 1.4;
 }
 
 /* ── PR CELEBRATION ── */
@@ -1680,10 +2028,70 @@ body {
   <div id="programContent"></div>
 </div>
 
-<!-- HISTORY SCREEN -->
-<div class="screen" id="screen-history">
-  <div class="screen-title">Session history</div>
-  <div id="history-content" style="margin-top:8px"><div class="empty-state">Loading...</div></div>
+<!-- ACTIVITY SCREEN -->
+<div class="screen" id="screen-activity">
+  <div class="screen-title">Activity</div>
+  <div id="activity-content" style="margin-top:8px"><div class="empty-state">Loading...</div></div>
+</div>
+
+<!-- VB FAB (only visible on activity screen) -->
+<div class="vb-fab-wrap" id="vbFabWrap" onclick="openVBLogger()">
+  <button class="vb-fab" aria-label="Log volleyball session">🏐</button>
+  <div class="vb-shadow"></div>
+</div>
+
+<!-- VB LOG MODAL -->
+<div class="vb-modal" id="vbModal">
+  <div class="vb-modal-card">
+    <div class="vb-modal-header">
+      <div>
+        <div class="vb-modal-title">Log VB Session</div>
+        <div class="vb-modal-sub" id="vbModalDate">Today</div>
+      </div>
+      <button class="vb-modal-close" onclick="closeVBLogger()" aria-label="Close">&times;</button>
+    </div>
+
+    <div class="vb-modal-section">
+      <div class="vb-modal-label">Session Type</div>
+      <div class="vb-chip-grid">
+        <button class="vb-chip" data-type="Morning" onclick="setVBType('Morning')">Morning</button>
+        <button class="vb-chip" data-type="Evening" onclick="setVBType('Evening')">Evening</button>
+        <button class="vb-chip" data-type="Weekend" onclick="setVBType('Weekend')">Weekend</button>
+        <button class="vb-chip" data-type="Tournament" onclick="setVBType('Tournament')">Tournament</button>
+      </div>
+    </div>
+
+    <div class="vb-modal-section">
+      <div class="vb-modal-label">How'd it feel?</div>
+      <div class="vb-feel-grid">
+        <button class="vb-feel" data-feel="good" onclick="setVBFeel('good')">
+          <div class="vb-feel-emoji">👍</div>
+          <div class="vb-feel-lbl">Good</div>
+        </button>
+        <button class="vb-feel" data-feel="rough" onclick="setVBFeel('rough')">
+          <div class="vb-feel-emoji">👎</div>
+          <div class="vb-feel-lbl">Rough</div>
+        </button>
+      </div>
+    </div>
+
+    <div class="vb-modal-section">
+      <div class="vb-modal-label">Pain areas <span class="vb-modal-optional">optional</span></div>
+      <div class="vb-pain-chips">
+        <button class="vb-pain-chip" data-pain="Shoulder" onclick="toggleVBPain('Shoulder')">Shoulder</button>
+        <button class="vb-pain-chip" data-pain="Back" onclick="toggleVBPain('Back')">Back</button>
+        <button class="vb-pain-chip" data-pain="Knees" onclick="toggleVBPain('Knees')">Knees</button>
+        <button class="vb-pain-chip" data-pain="Ankles" onclick="toggleVBPain('Ankles')">Ankles</button>
+      </div>
+    </div>
+
+    <div class="vb-modal-section">
+      <div class="vb-modal-label">Notes <span class="vb-modal-optional">optional</span></div>
+      <textarea class="vb-notes" id="vbNotes" placeholder="How did the session go?" rows="3"></textarea>
+    </div>
+
+    <button class="vb-save-btn" id="vbSaveBtn" onclick="saveVBSession()" disabled>Save session</button>
+  </div>
 </div>
 
 <!-- MAXES SCREEN -->
@@ -1740,7 +2148,7 @@ body {
 </div>
 
 <!-- PLATE CALCULATOR (floating button reveals modal) -->
-<div class="plate-fab" onclick="togglePlateCalc()">LB</div>
+<div class="plate-fab" id="plateFab" onclick="togglePlateCalc()">LB</div>
 <div class="plate-modal" id="plateModal">
   <div class="plate-card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -1778,7 +2186,7 @@ body {
 <div class="bottom-nav">
   <button class="nav-btn" onclick="showScreen('program')"><div class="nav-icon on" id="ni-program"></div><span class="nav-lbl on" id="nl-program">Program</span></button>
   <button class="nav-btn" onclick="showScreen('warmup')"><div class="nav-icon" id="ni-warmup"></div><span class="nav-lbl" id="nl-warmup">Warm-up</span></button>
-  <button class="nav-btn" onclick="showScreen('history')"><div class="nav-icon" id="ni-history"></div><span class="nav-lbl" id="nl-history">History</span></button>
+  <button class="nav-btn" onclick="showScreen('activity')"><div class="nav-icon" id="ni-activity"></div><span class="nav-lbl" id="nl-activity">Activity</span></button>
   <button class="nav-btn" onclick="showScreen('maxes')"><div class="nav-icon" id="ni-maxes"></div><span class="nav-lbl" id="nl-maxes">Maxes</span></button>
 </div>
 
@@ -2836,13 +3244,19 @@ function showScreen(name) {
   document.getElementById('screen-'+name).classList.add('active');
   document.getElementById('mainHeader').style.display = name==='program' ? 'block' : 'none';
   document.getElementById('appBanner').style.display = name==='program' ? 'block' : 'none';
-  ['program','warmup','history','maxes'].forEach(n => {
+  ['program','warmup','activity','maxes'].forEach(n => {
     const icon = document.getElementById('ni-'+n);
     const lbl = document.getElementById('nl-'+n);
     if (icon) icon.className = 'nav-icon'+(n===name?' on':'');
     if (lbl) lbl.className = 'nav-lbl'+(n===name?' on':'');
   });
-  if (name==='history') loadHistory();
+  // Show VB FAB only on activity screen
+  const vbFab = document.getElementById('vbFabWrap');
+  if (vbFab) vbFab.style.display = name==='activity' ? 'flex' : 'none';
+  // Show LB plate calc FAB only on program screen
+  const plateFab = document.getElementById('plateFab');
+  if (plateFab) plateFab.style.display = name==='program' ? 'flex' : 'none';
+  if (name==='activity') loadActivity();
   if (name==='maxes') { renderMaxesInputs(); applyTheme(getStoredTheme()); }
 }
 
@@ -2928,25 +3342,206 @@ async function saveMaxes() {
   }
 }
 
-async function loadHistory() {
-  const el = document.getElementById('history-content');
-  el.innerHTML='<div class="empty-state">Loading...</div>';
+// ── VB Session logger ──
+let vbState = { type: null, felt: null, pain: [], notes: '' };
+function resetVBState() { vbState = { type: null, felt: null, pain: [], notes: '' }; }
+function openVBLogger() {
+  resetVBState();
+  // Reset UI
+  document.querySelectorAll('.vb-chip').forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll('.vb-feel').forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll('.vb-pain-chip').forEach(c => c.classList.remove('selected'));
+  document.getElementById('vbNotes').value = '';
+  // Date display
+  const now = new Date();
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('vbModalDate').textContent = `Today — ${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
+  document.getElementById('vbModal').classList.add('visible');
+  haptic(8);
+  updateVBSaveButton();
+}
+function closeVBLogger() {
+  document.getElementById('vbModal').classList.remove('visible');
+}
+function setVBType(t) {
+  vbState.type = t;
+  document.querySelectorAll('.vb-chip').forEach(c => c.classList.toggle('selected', c.dataset.type === t));
+  haptic(6);
+  updateVBSaveButton();
+}
+function setVBFeel(f) {
+  vbState.felt = f;
+  document.querySelectorAll('.vb-feel').forEach(c => c.classList.toggle('selected', c.dataset.feel === f));
+  haptic(6);
+  updateVBSaveButton();
+}
+function toggleVBPain(p) {
+  const idx = vbState.pain.indexOf(p);
+  if (idx >= 0) vbState.pain.splice(idx, 1);
+  else vbState.pain.push(p);
+  document.querySelectorAll('.vb-pain-chip').forEach(c => c.classList.toggle('selected', vbState.pain.includes(c.dataset.pain)));
+  haptic(6);
+}
+function updateVBSaveButton() {
+  const btn = document.getElementById('vbSaveBtn');
+  if (!btn) return;
+  btn.disabled = !(vbState.type && vbState.felt);
+}
+async function saveVBSession() {
+  if (!vbState.type || !vbState.felt) return;
+  vbState.notes = document.getElementById('vbNotes').value.trim();
+  const btn = document.getElementById('vbSaveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+  const date = new Date().toLocaleDateString('en-US');
+  const row = [date, vbState.type, vbState.felt, vbState.pain.join(', '), vbState.notes];
   try {
-    const res = await fetch(SHEET_URL+'?tab=Log');
-    const data = await res.json();
-    const rows = data.rows.slice(1);
-    if (!rows.length) { el.innerHTML='<div class="empty-state">No sessions logged yet.<br>Complete your first session and save it.</div>'; return; }
-    const byDate = {};
-    rows.forEach(r => {
-      const key=r[0]+'|'+r[2];
-      if (!byDate[key]) byDate[key]={date:r[0],day:r[2],week:r[1],exercises:[]};
-      byDate[key].exercises.push(r[3]);
+    await fetch(SHEET_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ tab: 'VB Sessions', row })
     });
-    el.innerHTML = Object.values(byDate).reverse().map(s =>
-      `<div class="section" style="margin:12px 16px 0"><div class="hist-row"><div class="hist-date">${s.date} &middot; ${s.week}</div><div class="hist-title">${s.day}</div><div class="hist-detail">${s.exercises.slice(0,4).join(', ')}${s.exercises.length>4?' +'+(s.exercises.length-4)+' more':''}</div></div></div>`
-    ).join('')+'<div class="spacer"></div>';
+    btn.textContent = 'Saved ✓';
+    haptic(12);
+    setTimeout(() => {
+      closeVBLogger();
+      btn.textContent = 'Save session';
+      btn.disabled = false;
+      loadActivity();
+    }, 700);
   } catch(e) {
-    el.innerHTML='<div class="empty-state">Could not load history.<br>Check your internet connection.</div>';
+    btn.textContent = 'Save failed — retry';
+    btn.disabled = false;
+  }
+}
+
+// ── Activity feed — combines lifting (Log tab) and VB sessions (VB Sessions tab) ──
+function parseSheetDate(raw) {
+  if (!raw) return null;
+  const d = new Date(raw);
+  return isNaN(d.getTime()) ? null : d;
+}
+function formatActivityDate(d) {
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  return `${days[d.getDay()]} ${months[d.getMonth()]} ${d.getDate()}`;
+}
+function getWeekStart(d) {
+  // Monday as week start
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  const monday = new Date(d);
+  monday.setDate(d.getDate() + diff);
+  monday.setHours(0,0,0,0);
+  return monday;
+}
+function weekGroupLabel(weekStart, now) {
+  const today = getWeekStart(now);
+  const diff = Math.round((today - weekStart) / (7 * 86400000));
+  if (diff === 0) return 'This Week';
+  if (diff === 1) return 'Last Week';
+  return `${diff} weeks ago`;
+}
+
+async function loadActivity() {
+  const el = document.getElementById('activity-content');
+  el.innerHTML = '<div class="empty-state">Loading...</div>';
+  try {
+    // Fetch both tabs in parallel; tolerate VB Sessions tab not existing yet
+    const [liftRes, vbRes] = await Promise.allSettled([
+      fetch(SHEET_URL + '?tab=Log').then(r => r.json()),
+      fetch(SHEET_URL + '?tab=VB Sessions').then(r => r.json()),
+    ]);
+    const liftRows = liftRes.status === 'fulfilled' && liftRes.value.rows ? liftRes.value.rows.slice(1) : [];
+    const vbRows = vbRes.status === 'fulfilled' && vbRes.value.rows ? vbRes.value.rows.slice(1) : [];
+
+    // Group lifting by date+day to collapse multiple exercises into one entry
+    const liftSessions = {};
+    liftRows.forEach(r => {
+      const dateRaw = r[0];
+      const week = r[1];
+      const day = r[2];
+      const ex = r[3];
+      const d = parseSheetDate(dateRaw);
+      if (!d || !day) return;
+      const key = `${dateRaw}|${day}`;
+      if (!liftSessions[key]) liftSessions[key] = { date: d, dateRaw, week, day, exercises: [] };
+      liftSessions[key].exercises.push(ex);
+    });
+    const liftEntries = Object.values(liftSessions).map(s => ({
+      kind: 'lift',
+      date: s.date,
+      week: s.week,
+      day: s.day,
+      exercises: s.exercises,
+    }));
+
+    // VB sessions: [Date, Type, Felt, Pain, Notes]
+    const vbEntries = vbRows.map(r => {
+      const d = parseSheetDate(r[0]);
+      if (!d) return null;
+      return {
+        kind: 'vb',
+        date: d,
+        type: r[1] || '',
+        felt: r[2] || '',
+        pain: r[3] || '',
+        notes: r[4] || '',
+      };
+    }).filter(Boolean);
+
+    const all = [...liftEntries, ...vbEntries].sort((a, b) => b.date - a.date);
+    if (!all.length) {
+      el.innerHTML = '<div class="empty-state">No activity logged yet.<br>Save a lift or tap the volleyball to log a session.</div>';
+      return;
+    }
+
+    // Group by week start (Monday)
+    const now = new Date();
+    const groups = {};
+    all.forEach(entry => {
+      const ws = getWeekStart(entry.date);
+      const key = ws.toISOString();
+      if (!groups[key]) groups[key] = { weekStart: ws, entries: [] };
+      groups[key].entries.push(entry);
+    });
+    const sortedGroups = Object.values(groups).sort((a,b) => b.weekStart - a.weekStart);
+
+    let html = '';
+    sortedGroups.forEach(g => {
+      html += `<div class="activity-group-label">${weekGroupLabel(g.weekStart, now)}</div>`;
+      g.entries.forEach(entry => {
+        if (entry.kind === 'lift') {
+          const exPreview = entry.exercises.slice(0,3).join(', ');
+          const more = entry.exercises.length > 3 ? ` +${entry.exercises.length - 3} more` : '';
+          html += `<div class="activity-row activity-row-lift">
+            <div class="activity-icon">🏋️</div>
+            <div class="activity-body">
+              <div class="activity-headline">${entry.day} — ${entry.week}</div>
+              <div class="activity-sub">${formatActivityDate(entry.date)}</div>
+              <div class="activity-detail">${exPreview}${more}</div>
+            </div>
+          </div>`;
+        } else {
+          const feltIcon = entry.felt === 'good' ? '👍' : (entry.felt === 'rough' ? '👎' : '');
+          const painChips = entry.pain ? entry.pain.split(',').map(p => p.trim()).filter(Boolean).map(p => `<span class="activity-pain-chip">${p}</span>`).join('') : '';
+          const notesLine = entry.notes ? `<div class="activity-notes">"${entry.notes}"</div>` : '';
+          html += `<div class="activity-row activity-row-vb">
+            <div class="activity-icon">🏐</div>
+            <div class="activity-body">
+              <div class="activity-headline">${entry.type} session ${feltIcon}</div>
+              <div class="activity-sub">${formatActivityDate(entry.date)}</div>
+              ${painChips ? `<div class="activity-pain-row">${painChips}</div>` : ''}
+              ${notesLine}
+            </div>
+          </div>`;
+        }
+      });
+    });
+    el.innerHTML = html + '<div class="spacer"></div>';
+  } catch(e) {
+    el.innerHTML = '<div class="empty-state">Could not load activity.<br>Check your internet connection.</div>';
   }
 }
 
