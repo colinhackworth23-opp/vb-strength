@@ -2861,15 +2861,15 @@ function toggleCue(header) {
 
 // ── Data ──
 const WEEKS = [
-  { n:1, phase:'Deload / Re-entry', dates:'May 25 – Jun 1',  intensity:'60–70%', volume:'3×5', rpe:'5–6', reps:5, pcts:[0.65,0.65,0.65,0.65], done:false, deload:true, tournament:'May 30' },
+  { n:1, phase:'Deload / Re-entry', dates:'May 25 – Jun 1',  intensity:'60–70%', volume:'3×5', rpe:'5–6', reps:5, pcts:[0.65,0.65,0.65], done:false, deload:true, tournament:'May 30' },
   { n:2, phase:'Build',             dates:'Jun 2 – Jun 8',   intensity:'73–83%', volume:'4×5', rpe:'7–8', reps:5, pcts:[0.73,0.76,0.80,0.83], done:false },
-  { n:3, phase:'Taper',             dates:'Jun 9 – Jun 15',  intensity:'70–75%', volume:'3×5', rpe:'6–7', reps:5, pcts:[0.70,0.73,0.75,0.75], done:false, taper:true, tournament:'Jun 13' },
+  { n:3, phase:'Taper',             dates:'Jun 9 – Jun 15',  intensity:'70–75%', volume:'3×5', rpe:'6–7', reps:5, pcts:[0.70,0.73,0.75], done:false, taper:true, tournament:'Jun 13' },
   { n:4, phase:'Build',             dates:'Jun 16 – Jun 22', intensity:'76–86%', volume:'4×5', rpe:'7–8', reps:5, pcts:[0.76,0.79,0.83,0.86], done:false },
-  { n:5, phase:'Taper',             dates:'Jun 23 – Jun 29', intensity:'70–75%', volume:'3×5', rpe:'6–7', reps:5, pcts:[0.70,0.73,0.75,0.75], done:false, taper:true, tournament:'Jun 27' },
+  { n:5, phase:'Taper',             dates:'Jun 23 – Jun 29', intensity:'70–75%', volume:'3×5', rpe:'6–7', reps:5, pcts:[0.70,0.73,0.75], done:false, taper:true, tournament:'Jun 27' },
   { n:6, phase:'Peak Intensity',    dates:'Jun 30 – Jul 6',  intensity:'80–90%', volume:'4×3', rpe:'8–9', reps:3, pcts:[0.80,0.83,0.86,0.90], done:false },
   { n:7, phase:'Build / Maintain',  dates:'Jul 7 – Jul 13',  intensity:'83–90%', volume:'4×3', rpe:'8–9', reps:3, pcts:[0.83,0.86,0.88,0.90], done:false },
   { n:8, phase:'Build → Taper',     dates:'Jul 14 – Jul 20', intensity:'76–83%', volume:'4×5', rpe:'7–8', reps:5, pcts:[0.76,0.79,0.83,0.83], done:false, tournament:'Jul 18' },
-  { n:9, phase:'Easy / Recovery',   dates:'Jul 21 – Jul 27', intensity:'60–65%', volume:'2×5', rpe:'5–6', reps:5, pcts:[0.63,0.65,0.65,0.65], done:false, deload:true, tournament:'Jul 25' },
+  { n:9, phase:'Easy / Recovery',   dates:'Jul 21 – Jul 27', intensity:'60–65%', volume:'2×5', rpe:'5–6', reps:5, pcts:[0.63,0.65], done:false, deload:true, tournament:'Jul 25' },
 ];
 
 const ACC = {
@@ -3062,10 +3062,6 @@ function buildLiftDay(weekN, liftDayN, w, loads) {
     h += `<div id="status-${weekN}-${liftDayN}"></div>`;
     h += `<button class="save-btn" onclick="saveSession(${weekN},${liftDayN})">Save session to Google Sheets</button>`;
   }
-  // End-of-program report on Week 9 Friday
-  if (w.testing && liftDayN === 2) {
-    h += buildEndReport();
-  }
   return h + `<div class="spacer"></div>`;
 }
 
@@ -3095,7 +3091,7 @@ function buildWed(weekN, locked) {
   let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-vb">VB practice tonight</span></div>`;
   if (locked) h += `<div class="locked-banner"><span>✓ Week ${weekN} completed — view only</span></div>`;
   if (w && w.tournament) {
-    h += `<div class="callout c-amber" style="margin-top:12px">🏐 Tournament this ${w.n === 8 ? 'Friday' : 'Saturday'}: ${w.tournament}. Keep everything easy this week — you're tapering.</div>`;
+    h += `<div class="callout c-amber" style="margin-top:12px">🏐 Tournament this Saturday: ${w.tournament}. Keep everything easy this week — you're tapering.</div>`;
   }
   h += `<div class="callout c-green" style="margin-top:12px">Practice 8–10:30pm. No lifting today. Do this pre-practice prep 30–45 min before you play.</div>`;
   h += `<div class="section"><div class="section-header">Pre-practice activation · 20–25 min</div>`;
@@ -3163,6 +3159,39 @@ function buildSun() {
 
 const LIFT_DAY_MAP = [0, 1, null, null, 2, null, null]; // Mon=0, Tue=1, Fri=2
 
+function buildTournamentFriday(weekN, w, locked) {
+  let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-vb">Pre-tournament</span></div>`;
+  if (locked) h += `<div class="locked-banner"><span>✓ Week ${weekN} completed — view only</span></div>`;
+  h += `<div class="callout c-amber" style="margin-top:12px">🏐 Tournament tomorrow: ${w.tournament}. NO lifting today — fresh legs win matches. Activation only, 15 minutes max.</div>`;
+  h += `<div class="section"><div class="section-header">Optional activation · 15 min max</div>`;
+  [['Band external rotations','Rotator cuff primed for tomorrow\'s swings','2 × 15 each'],
+   ['Shoulder CARs','Full range, slow and controlled','2 × 5 each direction'],
+   ['Light calf raises','Blood flow, not fatigue — cramp prevention','2 × 20'],
+   ['Hip 90/90 switches','Hip mobility for low defensive positions','1 × 8 each side'],
+   ['Easy walk','Keep blood moving, nothing more','10–15 min'],
+  ].forEach(([n,d,v]) => {
+    h += `<div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">${n}</div><div class="mob-detail">${d}</div><div class="mob-vol">${v}</div></div></div>`;
+  });
+  h += `</div>`;
+  h += `<div class="callout c-blue">Hydration and sodium start NOW, not tomorrow morning. Cramping prevention is a today problem.</div>`;
+  if (w.n === 9) h += buildEndReport();
+  return h + `<div class="spacer"></div>`;
+}
+function buildTournamentSat(weekN, w) {
+  let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-vb">Tournament day</span></div>`;
+  h += `<div class="callout c-amber" style="margin-top:12px">🏐 ${w.tournament} — Tournament day. No lifting. Go compete.</div>`;
+  h += `<div class="section"><div class="section-header">Tournament checklist</div>`;
+  [['Electrolytes + sodium every hour','Not just water — sodium is the cramp lever','all day'],
+   ['Stay loose between matches','Shade + easy movement, don\'t go fully static','between matches'],
+   ['Band work before match one','Light external rotations to wake the cuff up','2 × 10'],
+   ['Log it afterward','🏐 button on the Activity tab','30 seconds'],
+  ].forEach(([n,d,v]) => {
+    h += `<div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">${n}</div><div class="mob-detail">${d}</div><div class="mob-vol">${v}</div></div></div>`;
+  });
+  h += `</div>`;
+  return h + `<div class="spacer"></div>`;
+}
+
 function buildWeekContent(weekIdx) {
   const w = WEEKS[weekIdx];
   const loads = calcLoads(w.n);
@@ -3173,6 +3202,8 @@ function buildWeekContent(weekIdx) {
     let content;
     if (d === 2) content = buildWed(w.n, locked);
     else if (d === 3) content = buildThu(w.n, locked);
+    else if (d === 4 && w.tournament) content = buildTournamentFriday(w.n, w, locked);
+    else if (d === 5 && w.tournament) content = buildTournamentSat(w.n, w);
     else if (d === 5) content = buildSat(w.n, locked);
     else if (d === 6) content = buildSun();
     else content = buildLiftDay(w.n, liftIdx, w, loads);
@@ -3306,11 +3337,15 @@ async function saveSession(weekN, dayN) {
     }
     if (statusEl) statusEl.innerHTML = `<div class="callout c-success" style="margin-top:8px">Session saved to Google Sheets</div>`;
     if (btn) { btn.textContent = 'Saved ✓'; setTimeout(()=>{ btn.disabled=false; btn.textContent='Save session to Google Sheets'; }, 3000); }
-    // Mark week as done when Friday session is saved
-    if (dayN === 2) {
+    // Mark week as done after its last lifting day —
+    // tournament weeks have no Friday session, so Tuesday (dayN 1) is their last lift day
+    const wDef = WEEKS[weekN - 1];
+    const lastLiftDay = (wDef && wDef.tournament) ? 1 : 2;
+    if (dayN === lastLiftDay) {
       markWeekDone(weekN);
       clearChecksForWeek(weekN);
       renderWeekStrip();
+      setTimeout(renderContent, 1200); // apply locked state after the "Saved ✓" feedback registers
     }
     // Detect PRs against the pre-save snapshot
     const prs = detectPRs(prSnapshot, sessionLifts);
@@ -3467,7 +3502,7 @@ async function loadActivity() {
       if (!d || !day) return;
       const key = `${dateRaw}|${day}`;
       if (!liftSessions[key]) liftSessions[key] = { date: d, dateRaw, week, day, exercises: [] };
-      liftSessions[key].exercises.push(ex);
+      liftSessions[key].exercises.push((ex || '').toString().split('__')[0]);
     });
     const liftEntries = Object.values(liftSessions).map(s => ({
       kind: 'lift',
