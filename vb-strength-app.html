@@ -2041,8 +2041,8 @@ body {
 </div>
 
 <!-- VB LOG MODAL -->
-<div class="vb-modal" id="vbModal">
-  <div class="vb-modal-card">
+<div class="vb-modal" id="vbModal" onclick="closeVBLogger()">
+  <div class="vb-modal-card" onclick="event.stopPropagation()">
     <div class="vb-modal-header">
       <div>
         <div class="vb-modal-title">Log VB Session</div>
@@ -2257,6 +2257,7 @@ function clearChecksForWeek(weekN) {
 }
 // Restore all checkmark visuals after a re-render
 function restoreCheckmarks() {
+  const checks = (loadCache().checks) || {};   // single parse for the whole pass
   document.querySelectorAll('.set-check').forEach(checkEl => {
     // Find associated input to read the week/day/ex/s identifiers
     const inputRow = checkEl.closest('.set-input-row');
@@ -2267,7 +2268,7 @@ function restoreCheckmarks() {
     const d = parseInt(inp.dataset.day, 10);
     const ex = inp.dataset.ex;
     const s = parseInt(inp.dataset.s, 10);
-    if (isChecked(w, d, ex, s)) {
+    if (checks[checkKey(w, d, ex, s)]) {
       checkEl.classList.add('checked');
       inp.classList.add('done');
     }
@@ -2535,6 +2536,7 @@ function stopConfetti() {
 
 // ── PR queue + display ──
 let PR_QUEUE = [];
+let prAutoDismissTimer = null;
 function celebratePRs(prs) {
   if (!prs || !prs.length) return;
   PR_QUEUE = prs.slice();
@@ -2565,10 +2567,14 @@ function showNextPR() {
   setTimeout(() => haptic(60), 500);
   setTimeout(() => haptic(80), 1100);
   startConfetti();
+  // Auto-dismiss after 10s so confetti doesn't run the battery down if the phone is set down
+  if (prAutoDismissTimer) clearTimeout(prAutoDismissTimer);
+  prAutoDismissTimer = setTimeout(dismissPR, 10000);
 }
 function dismissPR() {
   const overlay = document.getElementById('prOverlay');
   if (!overlay) return;
+  if (prAutoDismissTimer) { clearTimeout(prAutoDismissTimer); prAutoDismissTimer = null; }
   overlay.classList.remove('visible');
   stopConfetti();
   // Brief delay before showing next so the transition feels distinct
@@ -3481,12 +3487,13 @@ function weekGroupLabel(weekStart, now) {
 
 async function loadActivity() {
   const el = document.getElementById('activity-content');
-  el.innerHTML = '<div class="empty-state">Loading...</div>';
+  const firstLoad = !el.dataset.loaded;
+  if (firstLoad) el.innerHTML = '<div class="empty-state">Loading...</div>';
   try {
     // Fetch both tabs in parallel; tolerate VB Sessions tab not existing yet
     const [liftRes, vbRes] = await Promise.allSettled([
       fetch(SHEET_URL + '?tab=Log').then(r => r.json()),
-      fetch(SHEET_URL + '?tab=VB Sessions').then(r => r.json()),
+      fetch(SHEET_URL + '?tab=' + encodeURIComponent('VB Sessions')).then(r => r.json()),
     ]);
     const liftRows = liftRes.status === 'fulfilled' && liftRes.value.rows ? liftRes.value.rows.slice(1) : [];
     const vbRows = vbRes.status === 'fulfilled' && vbRes.value.rows ? vbRes.value.rows.slice(1) : [];
@@ -3575,8 +3582,11 @@ async function loadActivity() {
       });
     });
     el.innerHTML = html + '<div class="spacer"></div>';
+    el.dataset.loaded = '1';
   } catch(e) {
-    el.innerHTML = '<div class="empty-state">Could not load activity.<br>Check your internet connection.</div>';
+    // Only clobber the view with an error on first load — a failed background
+    // refresh keeps the previously rendered feed on screen
+    if (firstLoad) el.innerHTML = '<div class="empty-state">Could not load activity.<br>Check your internet connection.</div>';
   }
 }
 
