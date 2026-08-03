@@ -260,6 +260,9 @@ body {
   position: sticky;
   top: 0;
   z-index: 20;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
 }
 .header-top { padding: 0; }
 
@@ -359,6 +362,16 @@ body {
   background: var(--accent);
   width: 0%;
   transition: width var(--t-slow) var(--ease);
+}
+.progress-bar-fill.complete {
+  background: linear-gradient(90deg, var(--accent), #f5c870, var(--accent));
+  background-size: 200% 100%;
+  animation: prog-shimmer 1.6s linear infinite;
+  box-shadow: 0 0 8px rgba(232, 163, 61, 0.55);
+}
+@keyframes prog-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 .progress-label {
   font-family: var(--f-num);
@@ -1143,6 +1156,10 @@ body {
 .screen.active { display: block; animation: fadeIn var(--t-mid) var(--ease); }
 .day-screen { display: none; }
 .day-screen.active { display: block; animation: fadeIn var(--t-mid) var(--ease); }
+.day-screen.active.slide-fwd { animation: day-fwd 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.day-screen.active.slide-back { animation: day-back 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes day-fwd { from { opacity: 0; transform: translateX(26px); } to { opacity: 1; transform: none; } }
+@keyframes day-back { from { opacity: 0; transform: translateX(-26px); } to { opacity: 1; transform: none; } }
 .spacer { height: var(--s4); }
 
 .screen-title {
@@ -1649,6 +1666,96 @@ body {
   font-style: italic;
   margin-top: 6px;
   line-height: 1.4;
+}
+
+/* ── POLISH: skeleton loading ── */
+.skel-group {
+  height: 12px;
+  width: 90px;
+  margin: 20px 16px 8px;
+  border-radius: 4px;
+  background: var(--line);
+  opacity: 0.6;
+}
+.skel-row {
+  display: flex;
+  gap: 12px;
+  margin: 0 16px 8px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  animation: skel-in 0.3s ease both;
+}
+.skel-icon {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--line) 25%, color-mix(in srgb, var(--line) 40%, var(--surface)) 50%, var(--line) 75%);
+  background-size: 200% 100%;
+  animation: skel-shimmer 1.4s linear infinite;
+}
+.skel-lines { flex: 1; display: flex; flex-direction: column; gap: 8px; padding-top: 2px; }
+.skel-line {
+  height: 11px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--line) 25%, color-mix(in srgb, var(--line) 40%, var(--surface)) 50%, var(--line) 75%);
+  background-size: 200% 100%;
+  animation: skel-shimmer 1.4s linear infinite;
+}
+.skel-line.thin { height: 8px; opacity: 0.7; }
+@keyframes skel-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+@keyframes skel-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ── POLISH: number tick highlight ── */
+.lift-input-weight.num-tick {
+  background: color-mix(in srgb, var(--accent) 22%, var(--surface));
+  border-color: var(--accent);
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+/* ── READINESS CHECK-IN ── */
+.ready-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin: 12px 16px 0;
+  padding: var(--s3) var(--s4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.ready-q {
+  font-family: var(--f-num);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.ready-chips {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--s2);
+}
+.ready-chip {
+  font-family: var(--f-num);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 10px 6px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.ready-chip:active { transform: scale(0.96); }
+.ready-chip.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #2a2520;
+  font-weight: 700;
 }
 
 /* ── AUTO-PROGRESSION VERDICT ── */
@@ -2299,6 +2406,50 @@ function clearChecksForWeek(weekN) {
   });
   saveCache(cache);
 }
+// ── Readiness check-in ──
+// One tap at the top of each lift day: Rough night drops the day's primary
+// loads ~7% (recovery-adjusted); Okay/Fresh run as planned. Local only.
+function getReadiness(weekN, slot) {
+  const c = loadCache();
+  return (c.readiness && c.readiness[`w${weekN}d${slot}`]) || null;
+}
+function tapReadiness(btn, val) {
+  const wrap = btn.closest('.ready-card');
+  const weekN = parseInt(wrap.dataset.week, 10);
+  const slot = parseInt(wrap.dataset.slot, 10);
+  // Snapshot current primary weights so we can animate the change after re-render
+  const before = {};
+  document.querySelectorAll('.lift-input-weight').forEach(inp => {
+    before[`${inp.dataset.ex}|${inp.dataset.s}`] = inp.value;
+  });
+  const c = loadCache();
+  if (!c.readiness) c.readiness = {};
+  c.readiness[`w${weekN}d${slot}`] = val;
+  saveCache(c);
+  haptic(10);
+  renderContent(); // re-render so adjusted loads appear
+  // Tick each changed number from old → new so the adjustment explains itself
+  document.querySelectorAll('.lift-input-weight').forEach(inp => {
+    const old = parseFloat(before[`${inp.dataset.ex}|${inp.dataset.s}`]);
+    const now = parseFloat(inp.value);
+    if (isNaN(old) || isNaN(now) || old === now) return;
+    tickNumber(inp, old, now, 350);
+  });
+}
+// Animate an input's value between two numbers with a brief highlight pulse
+function tickNumber(inp, from, to, dur) {
+  inp.classList.add('num-tick');
+  const t0 = performance.now();
+  function frame(now) {
+    const p = Math.min(1, (now - t0) / dur);
+    const eased = 1 - Math.pow(1 - p, 3);
+    inp.value = Math.round(from + (to - from) * eased);
+    if (p < 1) requestAnimationFrame(frame);
+    else { inp.value = to; setTimeout(() => inp.classList.remove('num-tick'), 350); }
+  }
+  requestAnimationFrame(frame);
+}
+
 // ── Accessory auto-progression ──
 // Each progressable exercise (has ex.inc) accumulates an offset in the cache.
 // Tapping 'Clean' after the last set adds +inc to all future prescriptions;
@@ -2884,8 +3035,10 @@ function updateProgress() {
   const total = checks.length;
   const completed = done.length;
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
-  document.getElementById('progressFill').style.width = pct + '%';
-  document.getElementById('progressLabel').textContent = `${completed} of ${total} sets completed`;
+  const fillEl = document.getElementById('progressFill');
+  fillEl.style.width = pct + '%';
+  fillEl.classList.toggle('complete', pct === 100 && total > 0);
+  document.getElementById('progressLabel').textContent = pct === 100 && total > 0 ? `Session complete — ${total} sets` : `${completed} of ${total} sets completed`;
 }
 
 // ── Set check handler ──
@@ -3207,6 +3360,23 @@ function buildLiftDay(weekN, slot, w, loads, calDay) {
 
   let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-lift">${slotTitles[slot]}</span></div>`;
   if (locked) h += `<div class="locked-banner"><span>✓ Week ${weekN} completed — view only</span></div>`;
+  // Readiness check-in — adjusts today's primary loads if the night was rough
+  const readiness = getReadiness(weekN, slot);
+  if (!locked) {
+    const opts = [['rough','😴','Rough night'],['okay','😐','Okay'],['fresh','💪','Fresh']];
+    h += `<div class="ready-card" data-week="${weekN}" data-slot="${slot}">
+      <span class="ready-q">How'd you sleep?</span>
+      <div class="ready-chips">${opts.map(([v,e,l]) =>
+        `<button class="ready-chip${readiness===v?' selected':''}" onclick="tapReadiness(this,'${v}')">${e} ${l}</button>`).join('')}
+      </div>
+    </div>`;
+  }
+  if (readiness === 'rough' && !locked) {
+    // Clone loads with ~7% reduction on primary working sets only
+    loads = JSON.parse(JSON.stringify(loads));
+    ['squat','bench','dl'].forEach(k => { loads[k].ws = loads[k].ws.map(x => r5(x * 0.93)); });
+    h += `<div class="callout c-amber">Loads adjusted −7% for recovery. A lighter session done well beats a planned session done badly — accessories stay as listed, go by feel.</div>`;
+  }
   h += `<div class="callout c-blue">${getVBCallout(weekN, slot)}</div>`;
   // Slot 0 primary: squat. Slot 2 primary: hex bar. Slot 1 primary: bench —
   // unless this week routes pressing elsewhere (W1: press lives on the full-body
@@ -3470,9 +3640,14 @@ function switchWeek(idx) {
 }
 
 function switchDay(idx) {
+  const dir = idx > currentDayIdx ? 'slide-fwd' : 'slide-back';
   currentDayIdx = idx;
   document.querySelectorAll('.day-pill').forEach((p,i) => p.classList.toggle('active', i===idx));
-  document.querySelectorAll('.day-screen').forEach((s,i) => s.classList.toggle('active', i===idx));
+  document.querySelectorAll('.day-screen').forEach((s,i) => {
+    s.classList.remove('slide-fwd','slide-back');
+    s.classList.toggle('active', i===idx);
+    if (i === idx) s.classList.add(dir);
+  });
   stopTimer();
   setTimeout(updateProgress, 50);
 }
@@ -3689,7 +3864,9 @@ function weekGroupLabel(weekStart, now) {
 async function loadActivity() {
   const el = document.getElementById('activity-content');
   const firstLoad = !el.dataset.loaded;
-  if (firstLoad) el.innerHTML = '<div class="empty-state">Loading...</div>';
+  if (firstLoad) el.innerHTML =
+    '<div class="skel-group"></div>' +
+    Array.from({length: 4}, (_, i) => `<div class="skel-row" style="animation-delay:${i * 0.08}s"><div class="skel-icon"></div><div class="skel-lines"><div class="skel-line" style="width:${55 + (i%3)*12}%"></div><div class="skel-line thin" style="width:${30 + (i%2)*15}%"></div></div></div>`).join('');
   try {
     // Fetch both tabs in parallel; tolerate VB Sessions tab not existing yet
     const [liftRes, vbRes] = await Promise.allSettled([
