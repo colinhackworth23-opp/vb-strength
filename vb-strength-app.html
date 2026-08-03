@@ -3156,7 +3156,7 @@ const ACC = {
     { inc:5, name:'Seated calf raise', meta:'15 reps', rec:'+5-10 weekly', cue:'Full ROM, pause at bottom — soleus endurance is your anti-cramp engine for Aug 22.', sets:{1:['100','110','110'],2:['105','110','115'],3:['100','105','110'],4:['100','100']} },
     { inc:10, name:'Standing calf raise', meta:'12 reps', rec:'you were at 205+', cue:'Continue the loaded progression from last block — 3s eccentric, full stretch.', sets:{1:['205','205','205'],2:['215','215','215'],3:['185','185','185'],4:['light','light']} },
     { name:'Copenhagen plank', meta:'per side', rec:'+5s weekly', cue:'Hips level — adductor strength for lateral movement.', sets:{1:['25s','25s','25s'],2:['30s','30s','30s'],3:['25s','25s'],4:['20s','20s']} },
-    { name:'Trap bar jump', meta:'4 reps', rec:'~50% TM', cue:'Hinge back, explode through hips — max intent every rep.', sets:{2:['155','155','155','155']} },
+    { name:'Trap bar jump', meta:'4 reps', rec:'30-35% TM — speed IS the load', cue:'Hinge back, explode — the bar should feel like it wants to leave your hands, and the landing should feel like a stuck approach jump. If deceleration feels uncontrolled, the weight is too heavy, period.', sets:{2:['105','105','105','105']} },
     { name:'Depth drop → box jump', meta:'4 reps', rec:'BW', cue:'Drop, instant reaction — minimize ground contact.', sets:{2:['BW','BW','BW']} },
     { name:'Box jump (step down)', meta:'3 reps', rec:'BW', cue:'Max height intent, step down — protect ankles pre-tournament.', sets:{3:['BW','BW','BW']} },
   ],
@@ -3168,6 +3168,7 @@ const ACC = {
     { name:'Prone Y-T raise', meta:'10 each', rec:'2.5-5 lb', cue:'Face down, thumbs up, squeeze shoulder blades — rear cuff + lower trap for arm deceleration.', sets:{1:['3','3'],2:['5','5','5'],3:['5','5'],4:[]} },
     { name:'Serratus wall slide', meta:'10 reps', rec:'BW', cue:'Reach long at top — scapular upward rotation.', sets:{1:['BW','BW'],2:['BW','BW'],3:['BW','BW'],4:['BW','BW']} },
     { name:'Med ball spike sim (kneeling)', meta:'6 reps', rec:'only if pain-free', cue:'Full wind-up, accelerate through contact — ONLY if the shoulder has been quiet all week.', sets:{2:['10','10','10']} },
+    { name:'Rotational scoop toss (or landmine rotation)', meta:'5 ea side', rec:'10 lb ball / light bar', cue:'Hips before shoulders, max trunk rotation — your most direct hitting-power exercise. No wall needed: toss the ball up-and-across onto grass/mat, or landmine a light barbell in a corner. Stop if the shoulder bites.', sets:{2:['10','10','10']} },
   ],
   full: [
     { inc:10, name:'Good mornings (barbell)', meta:'8 reps', rec:'+10 weekly', cue:'Hips back, neutral spine, chest proud. Restarting the progression we fumbled — 9 weeks at 65/75/85 never again. If it rounds, it\'s too heavy.', sets:{1:['75','85','95'],2:['85','95','105']} },
@@ -3524,7 +3525,7 @@ function buildOffDay(weekN, w) {
   });
   h += `</div>`;
   h += `<div class="section"><div class="section-header">Zone-2 · optional but valuable</div>`;
-  h += `<div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Bike / incline walk / easy swim</div><div class="mob-detail">Conversational pace — aerobic base = later fatigue = less tournament cramping</div><div class="mob-vol">30–40 min</div></div></div>`;
+  h += `<div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Brisk walk (stroller counts) or home stairs</div><div class="mob-detail">Conversational pace from your front door — aerobic base = later fatigue = less cramping. Rough night? Just the cuff work above is a successful day</div><div class="mob-vol">30–40 min</div></div></div>`;
   h += `</div>`;
   return h + `<div class="spacer"></div>`;
 }
