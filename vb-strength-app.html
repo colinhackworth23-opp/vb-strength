@@ -1651,6 +1651,50 @@ body {
   line-height: 1.4;
 }
 
+/* ── AUTO-PROGRESSION VERDICT ── */
+.prog-verdict {
+  display: none;
+  align-items: center;
+  gap: var(--s2);
+  margin-top: var(--s3);
+  padding-top: var(--s3);
+  border-top: 1px dashed var(--line);
+  animation: fadeIn var(--t-mid) var(--ease);
+}
+.prog-verdict.revealed { display: flex; }
+.prog-q {
+  font-family: var(--f-num);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.prog-chip {
+  font-family: var(--f-num);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.prog-chip:active { transform: scale(0.95); }
+.prog-chip.prog-clean.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #2a2520;
+}
+.prog-chip.prog-hold.selected {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg);
+}
+
 /* ── PR CELEBRATION ── */
 .pr-overlay {
   position: fixed;
@@ -1991,7 +2035,7 @@ body {
       <rect x="125" y="35" width="350" height="7" rx="1" fill="#f5f0e8" opacity=".92"/>
       <text x="40" y="88" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace" font-size="38" font-weight="700" fill="#fafaf7" letter-spacing="-0.8">VB STRENGTH</text>
       <line x1="40" y1="98" x2="320" y2="98" stroke="#e8a33d" stroke-width="1.5" opacity=".9"/>
-      <text x="41" y="114" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace" font-size="10" font-weight="600" fill="#bfb8a8" letter-spacing="1.6">CHICAGO · 9-WEEK BEACH SEASON BLOCK</text>
+      <text x="41" y="114" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace" font-size="10" font-weight="600" fill="#bfb8a8" letter-spacing="1.6">CHICAGO · 4-WEEK BRIDGE · SHOULDER REBUILD</text>
     </svg>
 </div>
 
@@ -2121,7 +2165,7 @@ body {
   </div>
   <div id="maxes-status"></div>
   <button class="save-btn" onclick="saveMaxes()">Save maxes to sheet</button>
-  <div class="callout c-gray" style="margin-top:12px">When you finish Week 9, share your Google Sheet with me and I'll generate your next program from your logged data.</div>
+  <div class="callout c-gray" style="margin-top:12px">When you finish Week 4, share your Google Sheet with me and we'll build the off-season block — posterior shoulder as the centerpiece.</div>
   <div class="spacer"></div>
 </div>
 
@@ -2197,7 +2241,7 @@ const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'
 const TM = { squat:230, bench:170, dl:315, ohp:115 };
 
 // ── Local cache — convenience layer, Google Sheets remains source of truth ──
-const CACHE_KEY = 'vb-strength-cache-v2';
+const CACHE_KEY = 'vb-strength-cache-v3';
 function loadCache() {
   try { return JSON.parse(localStorage.getItem(CACHE_KEY)) || {}; } catch(e) { return {}; }
 }
@@ -2255,6 +2299,42 @@ function clearChecksForWeek(weekN) {
   });
   saveCache(cache);
 }
+// ── Accessory auto-progression ──
+// Each progressable exercise (has ex.inc) accumulates an offset in the cache.
+// Tapping 'Clean' after the last set adds +inc to all future prescriptions;
+// 'Hold' (or silence) keeps the current level. Verdicts are stored per
+// week+exercise so re-tapping is idempotent.
+function progKey(exName) { return exName.replace(/\s/g,'').toLowerCase(); }
+function getProgOffset(exName) {
+  const c = loadCache();
+  return (c.prog && c.prog[progKey(exName)]) || 0;
+}
+function setVerdict(weekN, exName, verdict, inc) {
+  const c = loadCache();
+  if (!c.prog) c.prog = {};
+  if (!c.verdicts) c.verdicts = {};
+  const vk = `w${weekN}${progKey(exName)}`;
+  const prev = c.verdicts[vk];
+  if (prev === verdict) return; // no change
+  const pk = progKey(exName);
+  // Undo previous verdict's effect, apply new one
+  if (prev === 'clean') c.prog[pk] = (c.prog[pk] || 0) - inc;
+  if (verdict === 'clean') c.prog[pk] = (c.prog[pk] || 0) + inc;
+  c.verdicts[vk] = verdict;
+  saveCache(c);
+}
+function getVerdict(weekN, exName) {
+  const c = loadCache();
+  return (c.verdicts && c.verdicts[`w${weekN}${progKey(exName)}`]) || null;
+}
+// Apply an offset to a set value: '115'→'125', '+15'→'+20'; leave 'BW'/'grn'/'25s' alone
+function bumpVal(v, offset) {
+  if (!offset) return v;
+  const m = /^(\+?)(\d+(?:\.\d+)?)$/.exec((v||'').toString().trim());
+  if (!m) return v;
+  return m[1] + (parseFloat(m[2]) + offset);
+}
+
 // Restore all checkmark visuals after a re-render
 function restoreCheckmarks() {
   const checks = (loadCache().checks) || {};   // single parse for the whole pass
@@ -2677,14 +2757,14 @@ function getTodayDayIdx() {
   return [6,0,1,2,3,4,5][d]; // remap to Mon=0..Sun=6
 }
 function getTodayWeekIdx() {
-  // Week 1 started May 25, 2026 (Monday). Parse as LOCAL time with Y,M,D args.
-  const start = new Date(2026, 4, 25); // Monday May 25 2026 (month is 0-indexed)
+  // Week 1 started Aug 3, 2026 (Monday). Parse as LOCAL time with Y,M,D args.
+  const start = new Date(2026, 7, 3); // Monday Aug 3 2026 (month is 0-indexed)
   const today = new Date();
   // Normalize both to midnight local so DST and hour-of-day don't skew the math
   const startMid = new Date(start.getFullYear(), start.getMonth(), start.getDate());
   const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const diffDays = Math.floor((todayMid - startMid) / 86400000);
-  const weekIdx = Math.max(0, Math.min(8, Math.floor(diffDays / 7)));
+  const weekIdx = Math.max(0, Math.min(3, Math.floor(diffDays / 7)));
   return weekIdx;
 }
 
@@ -2836,6 +2916,8 @@ function handleSetCheck(checkEl, isWorkingSet) {
     const s = parseInt(inp.dataset.s, 10);
     if (!isNaN(w) && !isNaN(d) && ex && !isNaN(s)) saveCheck(w, d, ex, s, checked);
   }
+  // Reveal/hide progression verdict when an accessory's sets are all checked
+  maybeRevealVerdict(checkEl);
   // Clear all active-row highlights
   document.querySelectorAll('.acc-row, .lift-row').forEach(r => r.classList.remove('active-row'));
   // Highlight current row only when unchecking (mid-exercise state)
@@ -2854,6 +2936,38 @@ function autofill(btn) {
   inputs.forEach((inp, i) => { if (i > 0 && !inp.classList.contains('done')) inp.value = firstVal; });
 }
 
+// ── Auto-progression interactions ──
+function allSetsChecked(weekN, dayN, exName, count) {
+  const checks = (loadCache().checks) || {};
+  for (let s = 0; s < count; s++) {
+    if (!checks[checkKey(weekN, dayN, exName, s)]) return false;
+  }
+  return count > 0;
+}
+function tapVerdict(btn, verdict) {
+  const wrap = btn.closest('.prog-verdict');
+  const exName = wrap.dataset.ex;
+  const inc = parseFloat(wrap.dataset.inc);
+  const weekN = parseInt(wrap.dataset.week, 10);
+  setVerdict(weekN, exName, verdict, inc);
+  wrap.querySelectorAll('.prog-chip').forEach(c => c.classList.remove('selected'));
+  btn.classList.add('selected');
+  haptic(verdict === 'clean' ? 15 : 8);
+}
+function maybeRevealVerdict(checkEl) {
+  const row = checkEl.closest('.acc-row');
+  if (!row) return;
+  const wrap = row.querySelector('.prog-verdict');
+  if (!wrap) return;
+  const total = row.querySelectorAll('.set-check').length;
+  const done = row.querySelectorAll('.set-check.checked').length;
+  if (done === total && total > 0) {
+    if (!wrap.classList.contains('revealed')) { wrap.classList.add('revealed'); haptic(10); }
+  } else {
+    wrap.classList.remove('revealed');
+  }
+}
+
 // ── Toggle cue ──
 function toggleCue(header) {
   const row = header.closest('.acc-row');
@@ -2867,44 +2981,48 @@ function toggleCue(header) {
 
 // ── Data ──
 const WEEKS = [
-  { n:1, phase:'Deload / Re-entry', dates:'May 25 – Jun 1',  intensity:'60–70%', volume:'3×5', rpe:'5–6', reps:5, pcts:[0.65,0.65,0.65], done:false, deload:true, tournament:'May 30' },
-  { n:2, phase:'Build',             dates:'Jun 2 – Jun 8',   intensity:'73–83%', volume:'4×5', rpe:'7–8', reps:5, pcts:[0.73,0.76,0.80,0.83], done:false },
-  { n:3, phase:'Taper',             dates:'Jun 9 – Jun 15',  intensity:'70–75%', volume:'3×5', rpe:'6–7', reps:5, pcts:[0.70,0.73,0.75], done:false, taper:true, tournament:'Jun 13' },
-  { n:4, phase:'Build',             dates:'Jun 16 – Jun 22', intensity:'76–86%', volume:'4×5', rpe:'7–8', reps:5, pcts:[0.76,0.79,0.83,0.86], done:false },
-  { n:5, phase:'Taper',             dates:'Jun 23 – Jun 29', intensity:'70–75%', volume:'3×5', rpe:'6–7', reps:5, pcts:[0.70,0.73,0.75], done:false, taper:true, tournament:'Jun 27' },
-  { n:6, phase:'Peak Intensity',    dates:'Jun 30 – Jul 6',  intensity:'80–90%', volume:'4×3', rpe:'8–9', reps:3, pcts:[0.80,0.83,0.86,0.90], done:false },
-  { n:7, phase:'Build / Maintain',  dates:'Jul 7 – Jul 13',  intensity:'83–90%', volume:'4×3', rpe:'8–9', reps:3, pcts:[0.83,0.86,0.88,0.90], done:false },
-  { n:8, phase:'Build → Taper',     dates:'Jul 14 – Jul 20', intensity:'76–83%', volume:'4×5', rpe:'7–8', reps:5, pcts:[0.76,0.79,0.83,0.83], done:false, tournament:'Jul 18' },
-  { n:9, phase:'Easy / Recovery',   dates:'Jul 21 – Jul 27', intensity:'60–65%', volume:'2×5', rpe:'5–6', reps:5, pcts:[0.63,0.65], done:false, deload:true, tournament:'Jul 25' },
+  { n:1, phase:'Shoulder Reset', dates:'Aug 3 – 9', intensity:'~70% TM', volume:'3×5', rpe:'6', reps:5,
+    pcts:{ squat:[0.63,0.67,0.72], bench:[0.65,0.68,0.71], dl:[0.70,0.73,0.75] },
+    days:['lower','off','pull','olympian','full','off','off'], lastLiftSlot:2, pressOn:'full', done:false },
+  { n:2, phase:'Build', dates:'Aug 10 – 16', intensity:'75–83% TM', volume:'4×5', rpe:'7–8', reps:5,
+    pcts:{ squat:[0.74,0.76,0.80,0.83], bench:[0.71,0.74,0.76,0.79], dl:[0.75,0.78,0.81,0.83] },
+    days:['lower','off','pull','off','full','off','off'], lastLiftSlot:2, done:false },
+  { n:3, phase:'Taper → Rae Strong', dates:'Aug 17 – 22', intensity:'~70% TM', volume:'3×5', rpe:'6', reps:5,
+    pcts:{ squat:[0.70,0.74,0.76], bench:[0.65,0.68,0.71], dl:[] },
+    days:['lower','pull','off','activation','activation','tournament','off'], lastLiftSlot:1, taper:true, tournament:'Aug 22 — Rae Strong', done:false },
+  { n:4, phase:'Easy Bridge', dates:'Aug 23 – 29', intensity:'60–65% TM', volume:'2×5', rpe:'5', reps:5,
+    pcts:{ squat:[0.63,0.65], bench:[], dl:[] },
+    days:['lower','pull','off','off','activation','tournament','off'], lastLiftSlot:1, deload:true, noPress:true, tournament:'Aug 29', done:false },
 ];
 
 const ACC = {
-  mon: [
-    { name:'Romanian deadlift (barbell)', meta:'3 × 8', rec:'95–125', cue:'Hips back first, neutral spine throughout, 3s eccentric — building the back weakness that limited hex bar max. If your lower back rounds, the weight is too heavy.', sets:['95','105','115'] },
-    { name:'Bulgarian split squat', meta:'3 × 8 ea', rec:'40/50/55', cue:'Front shin vertical, drive through heel — unilateral VB takeoff pattern', sets:['40','50','55'] },
-    { name:'Nordic hamstring curl', meta:'3 × 5', rec:'BW', cue:'Brace hard, lower as slow as possible — eccentric hamstring endurance helps prevent tournament cramping', sets:['BW','BW','BW'] },
-    { name:'Seated calf raise', meta:'3 × 12', rec:'100/100/110', cue:'Full ROM, pause at bottom — soleus endurance, cramp prevention priority', sets:['100','100','110'] },
-    { name:'Standing calf raise', meta:'3 × 12', rec:'BW', cue:'3s eccentric, full stretch at bottom — gastrocnemius endurance, cramp prevention', sets:['BW','BW','BW'] },
-    { name:'Copenhagen plank', meta:'3 × 20s ea', rec:'BW', cue:'Hips level, don\'t let bottom hip sag — adductor strength for lateral movement', sets:['BW','BW','BW'] },
-    { name:'Pallof press', meta:'2 × 10 ea', rec:'30/35', cue:'Tall spine, resist rotation — anti-rotation core for explosive push-off', sets:['30','35'] },
+  lower: [
+    { inc:10, name:'Romanian deadlift (barbell)', meta:'8 reps', rec:'progresses weekly', cue:'Hips back, neutral spine, 3s eccentric. THE RULE: if last week felt clean, this week\'s listed weight is the plan, not a suggestion.', sets:{1:['115','125','135'],2:['125','135','145'],3:['125','135'],4:['105','115']} },
+    { inc:5, name:'Bulgarian split squat', meta:'8 ea', rec:'+5s weekly', cue:'Front shin vertical, drive through heel — unilateral takeoff pattern.', sets:{1:['50','55','60'],2:['55','60','65'],3:['50','55'],4:[]} },
+    { name:'Nordic hamstring curl', meta:'5 reps', rec:'BW + pause', cue:'Brace hard, lower as slow as possible — add a pause when clean.', sets:{1:['BW','BW','BW'],2:['BW','BW','BW'],3:['BW','BW'],4:[]} },
+    { inc:5, name:'Seated calf raise', meta:'15 reps', rec:'+5-10 weekly', cue:'Full ROM, pause at bottom — soleus endurance is your anti-cramp engine for Aug 22.', sets:{1:['100','110','110'],2:['105','110','115'],3:['100','105','110'],4:['100','100']} },
+    { inc:10, name:'Standing calf raise', meta:'12 reps', rec:'you were at 205+', cue:'Continue the loaded progression from last block — 3s eccentric, full stretch.', sets:{1:['205','205','205'],2:['215','215','215'],3:['185','185','185'],4:['light','light']} },
+    { name:'Copenhagen plank', meta:'per side', rec:'+5s weekly', cue:'Hips level — adductor strength for lateral movement.', sets:{1:['25s','25s','25s'],2:['30s','30s','30s'],3:['25s','25s'],4:['20s','20s']} },
+    { name:'Trap bar jump', meta:'4 reps', rec:'~50% TM', cue:'Hinge back, explode through hips — max intent every rep.', sets:{2:['155','155','155','155']} },
+    { name:'Depth drop → box jump', meta:'4 reps', rec:'BW', cue:'Drop, instant reaction — minimize ground contact.', sets:{2:['BW','BW','BW']} },
+    { name:'Box jump (step down)', meta:'3 reps', rec:'BW', cue:'Max height intent, step down — protect ankles pre-tournament.', sets:{3:['BW','BW','BW']} },
   ],
-  tue: [
-    { name:'Weighted pull-up', meta:'4 × 5', rec:'BW/+15/+25', cue:'Depress scapula before pulling, lead with elbows — lat torque for arm swing', sets:['BW','+15','+25','+25'] },
-    { name:'Single-arm DB row', meta:'3 × 10 ea', rec:'70/80/85', cue:'Chest tall, row to hip not armpit — thoracic posture at 6\'10"', sets:['70','80','85'] },
-    { name:'Facepull', meta:'3 × 15', rec:'green band', cue:'Pull to forehead, elbows high, pause at end range — NON-NEGOTIABLE rear cuff longevity', sets:['grn','grn','grn'] },
-    { name:'Band external rotation', meta:'3 × 15 ea', rec:'light→med', cue:'Side-lying or standing, slow and controlled, full ROM — direct rotator cuff strengthening, addresses #1 tournament risk. Never skip.', sets:['lgt','lgt','med'] },
-    { name:'Serratus wall slide', meta:'2 × 10', rec:'BW', cue:'Reach long at top, feel shoulder blade wrap around ribs — scapular upward rotation for blocking', sets:['BW','BW'] },
-    { name:'DB lateral raise', meta:'3 × 15', rec:'20/20/20', cue:'Lead with elbow, stop at shoulder height — medial delt stability', sets:['20','20','20'] },
-    { name:'Tricep pushdown (rope)', meta:'3 × 12', rec:'50/60/65', cue:'Elbows pinned, full extension at bottom — wrist snap at ball contact', sets:['50','60','65'] },
-    { name:'Wrist roller', meta:'2 × 30s', rec:'BW', cue:'Slow and controlled both directions — forearm endurance through long sets', sets:['BW','BW'] },
+  pull: [
+    { inc:5, name:'Weighted pull-up', meta:'5 reps', rec:'+5 top weekly', cue:'Depress scapula before pulling, lead with elbows — no grinding reps this block.', sets:{1:['BW','+15','+25'],2:['BW','+15','+25','+30'],3:['BW','+15','+25'],4:['BW','BW']} },
+    { inc:5, name:'Single-arm DB row', meta:'10 ea', rec:'+5 weekly', cue:'Chest tall, row to hip — thoracic posture at 6\'10\".', sets:{1:['70','80','85'],2:['75','85','90'],3:['75','85'],4:[]} },
+    { name:'Facepull', meta:'15 reps', rec:'green + 2s pause', cue:'Pull to forehead, elbows high, 2-SECOND PAUSE at end range — the pause is the progression now.', sets:{1:['grn','grn','grn'],2:['grn','grn','grn'],3:['grn','grn','grn'],4:['grn','grn','grn']} },
+    { inc:1, name:'Side-lying DB external rotation', meta:'12 ea', rec:'+1-2 lb weekly', cue:'THE CENTERPIECE. Elbow pinned to side, slow up and down. Real dumbbell load, progressing weekly — this is what fixes the shoulder. Never token weights again.', sets:{1:['4','4','4'],2:['5','5','6'],3:['5','5','6'],4:['3','3','3']} },
+    { name:'Prone Y-T raise', meta:'10 each', rec:'2.5-5 lb', cue:'Face down, thumbs up, squeeze shoulder blades — rear cuff + lower trap for arm deceleration.', sets:{1:['3','3'],2:['5','5','5'],3:['5','5'],4:[]} },
+    { name:'Serratus wall slide', meta:'10 reps', rec:'BW', cue:'Reach long at top — scapular upward rotation.', sets:{1:['BW','BW'],2:['BW','BW'],3:['BW','BW'],4:['BW','BW']} },
+    { name:'Med ball spike sim (kneeling)', meta:'6 reps', rec:'only if pain-free', cue:'Full wind-up, accelerate through contact — ONLY if the shoulder has been quiet all week.', sets:{2:['10','10','10']} },
   ],
-  fri: [
-    { name:'Good mornings (barbell)', meta:'3 × 8', rec:'65–95', cue:'Hips back first (not down), neutral spine throughout, 3s eccentric, chest proud — erector strength, direct fix for DL limiting factor. Start embarrassingly light. If lower back rounds, stop.', sets:['65','75','85'] },
-    { name:'Barbell hip thrust', meta:'3 × 8', rec:'225/275/300', cue:'Drive through heels, pause 1s at top, squeeze glutes hard — glute max for jump height', sets:['225','275','300'] },
-    { name:'Glute-ham raise', meta:'3 × 6', rec:'BW', cue:'Brace hard, lower as slow as possible — most effective knee flexor', sets:['BW','BW','BW'] },
-    { name:'Suitcase carry', meta:'3 × 30m ea', rec:'70/80/80', cue:'Tall spine, don\'t lean away from load — lateral core for VB lateral movement power', sets:['70','80','80'] },
-    { name:'Single-leg RDL', meta:'3 × 10 ea', rec:'30/35/35', cue:'Hinge until hamstring pull, slow return — eccentric strength for jump landing', sets:['30','35','35'] },
-    { name:'Seated hip abduction (band)', meta:'2 × 20', rec:'light→med', cue:'Controlled out and back, don\'t let band snap in — glute med for knee stability on jumps', sets:['lgt','med'] },
+  full: [
+    { inc:10, name:'Good mornings (barbell)', meta:'8 reps', rec:'+10 weekly', cue:'Hips back, neutral spine, chest proud. Restarting the progression we fumbled — 9 weeks at 65/75/85 never again. If it rounds, it\'s too heavy.', sets:{1:['75','85','95'],2:['85','95','105']} },
+    { inc:15, name:'Barbell hip thrust', meta:'8 reps', rec:'+10 top weekly', cue:'Drive through heels, 1s pause at top — glute max for jump height.', sets:{1:['245','285','315'],2:['255','295','325']} },
+    { inc:1, name:'Side-lying DB external rotation', meta:'12 ea', rec:'match Wednesday', cue:'Second cuff dose of the week — twice weekly loading is what actually builds tissue capacity.', sets:{1:['4','4','4'],2:['5','5','6']} },
+    { inc:5, name:'Suitcase carry', meta:'30m ea', rec:'+5 weekly', cue:'Tall spine, don\'t lean away — lateral core.', sets:{1:['75','85','85'],2:['80','85','90']} },
+    { name:'VB approach jump (max effort)', meta:'5 reps', rec:'track height', cue:'Full 3-step approach — your primary performance KPI.', sets:{2:['BW','BW','BW','BW']} },
+    { name:'Sled push 20m', meta:'rounds', rec:'mod → heavy', cue:'Low hips, full hip extension — posterior chain power endurance.', sets:{2:['mod','mod','hvy','hvy']} },
   ],
 };
 
@@ -2956,25 +3074,26 @@ let currentDayIdx = getTodayDayIdx();
 function calcLoads(weekN) {
   const w = WEEKS[weekN - 1];
   const out = {};
-  ['squat','bench','dl','ohp'].forEach(lift => {
+  ['squat','bench','dl'].forEach(lift => {
     const tm = TM[lift];
+    const pcts = (w.pcts && w.pcts[lift]) || [];
     const wu1 = r5(tm * 0.60);
-    const ws = w.pcts.map(p => r5(tm * p));
-    const wu2 = w.deload ? null : r5((wu1 + ws[0]) / 2);
-    out[lift] = { wu1, wu2, ws };
+    const ws = pcts.map(p => r5(tm * p));
+    const wu2 = (w.deload || !ws.length) ? null : r5((wu1 + ws[0]) / 2);
+    out[lift] = { wu1, wu2, ws, pcts };
   });
   return out;
 }
 
 function liftRows(loads, key, name, w, dayN, locked) {
-  const { wu1, wu2, ws } = loads[key];
+  const { wu1, wu2, ws, pcts } = loads[key];
   const isTest = w.testing;
   const rLabel = isTest ? 'Attempt' : 'Working set';
   const bClass = isTest ? 'badge-attempt' : 'badge-work';
   const rCount = isTest ? 1 : w.reps;
   const pLabels = isTest
     ? ['88% TM','93% TM','97% TM','100% TM']
-    : w.pcts.map(p => `${Math.round(p*100)}% TM`);
+    : pcts.map(p => `${Math.round(p*100)}% TM`);
   let h = `<div class="lift-row"><div class="lift-label">${name}<div class="lift-sub">Pattern activation ~60% TM</div></div><span class="badge badge-wu">${w.deload?'3':'5'} reps</span><div class="lift-target">${wu1} lbs</div></div>`;
   if (wu2) h += `<div class="lift-row"><div class="lift-label">Warm-up 2<div class="lift-sub">Bridge to working weight</div></div><span class="badge badge-wu">2 reps</span><div class="lift-target">${wu2} lbs</div></div>`;
   ws.forEach((wt, i) => {
@@ -3007,6 +3126,21 @@ function accRow(ex, weekN, dayN, isWorking, locked) {
     </div>`;
   }).join('');
   const autofillBtn = !locked && ex.sets.length > 1 ? `<button class="autofill-btn" onclick="autofill(this)">Copy to all</button>` : '';
+  // Auto-progression verdict chips — hidden until the last set is checked
+  let verdictHTML = '';
+  let progLine = '';
+  if (ex.inc && !locked) {
+    const off = getProgOffset(ex.name);
+    if (off) progLine = `<div class="acc-last visible" style="display:block">Progression earned: +${off}</div>`;
+    const v = getVerdict(weekN, ex.name);
+    const topSet = ex.sets[ex.sets.length - 1];
+    const nextVal = bumpVal(topSet, ex.inc);
+    verdictHTML = `<div class="prog-verdict${allSetsChecked(weekN, dayN, ex.name, ex.sets.length) ? ' revealed' : ''}" data-ex="${ex.name}" data-inc="${ex.inc}" data-week="${weekN}">
+      <span class="prog-q">Next week?</span>
+      <button class="prog-chip prog-clean${v==='clean'?' selected':''}" onclick="tapVerdict(this,'clean')">Clean → ${nextVal}</button>
+      <button class="prog-chip prog-hold${v==='hold'?' selected':''}" onclick="tapVerdict(this,'hold')">Hold</button>
+    </div>`;
+  }
   return `<div class="acc-row">
     <div class="acc-header" onclick="toggleCue(this)">
       <div class="acc-header-left">
@@ -3018,17 +3152,26 @@ function accRow(ex, weekN, dayN, isWorking, locked) {
       </div>
       <span class="acc-chevron">▾</span>
     </div>
-    ${formatLastTime(ex.name)}
+    ${formatLastTime(ex.name)}${typeof progLine !== 'undefined' ? progLine : ''}
     <div class="acc-cue">${ex.cue}</div>
     <div class="acc-body">
       <div class="set-inputs">${inputs}</div>
       ${autofillBtn}
+      ${verdictHTML}
     </div>
   </div>`;
 }
 
 function accRows(arr, weekN, dayN, isWorking, locked) {
-  return arr.map(ex => accRow(ex, weekN, dayN, isWorking, locked)).join('');
+  return arr.map(ex => {
+    let sets = Array.isArray(ex.sets) ? ex.sets : (ex.sets[weekN] || []);
+    if (!sets.length) return ''; // exercise not programmed this week
+    if (ex.inc) {
+      const off = getProgOffset(ex.name);
+      if (off) sets = sets.map(v => bumpVal(v, off));
+    }
+    return accRow({ ...ex, sets }, weekN, dayN, isWorking, locked);
+  }).join('');
 }
 
 function getPB(weekN, dayN) {
@@ -3043,30 +3186,45 @@ function getPBTitle(dayN) {
   return 'Power block · explosiveness (15 min)';
 }
 
-function getVBCallout(weekN, dayN) {
-  if (dayN === 0) return weekN <= 2 ? 'RDLs and calf work today directly target your two tournament challenges — back strength and cramp prevention. Hydration and sodium this week matter as much as this session.' : 'Depth drops and trap bar jumps are your peak plyometric stimulus. Track your approach jump height every Friday — that\'s your primary performance KPI.';
-  if (dayN === 1) return 'Rotational throws are the most direct hitting power stimulus in the gym. Full trunk wind-up every rep.';
-  return 'Track your approach jump height and compare to Week 1 baseline — this is your primary performance KPI.';
+function getVBCallout(weekN, slot) {
+  if (slot === 0) return 'Lower day. THE RULE this block: if last week\'s listed weight felt clean, this week\'s number is the plan — the app progresses so you don\'t have to remember. Calf volume = anti-cramp for Aug 22.';
+  if (slot === 1) return weekN === 1
+    ? 'No pressing today — you\'re walking into Thursday\'s Olympian session with a fresh shoulder. The DB external rotations are the centerpiece: real load, progressing weekly.'
+    : 'Posterior shoulder day. The DB external rotations and Y-T raises are why your arm holds up on tournament day — treat them like main lifts, not warm-ups.';
+  return 'Hex bar + Good Mornings resume the back progression properly this time. Second cuff dose today — twice-weekly loading is what actually builds tissue capacity.';
 }
 
-function buildLiftDay(weekN, liftDayN, w, loads) {
+function buildLiftDay(weekN, slot, w, loads, calDay) {
   const locked = isWeekDone(weekN);
-  const liftNames = ['Back squat / safety bar','Incline bench','Hex bar deadlift'];
-  const liftKeys = ['squat','bench','dl'];
-  const liftTitles = ['Back squat · primary lift','Incline bench · primary lift','Hex bar deadlift · primary lift'];
-  const accData = [ACC.mon, ACC.tue, ACC.fri];
-  const tags = ['Lifting day','Lifting day','Lifting day'];
+  const dayLabel = DAY_NAMES[calDay];
+  const slotTitles = ['Lower + hinge', 'Pull + posterior shoulder', 'Full body + power'];
+  const primaries = [
+    { key:'squat', name:'Back squat / safety bar', title:'Back squat · primary lift' },
+    { key:'bench', name:'Incline bench', title:'Incline bench · primary lift' },
+    { key:'dl', name:'Hex bar deadlift', title:'Hex bar deadlift · primary lift' },
+  ];
+  const accKeys = ['lower','pull','full'];
 
-  let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-lift">${tags[liftDayN]}</span></div>`;
+  let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-lift">${slotTitles[slot]}</span></div>`;
   if (locked) h += `<div class="locked-banner"><span>✓ Week ${weekN} completed — view only</span></div>`;
-  h += `<div class="callout c-blue">${getVBCallout(weekN, liftDayN)}</div>`;
-  h += `<div class="section"><div class="section-header">${liftTitles[liftDayN]}</div>${liftRows(loads, liftKeys[liftDayN], liftNames[liftDayN], w, liftDayN, locked)}</div>`;
-  if (liftDayN === 1) h += `<div class="section"><div class="section-header">OHP · primary lift</div>${liftRows(loads, 'ohp', 'Overhead press (strict)', w, liftDayN, locked)}</div>`;
-  h += `<div class="section"><div class="section-header">Accessories · tap name for cues</div>${accRows(accData[liftDayN], weekN, liftDayN, false, locked)}</div>`;
-  h += `<div class="section"><div class="section-header">${getPBTitle(liftDayN)}</div>${accRows(getPB(weekN, liftDayN), weekN, liftDayN, false, locked)}</div>`;
+  h += `<div class="callout c-blue">${getVBCallout(weekN, slot)}</div>`;
+  // Slot 0 primary: squat. Slot 2 primary: hex bar. Slot 1 primary: bench —
+  // unless this week routes pressing elsewhere (W1: press lives on the full-body
+  // day to keep the shoulder fresh pre-Olympian) or bans it (W4 noPress).
+  const p = primaries[slot];
+  const showPrimary = loads[p.key].ws.length > 0;
+  if (slot === 0 && showPrimary) h += `<div class="section"><div class="section-header">${p.title}</div>${liftRows(loads, p.key, p.name, w, slot, locked)}</div>`;
+  if (slot === 1 && !w.noPress && w.pressOn !== 'full' && loads.bench.ws.length) {
+    h += `<div class="section"><div class="section-header">Incline bench · primary lift (pain-free only)</div>${liftRows(loads, 'bench', 'Incline bench', w, slot, locked)}</div>`;
+  }
+  if (slot === 2) {
+    if (loads.dl.ws.length) h += `<div class="section"><div class="section-header">Hex bar deadlift · primary lift</div>${liftRows(loads, 'dl', 'Hex bar deadlift', w, slot, locked)}</div>`;
+    if (w.pressOn === 'full' && loads.bench.ws.length) h += `<div class="section"><div class="section-header">Incline bench · primary lift (pain-free only)</div>${liftRows(loads, 'bench', 'Incline bench', w, slot, locked)}</div>`;
+  }
+  h += `<div class="section"><div class="section-header">Accessories · tap name for cues + last time</div>${accRows(ACC[accKeys[slot]], weekN, slot, false, locked)}</div>`;
   if (!locked) {
-    h += `<div id="status-${weekN}-${liftDayN}"></div>`;
-    h += `<button class="save-btn" onclick="saveSession(${weekN},${liftDayN})">Save session to Google Sheets</button>`;
+    h += `<div id="status-${weekN}-${slot}"></div>`;
+    h += `<button class="save-btn" onclick="saveSession(${weekN},${slot},'${dayLabel}')">Save session to Google Sheets</button>`;
   }
   return h + `<div class="spacer"></div>`;
 }
@@ -3079,7 +3237,7 @@ function buildEndReport() {
   <div class="section" style="margin-top:20px">
     <div class="section-header">Program complete · end-of-program report</div>
     <div class="report-hero">
-      <div class="report-title">🏐 9-week beach season complete</div>
+      <div class="report-title">🏐 Bridge block complete</div>
       <div class="report-body">You finished. Now let's build the next block from your actual data.</div>
     </div>
     <div style="padding:4px 0">
@@ -3089,7 +3247,7 @@ function buildEndReport() {
       <div class="report-stat"><span class="report-stat-label">OHP TM</span><span><span class="report-stat-val">${TM.ohp} lbs</span>${gains.ohp !== 0 ? `<span class="report-delta" style="color:${gains.ohp > 0 ? 'var(--green)' : 'var(--red)'}">${gains.ohp > 0 ? '+' : ''}${gains.ohp}</span>` : ''}</span></div>
     </div>
   </div>
-  <div class="callout c-blue" style="margin-top:12px">9-week beach season block complete. Share your Google Sheet with me and I'll build the next program from your actual data.</div>`;
+  <div class="callout c-blue" style="margin-top:12px">Bridge block complete. Share your Google Sheet and we'll build the off-season program from your actual data.</div>`;
 }
 
 function buildWed(weekN, locked) {
@@ -3183,6 +3341,51 @@ function buildTournamentFriday(weekN, w, locked) {
   if (w.n === 9) h += buildEndReport();
   return h + `<div class="spacer"></div>`;
 }
+function buildOffDay(weekN, w) {
+  let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-vb">Recovery day</span></div>`;
+  h += `<div class="callout c-green" style="margin-top:12px">No barbell today. Ten minutes of shoulder care + optional zone-2 — this is where the cuff actually rebuilds and the anti-cramp engine gets built.</div>`;
+  h += `<div class="section"><div class="section-header">Home cuff routine · ~10 min</div>`;
+  [['Band external rotation','Slow, controlled, pain-free range only','2 × 15 each side'],
+   ['Prone T raise','Face down, thumbs up, squeeze blades','2 × 10'],
+   ['Serratus wall slide','Reach long at the top','2 × 10'],
+   ['Sleeper stretch','Gentle — stretch, never pain','30s each side'],
+  ].forEach(([n,d,v]) => {
+    h += `<div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">${n}</div><div class="mob-detail">${d}</div><div class="mob-vol">${v}</div></div></div>`;
+  });
+  h += `</div>`;
+  h += `<div class="section"><div class="section-header">Zone-2 · optional but valuable</div>`;
+  h += `<div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">Bike / incline walk / easy swim</div><div class="mob-detail">Conversational pace — aerobic base = later fatigue = less tournament cramping</div><div class="mob-vol">30–40 min</div></div></div>`;
+  h += `</div>`;
+  return h + `<div class="spacer"></div>`;
+}
+function buildActivationDay(weekN, w) {
+  let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-vb">Pre-tournament</span></div>`;
+  h += `<div class="callout c-amber" style="margin-top:12px">🏐 ${w.tournament} is coming. NO lifting — fresh legs and a quiet shoulder win matches. Activation only, 15 minutes max.</div>`;
+  [['Band external rotations','Wake the cuff, do not fatigue it','2 × 15 each'],
+   ['Shoulder CARs','Full range, slow and controlled','2 × 5 each direction'],
+   ['Light calf raises','Blood flow only — cramp prevention','2 × 20'],
+   ['Hip 90/90 switches','Hip mobility for low defensive positions','1 × 8 each side'],
+   ['Easy walk','Keep blood moving, nothing more','10–15 min'],
+  ].forEach(([n,d,v]) => {
+    h += `<div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">${n}</div><div class="mob-detail">${d}</div><div class="mob-vol">${v}</div></div></div>`;
+  });
+  h += `<div class="callout c-blue">Hydration and sodium start today, not tournament morning.</div>`;
+  return h + `<div class="spacer"></div>`;
+}
+function buildOlympianDay(weekN, w) {
+  let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-vb">Olympian session 🏐</span></div>`;
+  h += `<div class="callout c-amber" style="margin-top:12px">Training with an Olympian today. No lifting — you tapered the shoulder all week for this.</div>`;
+  h += `<div class="section"><div class="section-header">The game plan</div>`;
+  [['Steal the invisible stuff','Footwork, positioning, vision, serve-receive habits — these transfer forever','all session'],
+   ['Swing when drills demand it',"Don't audition your arm — an Olympian respects load management",'as needed'],
+   ['If the shoulder barks','Shift to learning mode, not push-through mode','instantly'],
+   ['Light cuff activation beforehand','Band ER 2 × 10 each, shoulder CARs','10 min prior'],
+  ].forEach(([n,d,v]) => {
+    h += `<div class="mob-row"><div class="mob-check" onclick="this.classList.toggle('checked')"></div><div class="mob-info"><div class="mob-name">${n}</div><div class="mob-detail">${d}</div><div class="mob-vol">${v}</div></div></div>`;
+  });
+  h += `</div><div class="callout c-blue">Log it with the 🏐 button afterward — including how the shoulder responded.</div>`;
+  return h + `<div class="spacer"></div>`;
+}
 function buildTournamentSat(weekN, w) {
   let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-vb">Tournament day</span></div>`;
   h += `<div class="callout c-amber" style="margin-top:12px">🏐 ${w.tournament} — Tournament day. No lifting. Go compete.</div>`;
@@ -3201,18 +3404,16 @@ function buildTournamentSat(weekN, w) {
 function buildWeekContent(weekIdx) {
   const w = WEEKS[weekIdx];
   const loads = calcLoads(w.n);
-  const locked = isWeekDone(w.n);
   let html = '';
+  const slotOf = { lower:0, pull:1, full:2 };
   for (let d = 0; d < 7; d++) {
-    const liftIdx = LIFT_DAY_MAP[d];
+    const token = (w.days && w.days[d]) || 'off';
     let content;
-    if (d === 2) content = buildWed(w.n, locked);
-    else if (d === 3) content = buildThu(w.n, locked);
-    else if (d === 4 && w.tournament) content = buildTournamentFriday(w.n, w, locked);
-    else if (d === 5 && w.tournament) content = buildTournamentSat(w.n, w);
-    else if (d === 5) content = buildSat(w.n, locked);
-    else if (d === 6) content = buildSun();
-    else content = buildLiftDay(w.n, liftIdx, w, loads);
+    if (token in slotOf) content = buildLiftDay(w.n, slotOf[token], w, loads, d);
+    else if (token === 'activation') content = buildActivationDay(w.n, w);
+    else if (token === 'tournament') content = buildTournamentSat(w.n, w);
+    else if (token === 'olympian') content = buildOlympianDay(w.n, w);
+    else content = buildOffDay(w.n, w);
     const isActive = d === currentDayIdx;
     html += `<div class="day-screen${isActive?' active':''}" id="day-${weekIdx}-${d}">${content}</div>`;
   }
@@ -3233,7 +3434,7 @@ function renderWeekInfo() {
   const badge = isWeekDone(w.n) ? '<span class="done-badge">Completed</span>' : '';
   document.getElementById('weekInfo').innerHTML = `<span class="week-title">${w.phase}</span><span class="week-meta">${w.dates} &middot; ${w.intensity} &middot; ${w.volume}</span>${badge}`;
   const heroLbl = document.getElementById('heroWeekLabel');
-  if (heroLbl) heroLbl.textContent = `Week ${w.n} of 9`;
+  if (heroLbl) heroLbl.textContent = `Week ${w.n} of 4`;
 }
 
 function renderDayStrip() {
@@ -3323,7 +3524,7 @@ function getInputsForDay(weekN, dayN) {
   return data;
 }
 
-async function saveSession(weekN, dayN) {
+async function saveSession(weekN, dayN, dayLabelOverride) {
   const statusEl = document.getElementById(`status-${weekN}-${dayN}`);
   const btn = document.querySelector(`button[onclick="saveSession(${weekN},${dayN})"]`);
   if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
@@ -3332,7 +3533,7 @@ async function saveSession(weekN, dayN) {
   const sessionLifts = (dayN === 0 || dayN === 1 || dayN === 2) ? getSessionLiftBests(weekN, dayN) : [];
   const inputs = getInputsForDay(weekN, dayN);
   const date = new Date().toLocaleDateString('en-US');
-  const dayLabel = DAY_NAMES[dayN];
+  const dayLabel = dayLabelOverride || DAY_NAMES[dayN]; // fix: Friday no longer saved as 'Wednesday'
   try {
     for (const [ex, sets] of Object.entries(inputs)) {
       await fetch(SHEET_URL, {
@@ -3346,7 +3547,7 @@ async function saveSession(weekN, dayN) {
     // Mark week as done after its last lifting day —
     // tournament weeks have no Friday session, so Tuesday (dayN 1) is their last lift day
     const wDef = WEEKS[weekN - 1];
-    const lastLiftDay = (wDef && wDef.tournament) ? 1 : 2;
+    const lastLiftDay = (wDef && wDef.lastLiftSlot !== undefined) ? wDef.lastLiftSlot : 2;
     if (dayN === lastLiftDay) {
       markWeekDone(weekN);
       clearChecksForWeek(weekN);
