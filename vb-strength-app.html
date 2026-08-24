@@ -2272,7 +2272,7 @@ body {
   </div>
   <div id="maxes-status"></div>
   <button class="save-btn" onclick="saveMaxes()">Save maxes to sheet</button>
-  <div class="callout c-gray" style="margin-top:12px">When you finish Week 4, share your Google Sheet with me and we'll build the off-season block — posterior shoulder as the centerpiece.</div>
+  <div class="callout c-gray" style="margin-top:12px">When you finish Week 6 (Santa Cruz!), share your Google Sheet and we'll build the off-season block — posterior shoulder as the centerpiece.</div>
   <div class="spacer"></div>
 </div>
 
@@ -2915,7 +2915,7 @@ function getTodayWeekIdx() {
   const startMid = new Date(start.getFullYear(), start.getMonth(), start.getDate());
   const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const diffDays = Math.floor((todayMid - startMid) / 86400000);
-  const weekIdx = Math.max(0, Math.min(3, Math.floor(diffDays / 7)));
+  const weekIdx = Math.max(0, Math.min(5, Math.floor(diffDays / 7)));
   return weekIdx;
 }
 
@@ -3143,40 +3143,46 @@ const WEEKS = [
   { n:3, phase:'Taper → Rae Strong', dates:'Aug 17 – 22', intensity:'~70% TM', volume:'3×5', rpe:'6', reps:5,
     pcts:{ squat:[0.70,0.74,0.76], bench:[0.65,0.68,0.71], dl:[] },
     days:['lower','pull','off','activation','activation','tournament','off'], lastLiftSlot:1, taper:true, tournament:'Aug 22 — Rae Strong', done:false },
-  { n:4, phase:'Easy Bridge', dates:'Aug 23 – 29', intensity:'60–65% TM', volume:'2×5', rpe:'5', reps:5,
-    pcts:{ squat:[0.63,0.65], bench:[], dl:[] },
-    days:['lower','pull','off','off','activation','tournament','off'], lastLiftSlot:1, deload:true, noPress:true, tournament:'Aug 29', done:false },
+  { n:4, phase:'Build', dates:'Aug 24 – 30', intensity:'75–85% TM', volume:'4×5', rpe:'7–8', reps:5,
+    pcts:{ squat:[0.75,0.78,0.82,0.85], bench:[0.73,0.76,0.79,0.82], dl:[0.75,0.79,0.82,0.85] },
+    days:['lower','off','pull','off','full','tournament','off'], lastLiftSlot:2, tournament:'Aug 29 — friendly', done:false },
+  { n:5, phase:'Build', dates:'Aug 31 – Sep 6', intensity:'77–87% TM', volume:'4×5', rpe:'8', reps:5,
+    pcts:{ squat:[0.77,0.80,0.84,0.87], bench:[0.76,0.79,0.82,0.85], dl:[0.78,0.81,0.84,0.87] },
+    days:['lower','off','pull','off','full','off','off'], lastLiftSlot:2, done:false },
+  { n:6, phase:'Send-off → Santa Cruz', dates:'Sep 7 – 12', intensity:'~68% TM', volume:'3×5', rpe:'5–6', reps:5,
+    pcts:{ squat:[0.65,0.68,0.70], bench:[0.65,0.68,0.71], dl:[] },
+    days:['lower','pull','off','off','activation','tournament','off'], lastLiftSlot:1, taper:true, tournament:'Sep 12 — Santa Cruz', done:false },
 ];
 
 const ACC = {
   lower: [
-    { inc:10, name:'Romanian deadlift (barbell)', meta:'8 reps', rec:'progresses weekly', cue:'Hips back, neutral spine, 3s eccentric. THE RULE: if last week felt clean, this week\'s listed weight is the plan, not a suggestion.', sets:{1:['115','125','135'],2:['125','135','145'],3:['125','135'],4:['105','115']} },
-    { inc:5, name:'Bulgarian split squat', meta:'8 ea', rec:'+5s weekly', cue:'Front shin vertical, drive through heel — unilateral takeoff pattern.', sets:{1:['50','55','60'],2:['55','60','65'],3:['50','55'],4:[]} },
-    { name:'Nordic hamstring curl', meta:'5 reps', rec:'BW + pause', cue:'Brace hard, lower as slow as possible — add a pause when clean.', sets:{1:['BW','BW','BW'],2:['BW','BW','BW'],3:['BW','BW'],4:[]} },
-    { inc:5, name:'Seated calf raise', meta:'15 reps', rec:'+5-10 weekly', cue:'Full ROM, pause at bottom — soleus endurance is your anti-cramp engine for Aug 22.', sets:{1:['100','110','110'],2:['105','110','115'],3:['100','105','110'],4:['100','100']} },
-    { inc:10, name:'Standing calf raise', meta:'12 reps', rec:'you were at 205+', cue:'Continue the loaded progression from last block — 3s eccentric, full stretch.', sets:{1:['205','205','205'],2:['215','215','215'],3:['185','185','185'],4:['light','light']} },
-    { name:'Copenhagen plank', meta:'per side', rec:'+5s weekly', cue:'Hips level — adductor strength for lateral movement.', sets:{1:['25s','25s','25s'],2:['30s','30s','30s'],3:['25s','25s'],4:['20s','20s']} },
-    { name:'Trap bar jump', meta:'4 reps', rec:'30-35% TM — speed IS the load', cue:'Hinge back, explode — the bar should feel like it wants to leave your hands, and the landing should feel like a stuck approach jump. If deceleration feels uncontrolled, the weight is too heavy, period.', sets:{2:['105','105','105','105']} },
-    { name:'Depth drop → box jump', meta:'4 reps', rec:'BW', cue:'Drop, instant reaction — minimize ground contact.', sets:{2:['BW','BW','BW']} },
-    { name:'Box jump (step down)', meta:'3 reps', rec:'BW', cue:'Max height intent, step down — protect ankles pre-tournament.', sets:{3:['BW','BW','BW']} },
+    { inc:10, name:'Romanian deadlift (barbell)', meta:'8 reps', rec:'progresses weekly', cue:'Hips back, neutral spine, 3s eccentric. THE RULE: if last week felt clean, this week\'s listed weight is the plan, not a suggestion.', sets:{1:['115','125','135'],2:['125','135','145'],3:['125','135'],4:['125','135','145'],5:['125','135','145'],6:['115','125']} },
+    { inc:5, name:'Bulgarian split squat', meta:'8 ea', rec:'per hand — 50 = two 50s', cue:'Front shin vertical, drive through heel — unilateral takeoff pattern.', sets:{1:['50','55','60'],2:['55','60','65'],3:['50','55'],4:['55','60','65'],5:['55','60','65'],6:['50','55']} },
+    { name:'Nordic hamstring curl', meta:'5 reps', rec:'BW + pause', cue:'Brace hard, lower as slow as possible — add a pause when clean.', sets:{1:['BW','BW','BW'],2:['BW','BW','BW'],3:['BW','BW'],4:['BW','BW','BW'],5:['BW','BW','BW'],6:['BW','BW']} },
+    { inc:5, name:'Seated calf raise', meta:'15 reps', rec:'+5-10 weekly', cue:'Full ROM, pause at bottom — soleus endurance is your anti-cramp engine for Aug 22.', sets:{1:['100','110','110'],2:['105','110','115'],3:['100','105','110'],4:['105','110','115'],5:['105','110','115'],6:['100','105']} },
+    { inc:10, name:'Standing calf raise', meta:'12 reps', rec:'you were at 205+', cue:'Continue the loaded progression from last block — 3s eccentric, full stretch.', sets:{1:['205','205','205'],2:['215','215','215'],3:['185','185','185'],4:['215','215','215'],5:['215','215','215'],6:['185','185']} },
+    { name:'Copenhagen plank', meta:'per side', rec:'+5s weekly', cue:'Hips level — adductor strength for lateral movement.', sets:{1:['25s','25s','25s'],2:['30s','30s','30s'],3:['25s','25s'],4:['30s','30s','30s'],5:['30s','30s','30s'],6:['25s','25s']} },
+    { name:'Trap bar jump', meta:'4 reps', rec:'30-35% TM — speed IS the load', cue:'Hinge back, explode — the bar should feel like it wants to leave your hands, and the landing should feel like a stuck approach jump. If deceleration feels uncontrolled, the weight is too heavy, period.', sets:{2:['105','105','105','105'],4:['105','105','105','105'],5:['105','105','105','105']} },
+    { name:'Depth drop → box jump', meta:'4 reps', rec:'BW', cue:'Drop, instant reaction — minimize ground contact.', sets:{2:['BW','BW','BW'],4:['BW','BW','BW'],5:['BW','BW','BW']} },
+    { name:'Box jump (step down)', meta:'3 reps', rec:'BW', cue:'Max height intent, step down — protect ankles pre-tournament.', sets:{3:['BW','BW','BW'],6:['BW','BW','BW']} },
   ],
   pull: [
-    { inc:5, name:'Weighted pull-up', meta:'5 reps', rec:'+5 top weekly', cue:'Depress scapula before pulling, lead with elbows — no grinding reps this block.', sets:{1:['BW','+15','+25'],2:['BW','+15','+25','+30'],3:['BW','+15','+25'],4:['BW','BW']} },
-    { inc:5, name:'Single-arm DB row', meta:'10 ea', rec:'+5 weekly', cue:'Chest tall, row to hip — thoracic posture at 6\'10\".', sets:{1:['70','80','85'],2:['75','85','90'],3:['75','85'],4:[]} },
-    { name:'Facepull', meta:'15 reps', rec:'green + 2s pause', cue:'Pull to forehead, elbows high, 2-SECOND PAUSE at end range — the pause is the progression now.', sets:{1:['grn','grn','grn'],2:['grn','grn','grn'],3:['grn','grn','grn'],4:['grn','grn','grn']} },
-    { inc:1, name:'Side-lying DB external rotation', meta:'12 ea', rec:'+1-2 lb weekly', cue:'THE CENTERPIECE. Elbow pinned to side, slow up and down. Real dumbbell load, progressing weekly — this is what fixes the shoulder. Never token weights again.', sets:{1:['4','4','4'],2:['5','5','6'],3:['5','5','6'],4:['3','3','3']} },
-    { name:'Prone Y-T raise', meta:'10 each', rec:'2.5-5 lb', cue:'Face down, thumbs up, squeeze shoulder blades — rear cuff + lower trap for arm deceleration.', sets:{1:['3','3'],2:['5','5','5'],3:['5','5'],4:[]} },
-    { name:'Serratus wall slide', meta:'10 reps', rec:'BW', cue:'Reach long at top — scapular upward rotation.', sets:{1:['BW','BW'],2:['BW','BW'],3:['BW','BW'],4:['BW','BW']} },
-    { name:'Med ball spike sim (kneeling)', meta:'6 reps', rec:'only if pain-free', cue:'Full wind-up, accelerate through contact — ONLY if the shoulder has been quiet all week.', sets:{2:['10','10','10']} },
-    { name:'Rotational scoop toss (or landmine rotation)', meta:'5 ea side', rec:'10 lb ball / light bar', cue:'Hips before shoulders, max trunk rotation — your most direct hitting-power exercise. No wall needed: toss the ball up-and-across onto grass/mat, or landmine a light barbell in a corner. Stop if the shoulder bites.', sets:{2:['10','10','10']} },
+    { inc:5, name:'Weighted pull-up', meta:'5 reps', rec:'+5 top weekly', cue:'Depress scapula before pulling, lead with elbows — no grinding reps this block.', sets:{1:['BW','+15','+25'],2:['BW','+15','+25','+30'],3:['BW','+15','+25'],4:['BW','+15','+25','+30'],5:['BW','+15','+25','+30'],6:['BW','+15','+25']} },
+    { inc:5, name:'Single-arm DB row', meta:'10 ea', rec:'one DB, +5 weekly', cue:'Chest tall, row to hip — thoracic posture at 6\'10\".', sets:{1:['70','80','85'],2:['75','85','90'],3:['75','85'],4:['75','85','90'],5:['75','85','90'],6:['75','85']} },
+    { name:'Facepull', meta:'15 reps', rec:'green + 2s pause', cue:'Pull to forehead, elbows high, 2-SECOND PAUSE at end range — the pause is the progression now.', sets:{1:['grn','grn','grn'],2:['grn','grn','grn'],3:['grn','grn','grn'],4:['grn','grn','grn'],5:['grn','grn','grn'],6:['grn','grn','grn']} },
+    { inc:1, name:'Side-lying DB external rotation', meta:'12 ea', rec:'one DB, +1-2 lb weekly', cue:'THE CENTERPIECE. Elbow pinned to side, slow up and down. Real dumbbell load, progressing weekly — this is what fixes the shoulder. Never token weights again.', sets:{1:['4','4','4'],2:['5','5','6'],3:['5','5','6'],4:['5','5','6'],5:['5','5','6'],6:['4','4','4']} },
+    { name:'Prone Y-T raise', meta:'10 each', rec:'per hand, light DBs', cue:'Face down, thumbs up, squeeze shoulder blades — rear cuff + lower trap for arm deceleration.', sets:{1:['3','3'],2:['5','5','5'],3:['5','5'],4:['5','5','5'],5:['5','5','5'],6:['5','5']} },
+    { name:'Serratus wall slide', meta:'10 reps', rec:'BW', cue:'Reach long at top — scapular upward rotation.', sets:{1:['BW','BW'],2:['BW','BW'],3:['BW','BW'],4:['BW','BW'],5:['BW','BW'],6:['BW','BW']} },
+    { name:'Med ball spike sim (kneeling)', meta:'6 reps', rec:'only if pain-free', cue:'Full wind-up, accelerate through contact — ONLY if the shoulder has been quiet all week.', sets:{2:['10','10','10'],4:['10','10','10'],5:['10','10','10']} },
+    { name:'Rotational scoop toss (or landmine rotation)', meta:'5 ea side', rec:'10 lb ball / light bar', cue:'Hips before shoulders, max trunk rotation — your most direct hitting-power exercise. No wall needed: toss the ball up-and-across onto grass/mat, or landmine a light barbell in a corner. Stop if the shoulder bites.', sets:{2:['10','10','10'],4:['10','10','10'],5:['10','10','10']} },
   ],
   full: [
-    { inc:10, name:'Good mornings (barbell)', meta:'8 reps', rec:'+10 weekly', cue:'Hips back, neutral spine, chest proud. Restarting the progression we fumbled — 9 weeks at 65/75/85 never again. If it rounds, it\'s too heavy.', sets:{1:['75','85','95'],2:['85','95','105']} },
-    { inc:15, name:'Barbell hip thrust', meta:'8 reps', rec:'+10 top weekly', cue:'Drive through heels, 1s pause at top — glute max for jump height.', sets:{1:['245','285','315'],2:['255','295','325']} },
-    { inc:1, name:'Side-lying DB external rotation', meta:'12 ea', rec:'match Wednesday', cue:'Second cuff dose of the week — twice weekly loading is what actually builds tissue capacity.', sets:{1:['4','4','4'],2:['5','5','6']} },
-    { inc:5, name:'Suitcase carry', meta:'30m ea', rec:'+5 weekly', cue:'Tall spine, don\'t lean away — lateral core.', sets:{1:['75','85','85'],2:['80','85','90']} },
-    { name:'VB approach jump (max effort)', meta:'5 reps', rec:'track height', cue:'Full 3-step approach — your primary performance KPI.', sets:{2:['BW','BW','BW','BW']} },
-    { name:'Sled push 20m', meta:'rounds', rec:'mod → heavy', cue:'Low hips, full hip extension — posterior chain power endurance.', sets:{2:['mod','mod','hvy','hvy']} },
+    { inc:10, name:'Good mornings (barbell)', meta:'8 reps', rec:'+10 weekly', cue:'Hips back, neutral spine, chest proud. Restarting the progression we fumbled — 9 weeks at 65/75/85 never again. If it rounds, it\'s too heavy.', sets:{1:['75','85','95'],2:['85','95','105'],4:['85','95','105'],5:['85','95','105']} },
+    { inc:15, name:'Barbell hip thrust', meta:'8 reps', rec:'+10 top weekly', cue:'Drive through heels, 1s pause at top — glute max for jump height.', sets:{1:['245','285','315'],2:['255','295','325'],4:['255','295','325'],5:['255','295','325']} },
+    { inc:1, name:'Side-lying DB external rotation', meta:'12 ea', rec:'one DB, match Wednesday', cue:'Second cuff dose of the week — twice weekly loading is what actually builds tissue capacity.', sets:{1:['4','4','4'],2:['5','5','6'],4:['5','5','6'],5:['5','5','6']} },
+    { inc:5, name:'Suitcase carry', meta:'30m ea', rec:'one KB per side, +5 weekly', cue:'Tall spine, don\'t lean away — lateral core.', sets:{1:['75','85','85'],2:['80','85','90'],4:['80','85','90'],5:['80','85','90']} },
+    { name:'VB approach jump (max effort)', meta:'5 reps', rec:'track height', cue:'Full 3-step approach — your primary performance KPI.', sets:{2:['BW','BW','BW','BW'],4:['BW','BW','BW','BW'],5:['BW','BW','BW','BW']} },
+    { name:'Sled push 20m', meta:'rounds', rec:'mod → heavy', cue:'Low hips, full hip extension — posterior chain power endurance.', sets:{2:['mod','mod','hvy','hvy'],4:['mod','mod','hvy','hvy'],5:['mod','hvy','hvy','hvy']} },
   ],
 };
 
@@ -3605,7 +3611,7 @@ function renderWeekInfo() {
   const badge = isWeekDone(w.n) ? '<span class="done-badge">Completed</span>' : '';
   document.getElementById('weekInfo').innerHTML = `<span class="week-title">${w.phase}</span><span class="week-meta">${w.dates} &middot; ${w.intensity} &middot; ${w.volume}</span>${badge}`;
   const heroLbl = document.getElementById('heroWeekLabel');
-  if (heroLbl) heroLbl.textContent = `Week ${w.n} of 4`;
+  if (heroLbl) heroLbl.textContent = `Week ${w.n} of 6`;
 }
 
 function renderDayStrip() {
