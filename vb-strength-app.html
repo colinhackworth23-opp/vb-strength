@@ -3242,8 +3242,10 @@ const WEEKS = [
 ];
 
 const ACC = {
+  warmup: [
+    { name:'Spanish squat hold', meta:'2 × 45s', rec:'BEFORE the first working set', cue:'Do this before you touch a bar. Band around a post at knee height, sit back, shins vertical, hold. Heavy isometrics like this often take the edge off patellar tendon pain for a while afterward — which is exactly the window when your knee complains during warmups.', sets:{1:['45s','45s'],2:['45s','45s'],3:['45s','45s'],4:['45s','45s'],5:['45s','45s'],6:['45s','45s'],7:['45s','45s'],8:['45s','45s'],9:['45s','45s'],10:['45s','45s']} },
+  ],
   lower: [
-    { name:'Spanish squat hold (warm-up)', meta:'2 × 45s', rec:'BEFORE squats', cue:'Do this FIRST, before you touch a bar. Band around a post at knee height, sit back, shins vertical. Heavy isometrics like this often take the edge off patellar tendon pain for a while afterward — which is exactly when your knee complains during warmups.', sets:{1:['45s','45s'],2:['45s','45s'],3:['45s','45s'],4:['45s','45s'],5:['45s','45s'],6:['45s','45s'],7:['45s','45s'],8:['45s','45s'],9:['45s','45s'],10:['45s','45s']} },
     { inc:10, name:'Romanian deadlift (barbell)', meta:'3 × 10', rec:'straps on heavy sets', cue:'Hips back, neutral spine, 3s eccentric. Your grip fails before your posterior chain does — use straps on the top set so the hamstrings get the honest stimulus. Weight only moves when you tap Clean.', sets:{1:['135','145','155'],2:['135','145','155'],3:['135','145','155'],4:['135','145','155'],5:['135','145','155'],6:['135','145','155'],7:['135','145','155'],8:['135','145','155'],9:['135','145','155'],10:['115','125','135']} },
     { inc:10, ss:'A', name:'Leg press', meta:'3 × 12', rec:'quad volume, no spinal load', cue:'Feet shoulder-width, toes slightly out, full range, knees tracking over toes. Pure quad work with zero load on your lower back — this is the structural knee work that makes jumping cheaper.', sets:{1:['270','290','290'],2:['270','290','290'],3:['270','290','290'],4:['270','290','290'],5:['270','290','290'],6:['270','290','290'],7:['270','290','290'],8:['270','290','290'],9:['270','290','290'],10:['225','245','245']} },
     { ss:'A', name:'Nordic curl (slow eccentric)', meta:'3 × 5', rec:'BW — 4s down', cue:'Superset with leg press: alternate, minimal rest. Lower as slowly as you can — 4 full seconds. Hamstring eccentric strength is your best landing-injury insurance.', sets:{1:['BW','BW','BW'],2:['BW','BW','BW'],3:['BW','BW','BW'],4:['BW','BW','BW'],5:['BW','BW','BW'],6:['BW','BW','BW'],7:['BW','BW','BW'],8:['BW','BW','BW'],9:['BW','BW','BW'],10:['BW','BW']} },
@@ -3284,7 +3286,6 @@ const ACC = {
     { name:'Dead hang', meta:'2 × 40s', rec:'grip + decompression', cue:'Steel doorframe bar, fully relaxed hang. Directly attacks the grip limitation behind your pull-up ceiling. Once a week, try one set hanging from a towel over the bar.', sets:{1:['40s','40s'],2:['40s','40s'],3:['40s','40s'],4:['40s','40s'],5:['40s','40s'],6:['40s','40s'],7:['40s','40s'],8:['40s','40s'],9:['40s','40s'],10:['30s','30s']} },
   ],
   powerPre: [
-    { name:'Spanish squat hold (warm-up)', meta:'2 × 45s', rec:'BEFORE cleans', cue:'Same as Monday — do this before anything else. Quiets the knee down before the most explosive session of the week.', sets:{1:['45s','45s'],2:['45s','45s'],3:['45s','45s'],4:['45s','45s'],5:['45s','45s'],6:['45s','45s'],7:['45s','45s'],8:['45s','45s'],9:['45s','45s'],10:['45s','45s']} },
     { rest:150, name:'Hang clean', meta:'4 × 3', rec:'SPEED decides the load', cue:'FIRST real lift of the day, while you are fresh. Bar at the hang just above the knee. Hips drive, shrug, high pull, catch high in the power position — no deep squat receive needed. Controlled eccentric back to the hang, no dropping. If the bar slows at your hip, strip 10 lbs. Full 2.5 min rest — this is neural work, not conditioning.', sets:{1:['115','115','115','115'],2:['115','115','115','115'],3:['125','125','125','125'],4:['125','125','125','125'],5:['135','135','135','135'],6:['135','135','135','135'],7:['145','145','145','145'],8:['145','145','145','145'],9:['145','145','145','145'],10:['115','115','115']} },
     { inc:5, rest:120, name:'Front squat', meta:'3 × 5', rec:'rack position + quads', cue:'Straight after cleans while the rack position is already grooved — this was your idea and it is the right one. Elbows HIGH, bar on the front delts not the hands, wrists loose. Upright torso means quad work that spares your knee.', sets:{1:['105','115','115'],2:['105','115','115'],3:['105','115','115'],4:['105','115','115'],5:['105','115','115'],6:['105','115','115'],7:['105','115','115'],8:['105','115','115'],9:['105','115','115'],10:['95','105','105']} },
   ],
@@ -3507,10 +3508,14 @@ function buildGymDay(weekN, slot, w, loads, calDay) {
     h += `<div class="callout c-amber">Loads adjusted −7% for recovery. Accessories stay as listed.</div>`;
   }
   h += `<div class="callout c-blue">${getGymCallout(weekN, slot)}</div>`;
-  // Primary lift (power day: front squat goes first as a header accessory, then hex bar)
+  // Warm-up section — always rendered first, ahead of any primary lift
+  if (slot === 'lower' || slot === 'power') {
+    h += `<div class="section"><div class="section-header">Warm-up · before anything else</div>${accRows(ACC.warmup, weekN, slotIdx, false, locked)}</div>`;
+  }
+  // Primary lift (power day: speed work comes before the heavy hex bar pull)
   if (slot === 'power') {
     // Speed work first: hang clean + front squat come BEFORE the heavy hex bar pull
-    h += `<div class="section"><div class="section-header">Warm-up + speed work · do these first</div>${accRows(ACC.powerPre, weekN, slotIdx, false, locked)}</div>`;
+    h += `<div class="section"><div class="section-header">Speed work · before the heavy pull</div>${accRows(ACC.powerPre, weekN, slotIdx, false, locked)}</div>`;
     h += `<div class="section"><div class="section-header">Hex bar deadlift · primary lift</div>${liftRows(loads, 'dl', 'Hex bar deadlift', w, slotIdx, locked)}</div>`;
   } else if (loads[primaryKey] && loads[primaryKey].ws.length) {
     h += `<div class="section"><div class="section-header">${liftNames[primaryKey]} · primary lift</div>${liftRows(loads, primaryKey, liftNames[primaryKey], w, slotIdx, locked)}</div>`;
