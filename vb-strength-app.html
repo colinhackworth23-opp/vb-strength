@@ -1758,6 +1758,46 @@ body {
   font-weight: 700;
 }
 
+/* ── SHARE BUTTON + TOAST ── */
+.share-btn {
+  display: block;
+  width: calc(100% - 32px);
+  margin: 8px 16px 0;
+  padding: 13px;
+  background: transparent;
+  color: var(--ink-2, var(--ink));
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-family: var(--f-num);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.share-btn:active { transform: scale(0.98); background: var(--surface); }
+.share-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(110px + env(safe-area-inset-bottom, 12px));
+  transform: translate(-50%, 10px);
+  background: var(--ink);
+  color: var(--bg);
+  font-family: var(--f-num);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 10px 18px;
+  border-radius: 999px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 9500;
+}
+.share-toast.visible { opacity: 1; transform: translate(-50%, 0); }
+
 /* ── SUPERSET BADGE ── */
 .ss-badge {
   display: inline-block;
@@ -3524,6 +3564,7 @@ function buildGymDay(weekN, slot, w, loads, calDay) {
   if (!locked) {
     h += `<div id="status-${weekN}-${slotIdx}"></div>`;
     h += `<button class="save-btn" onclick="saveSession(${weekN},${slotIdx},'${dayLabel}')">Save session to Google Sheets</button>`;
+    h += `<button class="share-btn" onclick="shareDay(${weekN-1},${calDay},'Block 1 · Week ${weekN} · ${dayLabel} — ${slot_title}')">Share this workout</button>`;
   }
   if (w.deload && slot === 'power') h += buildEndReport();
   return h + `<div class="spacer"></div>`;
@@ -3653,6 +3694,7 @@ function buildHomeDay(weekN, slot, w, calDay) {
   if (!locked) {
     h += `<div id="status-${weekN}-${slotIdx}"></div>`;
     h += `<button class="save-btn" onclick="saveSession(${weekN},${slotIdx},'${dayLabel}')">Save to Google Sheets</button>`;
+    h += `<button class="share-btn" onclick="shareDay(${weekN-1},${calDay},'Block 1 · Week ${weekN} · ${dayLabel} — ${titles[slot]}')">Share this workout</button>`;
   }
   return h + `<div class="spacer"></div>`;
 }
@@ -3916,6 +3958,84 @@ async function saveMaxes() {
     statusEl.innerHTML='<div class="callout c-error" style="margin-top:8px">Save failed — check your connection</div>';
     btn.disabled=false; btn.textContent='Save maxes to sheet';
   }
+}
+
+// ── Share a day's workout ──
+// Reads the rendered day screen so it exports what is actually on screen,
+// including any weights Colin edited, then hands off to the iOS share sheet.
+function buildShareText(screenEl, headerLine) {
+  const lines = [headerLine, ''];
+  let usedTM = false;
+  screenEl.querySelectorAll('.section').forEach(sec => {
+    const hdr = sec.querySelector('.section-header');
+    const title = hdr ? hdr.textContent.split('·')[0].trim() : '';
+    const body = [];
+    // Primary lift rows
+    sec.querySelectorAll('.lift-row').forEach(row => {
+      const lbl = row.querySelector('.lift-label');
+      if (!lbl) return;
+      const name = lbl.childNodes[0] ? lbl.childNodes[0].textContent.trim() : '';
+      const subEl = lbl.querySelector('.lift-sub');
+      const sub = subEl ? subEl.textContent.trim() : '';
+      const pct = sub.match(/\d+%\s*TM/);          // share the percentage, not my weight
+      const badge = row.querySelector('.badge');
+      const target = row.querySelector('.lift-target');
+      if (target) {                                  // warm-up rows
+        const reps = badge ? badge.textContent.trim() : '';
+        body.push(`  ${name} — ${reps}${pct ? ' @ ~'+pct[0] : (sub ? ' ('+sub+')' : '')}`);
+        usedTM = true;
+        return;
+      }
+      const reps = row.querySelector('.lift-input-reps');
+      if (reps) {
+        body.push(`  ${name} — ${reps.value} reps @ ${pct ? pct[0] : sub}`);
+        usedTM = true;
+      }
+    });
+    // Accessory rows
+    sec.querySelectorAll('.acc-row').forEach(row => {
+      const name = row.querySelector('.acc-name');
+      const meta = row.querySelector('.acc-meta');
+      const ss = row.querySelector('.ss-badge');
+      const vals = [...row.querySelectorAll('.set-input')].map(i => i.value).filter(Boolean);
+      if (!name) return;
+      let line = `  ${name.textContent.trim()} — ${meta ? meta.textContent.trim() : ''}`;
+      if (vals.length) line += `: ${vals.join(' / ')}`;
+      if (ss) line += `  [${ss.textContent.trim()}]`;
+      body.push(line);
+    });
+    if (body.length) { lines.push(title.toUpperCase()); lines.push(...body); lines.push(''); }
+  });
+  if (usedTM) lines.push('Main lifts are % of training max — use your own TM (roughly 90% of your 1RM).');
+  lines.push('— sent from my training app');
+  return lines.join('\n');
+}
+async function shareDay(weekIdx, dayIdx, headerLine) {
+  const screenEl = document.getElementById(`day-${weekIdx}-${dayIdx}`);
+  if (!screenEl) return;
+  const text = buildShareText(screenEl, headerLine);
+  haptic(10);
+  try {
+    if (navigator.share) { await navigator.share({ title: headerLine, text }); return; }
+    await navigator.clipboard.writeText(text);
+    flashShareMsg('Copied to clipboard');
+  } catch(e) {
+    if (e && e.name === 'AbortError') return; // user dismissed the share sheet
+    try { await navigator.clipboard.writeText(text); flashShareMsg('Copied to clipboard'); }
+    catch(_) { flashShareMsg('Could not share on this device'); }
+  }
+}
+function flashShareMsg(msg) {
+  let el = document.getElementById('shareToast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'shareToast';
+    el.className = 'share-toast';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.classList.add('visible');
+  setTimeout(() => el.classList.remove('visible'), 1800);
 }
 
 // ── Check-in prompt ──
