@@ -1758,6 +1758,79 @@ body {
   font-weight: 700;
 }
 
+/* ── SUPERSET BADGE ── */
+.ss-badge {
+  display: inline-block;
+  font-family: var(--f-num);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  padding: 2px 6px;
+  margin-left: 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--accent-ink, var(--ink));
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  vertical-align: middle;
+}
+
+/* ── CHECK-IN CARD ── */
+.checkin-card {
+  margin: 12px 16px 0;
+  padding: var(--s4);
+  background: var(--surface);
+  border: 1.5px solid var(--accent);
+  border-radius: 14px;
+}
+.checkin-title {
+  font-family: var(--f-num);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.checkin-sub {
+  font-family: var(--f-num);
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-bottom: var(--s4);
+  letter-spacing: 0.04em;
+}
+.checkin-q {
+  font-family: var(--f-num);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: var(--s3) 0 var(--s2);
+  letter-spacing: 0.04em;
+}
+.checkin-opts {
+  display: flex;
+  gap: var(--s2);
+  flex-wrap: wrap;
+  margin-bottom: var(--s2);
+}
+.checkin-opt {
+  font-family: var(--f-num);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.checkin-opt:active { transform: scale(0.95); }
+.checkin-opt.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #2a2520;
+  font-weight: 700;
+}
+
 /* ── AUTO-PROGRESSION VERDICT ── */
 .prog-verdict {
   display: none;
@@ -2142,7 +2215,7 @@ body {
       <rect x="125" y="35" width="350" height="7" rx="1" fill="#f5f0e8" opacity=".92"/>
       <text x="40" y="88" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace" font-size="38" font-weight="700" fill="#fafaf7" letter-spacing="-0.8">VB STRENGTH</text>
       <line x1="40" y1="98" x2="320" y2="98" stroke="#e8a33d" stroke-width="1.5" opacity=".9"/>
-      <text x="41" y="114" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace" font-size="10" font-weight="600" fill="#bfb8a8" letter-spacing="1.6">CHICAGO · 4-WEEK BRIDGE · SHOULDER REBUILD</text>
+      <text x="41" y="114" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace" font-size="10" font-weight="600" fill="#bfb8a8" letter-spacing="1.6">CHICAGO · BLOCK 1 · HYPERTROPHY + FOUNDATION</text>
     </svg>
 </div>
 
@@ -2272,7 +2345,7 @@ body {
   </div>
   <div id="maxes-status"></div>
   <button class="save-btn" onclick="saveMaxes()">Save maxes to sheet</button>
-  <div class="callout c-gray" style="margin-top:12px">When you finish Week 6 (Santa Cruz!), share your Google Sheet and we'll build the off-season block — posterior shoulder as the centerpiece.</div>
+  <div class="callout c-gray" style="margin-top:12px">When you finish Week 10, share your Google Sheet and we'll build Block 2 — strength focus, heavier loads, new ceilings.</div>
   <div class="spacer"></div>
 </div>
 
@@ -2345,10 +2418,10 @@ body {
 const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzLuijUOxwOOV2NESQGajLZQwe4ZTf1d7xjdW5xXdBp6Oh7BFQ70pknZsLgaCGOEB47/exec';
 const CURRENT_WEEK = 1;
 const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-const TM = { squat:230, bench:170, dl:315, ohp:115 };
+const TM = { squat:235, bench:170, dl:325, ohp:115 };
 
 // ── Local cache — convenience layer, Google Sheets remains source of truth ──
-const CACHE_KEY = 'vb-strength-cache-v3';
+const CACHE_KEY = 'vb-strength-cache-v4';
 function loadCache() {
   try { return JSON.parse(localStorage.getItem(CACHE_KEY)) || {}; } catch(e) { return {}; }
 }
@@ -2909,13 +2982,13 @@ function getTodayDayIdx() {
 }
 function getTodayWeekIdx() {
   // Week 1 started Aug 3, 2026 (Monday). Parse as LOCAL time with Y,M,D args.
-  const start = new Date(2026, 7, 3); // Monday Aug 3 2026 (month is 0-indexed)
+  const start = new Date(2026, 8, 28); // Monday Sep 28 2026 (month is 0-indexed)
   const today = new Date();
   // Normalize both to midnight local so DST and hour-of-day don't skew the math
   const startMid = new Date(start.getFullYear(), start.getMonth(), start.getDate());
   const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const diffDays = Math.floor((todayMid - startMid) / 86400000);
-  const weekIdx = Math.max(0, Math.min(5, Math.floor(diffDays / 7)));
+  const weekIdx = Math.max(0, Math.min(9, Math.floor(diffDays / 7)));
   return weekIdx;
 }
 
@@ -3042,7 +3115,7 @@ function updateProgress() {
 }
 
 // ── Set check handler ──
-function handleSetCheck(checkEl, isWorkingSet) {
+function handleSetCheck(checkEl, isWorkingSet, restOverride) {
   unlockAudio();
   checkEl.classList.toggle('checked');
   haptic(checkEl.classList.contains('checked') ? 12 : 6);
@@ -3053,8 +3126,10 @@ function handleSetCheck(checkEl, isWorkingSet) {
   const inp = inputRow ? inputRow.querySelector('.set-input') : (liftRow ? liftRow.querySelector('.lift-input-weight') : null);
   if (checked) {
     if (inp) inp.classList.add('done');
-    const restTime = isWorkingSet ? 180 : 90;
-    const label = isWorkingSet ? 'Rest — 3 min for primary lifts' : 'Rest — 90s for accessories';
+    const restTime = restOverride || (isWorkingSet ? 180 : 90);
+    const label = restOverride
+      ? `Rest — ${Math.round(restOverride/60*10)/10} min, full recovery`
+      : (isWorkingSet ? 'Rest — 3 min for primary lifts' : 'Rest — 90s for accessories');
     startTimer(restTime, label);
     requestWakeLock();
   } else {
@@ -3134,55 +3209,96 @@ function toggleCue(header) {
 
 // ── Data ──
 const WEEKS = [
-  { n:1, phase:'Shoulder Reset', dates:'Aug 3 – 9', intensity:'~70% TM', volume:'3×5', rpe:'6', reps:5,
-    pcts:{ squat:[0.63,0.67,0.72], bench:[0.65,0.68,0.71], dl:[0.70,0.73,0.75] },
-    days:['lower','off','pull','olympian','full','off','off'], lastLiftSlot:2, pressOn:'full', done:false },
-  { n:2, phase:'Build', dates:'Aug 10 – 16', intensity:'75–83% TM', volume:'4×5', rpe:'7–8', reps:5,
-    pcts:{ squat:[0.74,0.76,0.80,0.83], bench:[0.71,0.74,0.76,0.79], dl:[0.75,0.78,0.81,0.83] },
-    days:['lower','off','pull','off','full','off','off'], lastLiftSlot:2, done:false },
-  { n:3, phase:'Taper → Rae Strong', dates:'Aug 17 – 22', intensity:'~70% TM', volume:'3×5', rpe:'6', reps:5,
-    pcts:{ squat:[0.70,0.74,0.76], bench:[0.65,0.68,0.71], dl:[] },
-    days:['lower','pull','off','activation','activation','tournament','off'], lastLiftSlot:1, taper:true, tournament:'Aug 22 — Rae Strong', done:false },
-  { n:4, phase:'Build', dates:'Aug 24 – 30', intensity:'75–85% TM', volume:'4×5', rpe:'7–8', reps:5,
-    pcts:{ squat:[0.75,0.78,0.82,0.85], bench:[0.73,0.76,0.79,0.82], dl:[0.75,0.79,0.82,0.85] },
-    days:['lower','off','pull','off','full','tournament','off'], lastLiftSlot:2, tournament:'Aug 29 — friendly', done:false },
-  { n:5, phase:'Build', dates:'Aug 31 – Sep 6', intensity:'77–87% TM', volume:'4×5', rpe:'8', reps:5,
-    pcts:{ squat:[0.77,0.80,0.84,0.87], bench:[0.76,0.79,0.82,0.85], dl:[0.78,0.81,0.84,0.87] },
-    days:['lower','off','pull','off','full','off','off'], lastLiftSlot:2, done:false },
-  { n:6, phase:'Send-off → Santa Cruz', dates:'Sep 7 – 12', intensity:'~68% TM', volume:'3×5', rpe:'5–6', reps:5,
-    pcts:{ squat:[0.65,0.68,0.70], bench:[0.65,0.68,0.71], dl:[] },
-    days:['lower','pull','off','off','activation','tournament','off'], lastLiftSlot:1, taper:true, tournament:'Sep 12 — Santa Cruz', done:false },
+  { n:1, phase:'Foundation', dates:'Sep 28 – Oct 4', intensity:'65% TM', volume:'4×10', rpe:'6', reps:10,
+    pcts:{ squat:[0.65,0.65,0.65,0.65], bench:[0.65,0.65,0.65,0.65], dl:[0.65,0.65,0.65] },
+    days:['lower','home-lower','push-pull','home-upper','power','prehab','off'], lastLiftSlot:'power', done:false },
+  { n:2, phase:'Foundation', dates:'Oct 5 – Oct 11', intensity:'67% TM', volume:'4×10', rpe:'6–7', reps:10,
+    pcts:{ squat:[0.67,0.67,0.67,0.67], bench:[0.67,0.67,0.67,0.67], dl:[0.67,0.67,0.67] },
+    days:['lower','home-lower','push-pull','home-upper','power','prehab','off'], lastLiftSlot:'power', done:false },
+  { n:3, phase:'Build', dates:'Oct 12 – Oct 18', intensity:'70–75% TM', volume:'4×8', rpe:'7', reps:8,
+    pcts:{ squat:[0.70,0.72,0.74,0.75], bench:[0.70,0.72,0.74,0.75], dl:[0.70,0.72,0.74] },
+    days:['lower','home-lower','push-pull','home-upper','power','prehab','off'], lastLiftSlot:'power', done:false, checkin:3 },
+  { n:4, phase:'Build', dates:'Oct 19 – Oct 25', intensity:'72–77% TM', volume:'4×8', rpe:'7–8', reps:8,
+    pcts:{ squat:[0.72,0.74,0.76,0.77], bench:[0.72,0.74,0.76,0.77], dl:[0.72,0.74,0.76] },
+    days:['lower','home-lower','push-pull','home-upper','power','prehab','off'], lastLiftSlot:'power', done:false },
+  { n:5, phase:'Build', dates:'Oct 26 – Nov 1', intensity:'74–79% TM', volume:'4×8', rpe:'8', reps:8,
+    pcts:{ squat:[0.74,0.76,0.78,0.79], bench:[0.74,0.76,0.78,0.79], dl:[0.74,0.76,0.78] },
+    days:['lower','home-lower','push-pull','home-upper','power','prehab','off'], lastLiftSlot:'power', done:false, checkin:5 },
+  { n:6, phase:'Intensify', dates:'Nov 2 – Nov 8', intensity:'76–82% TM', volume:'4×6', rpe:'8', reps:6,
+    pcts:{ squat:[0.76,0.78,0.80,0.82], bench:[0.76,0.78,0.80,0.82], dl:[0.76,0.78,0.80] },
+    days:['lower','home-lower','push-pull','home-upper','power','prehab','off'], lastLiftSlot:'power', done:false },
+  { n:7, phase:'Intensify', dates:'Nov 9 – Nov 15', intensity:'78–84% TM', volume:'4×6', rpe:'8–9', reps:6,
+    pcts:{ squat:[0.78,0.80,0.82,0.84], bench:[0.78,0.80,0.82,0.84], dl:[0.78,0.80,0.82] },
+    days:['lower','home-lower','push-pull','home-upper','power','prehab','off'], lastLiftSlot:'power', done:false },
+  { n:8, phase:'Peak volume', dates:'Nov 16 – Nov 22', intensity:'78–84% TM', volume:'4×6', rpe:'8–9', reps:6,
+    pcts:{ squat:[0.78,0.80,0.82,0.84], bench:[0.78,0.80,0.82,0.84], dl:[0.78,0.80,0.82] },
+    days:['lower','home-lower','push-pull','home-upper','power','prehab','off'], lastLiftSlot:'power', done:false, checkin:8 },
+  { n:9, phase:'Peak volume', dates:'Nov 23 – Nov 29', intensity:'80–86% TM', volume:'4×6', rpe:'9', reps:6,
+    pcts:{ squat:[0.80,0.82,0.84,0.86], bench:[0.80,0.82,0.84,0.86], dl:[0.80,0.82,0.84] },
+    days:['lower','home-lower','push-pull','home-upper','power','prehab','off'], lastLiftSlot:'power', done:false, thanksgiving:true },
+  { n:10, phase:'Deload', dates:'Nov 30 – Dec 6', intensity:'55–65% TM', volume:'3×5', rpe:'5', reps:5,
+    pcts:{ squat:[0.55,0.60,0.65], bench:[0.55,0.60,0.65], dl:[0.55,0.60,0.65] },
+    days:['lower','home-lower','push-pull','home-upper','power','prehab','off'], lastLiftSlot:'power', deload:true, done:false },
 ];
 
 const ACC = {
   lower: [
-    { inc:10, name:'Romanian deadlift (barbell)', meta:'8 reps', rec:'progresses weekly', cue:'Hips back, neutral spine, 3s eccentric. THE RULE: if last week felt clean, this week\'s listed weight is the plan, not a suggestion.', sets:{1:['115','125','135'],2:['125','135','145'],3:['125','135'],4:['125','135','145'],5:['125','135','145'],6:['115','125']} },
-    { inc:5, name:'Bulgarian split squat', meta:'8 ea', rec:'per hand — 50 = two 50s', cue:'Front shin vertical, drive through heel — unilateral takeoff pattern.', sets:{1:['50','55','60'],2:['55','60','65'],3:['50','55'],4:['55','60','65'],5:['55','60','65'],6:['50','55']} },
-    { name:'Nordic hamstring curl', meta:'5 reps', rec:'BW + pause', cue:'Brace hard, lower as slow as possible — add a pause when clean.', sets:{1:['BW','BW','BW'],2:['BW','BW','BW'],3:['BW','BW'],4:['BW','BW','BW'],5:['BW','BW','BW'],6:['BW','BW']} },
-    { inc:5, name:'Seated calf raise', meta:'15 reps', rec:'+5-10 weekly', cue:'Full ROM, pause at bottom — soleus endurance is your anti-cramp engine for Aug 22.', sets:{1:['100','110','110'],2:['105','110','115'],3:['100','105','110'],4:['105','110','115'],5:['105','110','115'],6:['100','105']} },
-    { inc:10, name:'Standing calf raise', meta:'12 reps', rec:'you were at 205+', cue:'Continue the loaded progression from last block — 3s eccentric, full stretch.', sets:{1:['205','205','205'],2:['215','215','215'],3:['185','185','185'],4:['215','215','215'],5:['215','215','215'],6:['185','185']} },
-    { name:'Copenhagen plank', meta:'per side', rec:'+5s weekly', cue:'Hips level — adductor strength for lateral movement.', sets:{1:['25s','25s','25s'],2:['30s','30s','30s'],3:['25s','25s'],4:['30s','30s','30s'],5:['30s','30s','30s'],6:['25s','25s']} },
-    { name:'Trap bar jump', meta:'4 reps', rec:'30-35% TM — speed IS the load', cue:'Hinge back, explode — the bar should feel like it wants to leave your hands, and the landing should feel like a stuck approach jump. If deceleration feels uncontrolled, the weight is too heavy, period.', sets:{2:['105','105','105','105'],4:['105','105','105','105'],5:['105','105','105','105']} },
-    { name:'Depth drop → box jump', meta:'4 reps', rec:'BW', cue:'Drop, instant reaction — minimize ground contact.', sets:{2:['BW','BW','BW'],4:['BW','BW','BW'],5:['BW','BW','BW']} },
-    { name:'Box jump (step down)', meta:'3 reps', rec:'BW', cue:'Max height intent, step down — protect ankles pre-tournament.', sets:{3:['BW','BW','BW'],6:['BW','BW','BW']} },
+    { name:'Spanish squat hold (warm-up)', meta:'2 × 45s', rec:'BEFORE squats', cue:'Do this FIRST, before you touch a bar. Band around a post at knee height, sit back, shins vertical. Heavy isometrics like this often take the edge off patellar tendon pain for a while afterward — which is exactly when your knee complains during warmups.', sets:{1:['45s','45s'],2:['45s','45s'],3:['45s','45s'],4:['45s','45s'],5:['45s','45s'],6:['45s','45s'],7:['45s','45s'],8:['45s','45s'],9:['45s','45s'],10:['45s','45s']} },
+    { inc:10, name:'Romanian deadlift (barbell)', meta:'3 × 10', rec:'straps on heavy sets', cue:'Hips back, neutral spine, 3s eccentric. Your grip fails before your posterior chain does — use straps on the top set so the hamstrings get the honest stimulus. Weight only moves when you tap Clean.', sets:{1:['135','145','155'],2:['135','145','155'],3:['135','145','155'],4:['135','145','155'],5:['135','145','155'],6:['135','145','155'],7:['135','145','155'],8:['135','145','155'],9:['135','145','155'],10:['115','125','135']} },
+    { inc:10, ss:'A', name:'Leg press', meta:'3 × 12', rec:'quad volume, no spinal load', cue:'Feet shoulder-width, toes slightly out, full range, knees tracking over toes. Pure quad work with zero load on your lower back — this is the structural knee work that makes jumping cheaper.', sets:{1:['270','290','290'],2:['270','290','290'],3:['270','290','290'],4:['270','290','290'],5:['270','290','290'],6:['270','290','290'],7:['270','290','290'],8:['270','290','290'],9:['270','290','290'],10:['225','245','245']} },
+    { ss:'A', name:'Nordic curl (slow eccentric)', meta:'3 × 5', rec:'BW — 4s down', cue:'Superset with leg press: alternate, minimal rest. Lower as slowly as you can — 4 full seconds. Hamstring eccentric strength is your best landing-injury insurance.', sets:{1:['BW','BW','BW'],2:['BW','BW','BW'],3:['BW','BW','BW'],4:['BW','BW','BW'],5:['BW','BW','BW'],6:['BW','BW','BW'],7:['BW','BW','BW'],8:['BW','BW','BW'],9:['BW','BW','BW'],10:['BW','BW']} },
+    { inc:10, name:'Standing calf raise (barbell)', meta:'4 × 12', rec:'3s eccentric, full stretch', cue:'Full stretch at the bottom — that range is where calves actually grow. 3-second lowering, pause at the bottom, drive up. One of five calf doses this week.', sets:{1:['215','215','215','215'],2:['215','215','215','215'],3:['215','215','215','215'],4:['215','215','215','215'],5:['215','215','215','215'],6:['215','215','215','215'],7:['215','215','215','215'],8:['215','215','215','215'],9:['215','215','215','215'],10:['185','185','185']} },
   ],
-  pull: [
-    { inc:5, name:'Weighted pull-up', meta:'5 reps', rec:'+5 top weekly', cue:'Depress scapula before pulling, lead with elbows — no grinding reps this block.', sets:{1:['BW','+15','+25'],2:['BW','+15','+25','+30'],3:['BW','+15','+25'],4:['BW','+15','+25','+30'],5:['BW','+15','+25','+30'],6:['BW','+15','+25']} },
-    { inc:5, name:'Single-arm DB row', meta:'10 ea', rec:'one DB, +5 weekly', cue:'Chest tall, row to hip — thoracic posture at 6\'10\".', sets:{1:['70','80','85'],2:['75','85','90'],3:['75','85'],4:['75','85','90'],5:['75','85','90'],6:['75','85']} },
-    { name:'Facepull', meta:'15 reps', rec:'green + 2s pause', cue:'Pull to forehead, elbows high, 2-SECOND PAUSE at end range — the pause is the progression now.', sets:{1:['grn','grn','grn'],2:['grn','grn','grn'],3:['grn','grn','grn'],4:['grn','grn','grn'],5:['grn','grn','grn'],6:['grn','grn','grn']} },
-    { inc:1, name:'Side-lying DB external rotation', meta:'12 ea', rec:'one DB, +1-2 lb weekly', cue:'THE CENTERPIECE. Elbow pinned to side, slow up and down. Real dumbbell load, progressing weekly — this is what fixes the shoulder. Never token weights again.', sets:{1:['4','4','4'],2:['5','5','6'],3:['5','5','6'],4:['5','5','6'],5:['5','5','6'],6:['4','4','4']} },
-    { name:'Prone Y-T raise', meta:'10 each', rec:'per hand, light DBs', cue:'Face down, thumbs up, squeeze shoulder blades — rear cuff + lower trap for arm deceleration.', sets:{1:['3','3'],2:['5','5','5'],3:['5','5'],4:['5','5','5'],5:['5','5','5'],6:['5','5']} },
-    { name:'Serratus wall slide', meta:'10 reps', rec:'BW', cue:'Reach long at top — scapular upward rotation.', sets:{1:['BW','BW'],2:['BW','BW'],3:['BW','BW'],4:['BW','BW'],5:['BW','BW'],6:['BW','BW']} },
-    { name:'Med ball spike sim (kneeling)', meta:'6 reps', rec:'only if pain-free', cue:'Full wind-up, accelerate through contact — ONLY if the shoulder has been quiet all week.', sets:{2:['10','10','10'],4:['10','10','10'],5:['10','10','10']} },
-    { name:'Rotational scoop toss (or landmine rotation)', meta:'5 ea side', rec:'10 lb ball / light bar', cue:'Hips before shoulders, max trunk rotation — your most direct hitting-power exercise. No wall needed: toss the ball up-and-across onto grass/mat, or landmine a light barbell in a corner. Stop if the shoulder bites.', sets:{2:['10','10','10'],4:['10','10','10'],5:['10','10','10']} },
+  homeLower: [
+    { name:'Swiss ball leg curl', meta:'3 × 10', rec:'BW — 3s eccentric', cue:'On your back, heels on the ball, hips HIGH the whole time. Curl the ball to your glutes, then lower over 3 seconds. This is your Nordic substitute at home and it protects the knee on every landing.', sets:{1:['BW','BW','BW'],2:['BW','BW','BW'],3:['BW','BW','BW'],4:['BW','BW','BW'],5:['BW','BW','BW'],6:['BW','BW','BW'],7:['BW','BW','BW'],8:['BW','BW','BW'],9:['BW','BW','BW'],10:['BW','BW']} },
+    { inc:5, name:'DB Bulgarian split squat', meta:'8 ea', rec:'per hand — rear foot ~12in', cue:'REAR FOOT LOW — a 12-inch step or a couple of stacked books, NOT the couch or a chair. At 6ft10 a standard-height rear foot forces your back hip and knee into the position that made them ache. Front shin vertical, drive through the heel.', sets:{1:['15','20','20'],2:['15','20','20'],3:['15','20','20'],4:['15','20','20'],5:['15','20','20'],6:['15','20','20'],7:['15','20','20'],8:['15','20','20'],9:['15','20','20'],10:['15','15','15']} },
+    { ss:'A', name:'Single-leg calf raise', meta:'20 ea leg', rec:'BW — 3s up, 3s down', cue:'Superset with the Spanish squat. Toes on a step or thick book for full range. Slow both directions, full stretch at the bottom.', sets:{1:['BW','BW','BW'],2:['BW','BW','BW'],3:['BW','BW','BW'],4:['BW','BW','BW'],5:['BW','BW','BW'],6:['BW','BW','BW'],7:['BW','BW','BW'],8:['BW','BW','BW'],9:['BW','BW','BW'],10:['BW','BW']} },
+    { ss:'A', name:'Spanish squat hold', meta:'2 × 45s', rec:'BW — tendon loading', cue:'Band around a door handle, sit back, shins vertical. Three minutes total. The cumulative effect on your warmup knee pain over 10 weeks is the whole point.', sets:{1:['45s','45s'],2:['45s','45s'],3:['45s','45s'],4:['45s','45s'],5:['45s','45s'],6:['45s','45s'],7:['45s','45s'],8:['45s','45s'],9:['45s','45s'],10:['45s','45s']} },
+    { ss:'B', name:'Ab roller', meta:'3 × 8', rec:'slow and controlled', cue:'Superset with dead bugs. From your knees, roll out until your hips want to drop, then pull back with your abs — not your arms. Anterior core protects your back under heavy RDLs.', sets:{1:['BW','BW','BW'],2:['BW','BW','BW'],3:['BW','BW','BW'],4:['BW','BW','BW'],5:['BW','BW','BW'],6:['BW','BW','BW'],7:['BW','BW','BW'],8:['BW','BW','BW'],9:['BW','BW','BW'],10:['BW','BW']} },
+    { ss:'B', name:'Dead bug', meta:'6 ea side', rec:'low back stays DOWN', cue:'Opposite arm and leg extend together. Your lower back must stay pressed to the floor the entire time — if it lifts, stop the set. Best lumbar stability drill for heavy lifters.', sets:{1:['BW','BW','BW'],2:['BW','BW','BW'],3:['BW','BW','BW'],4:['BW','BW','BW'],5:['BW','BW','BW'],6:['BW','BW','BW'],7:['BW','BW','BW'],8:['BW','BW','BW'],9:['BW','BW','BW'],10:['BW','BW']} },
+    { inc:1, name:'Band external rotation', meta:'15 ea', rec:'1-2 lb ankle weight or band', cue:'Elbow pinned to your side, slow both directions. One of four cuff doses this week — the frequency away from the gym is what actually rebuilds shoulder tissue capacity.', sets:{1:['1','1','2'],2:['1','1','2'],3:['1','1','2'],4:['1','1','2'],5:['1','1','2'],6:['1','1','2'],7:['1','1','2'],8:['1','1','2'],9:['1','1','2'],10:['1','1']} },
   ],
-  full: [
-    { inc:10, name:'Good mornings (barbell)', meta:'8 reps', rec:'+10 weekly', cue:'Hips back, neutral spine, chest proud. Restarting the progression we fumbled — 9 weeks at 65/75/85 never again. If it rounds, it\'s too heavy.', sets:{1:['75','85','95'],2:['85','95','105'],4:['85','95','105'],5:['85','95','105']} },
-    { inc:15, name:'Barbell hip thrust', meta:'8 reps', rec:'+10 top weekly', cue:'Drive through heels, 1s pause at top — glute max for jump height.', sets:{1:['245','285','315'],2:['255','295','325'],4:['255','295','325'],5:['255','295','325']} },
-    { inc:1, name:'Side-lying DB external rotation', meta:'12 ea', rec:'one DB, match Wednesday', cue:'Second cuff dose of the week — twice weekly loading is what actually builds tissue capacity.', sets:{1:['4','4','4'],2:['5','5','6'],4:['5','5','6'],5:['5','5','6']} },
-    { inc:5, name:'Suitcase carry', meta:'30m ea', rec:'one KB per side, +5 weekly', cue:'Tall spine, don\'t lean away — lateral core.', sets:{1:['75','85','85'],2:['80','85','90'],4:['80','85','90'],5:['80','85','90']} },
-    { name:'VB approach jump (max effort)', meta:'5 reps', rec:'track height', cue:'Full 3-step approach — your primary performance KPI.', sets:{2:['BW','BW','BW','BW'],4:['BW','BW','BW','BW'],5:['BW','BW','BW','BW']} },
-    { name:'Sled push 20m', meta:'rounds', rec:'mod → heavy', cue:'Low hips, full hip extension — posterior chain power endurance.', sets:{2:['mod','mod','hvy','hvy'],4:['mod','mod','hvy','hvy'],5:['mod','hvy','hvy','hvy']} },
+  pushPull: [
+    { rest:120, name:'Single-arm DB clean and jerk', meta:'4 ea side', rec:'explosive — FIRST today', cue:'This goes first while your nervous system is fresh. Clean: hips drive, catch at the shoulder. Jerk: dip, drive, lock overhead. Moderate load, every rep fast — it trains explosive hip extension and overhead shoulder stability at once.', sets:{1:['35','40','40'],2:['35','40','40'],3:['35','40','40'],4:['35','40','40'],5:['35','40','40'],6:['35','40','40'],7:['35','40','40'],8:['35','40','40'],9:['35','40','40'],10:['30','35']} },
+    { name:'Scapular pull-up', meta:'2 × 10', rec:'BW — every week', cue:'Dead hang, then ONLY depress and retract the shoulder blades. No elbow bend. This is the lat engagement long-armed lifters skip, and it primes every pull that follows.', sets:{1:['BW','BW'],2:['BW','BW'],3:['BW','BW'],4:['BW','BW'],5:['BW','BW'],6:['BW','BW'],7:['BW','BW'],8:['BW','BW'],9:['BW','BW'],10:['BW','BW']} },
+    { rest:150, name:'Weighted pull-up', meta:'per protocol', rec:'see cue — protocol by week', cue:'PROTOCOL — W1-4: bodyweight, 3 sets to 1 rep shy of failure. W3-4 adds banded negatives below. W5-6: +10 lbs x 5, four sets. W7-8: +20 lbs x 5. W9: test your new ceiling. Fresh today — this comes before all the rowing, not after.', sets:{1:['BW','BW','BW'],2:['BW','BW','BW'],3:['BW','BW','BW'],4:['BW','BW','BW'],5:['+10','+10','+10','+10'],6:['+10','+10','+10','+10'],7:['+20','+20','+20','+20'],8:['+20','+20','+20','+20'],9:['+25','+25','+25','+25'],10:['BW','BW']} },
+    { name:'Banded negative pull-up', meta:'3 × 5', rec:'W3-4 only — 4s down', cue:'Jump or step to the top, then lower over 4 full seconds. Eccentric overload builds pulling strength faster than concentric reps and gets you past the 30 lb wall.', sets:{3:['BW','BW','BW'],4:['BW','BW','BW']} },
+    { inc:5, name:'Chest-supported DB row', meta:'4 × 12', rec:'per hand — SS with incline bench', cue:'Superset with your incline bench sets above: bench, then row, minimal rest. Chest stays on the pad so there is no lower-back compensation — pure lat and rear delt. Full stretch at the bottom.', sets:{1:['70','75','80','80'],2:['70','75','80','80'],3:['70','75','80','80'],4:['70','75','80','80'],5:['70','75','80','80'],6:['70','75','80','80'],7:['70','75','80','80'],8:['70','75','80','80'],9:['70','75','80','80'],10:['70','70','75']} },
+    { inc:5, ss:'B', name:'Dips', meta:'3 × 10', rec:'BW then weighted', cue:'Superset with lat pulldown. Slight forward lean to bias the chest, lower until upper arm is parallel. This is your best builder for the mid-chest and sternum area you flagged.', sets:{1:['BW','BW','BW'],2:['BW','BW','BW'],3:['BW','BW','BW'],4:['BW','BW','BW'],5:['BW','BW','BW'],6:['BW','BW','BW'],7:['BW','BW','BW'],8:['BW','BW','BW'],9:['BW','BW','BW'],10:['BW','BW','BW']} },
+    { inc:5, ss:'B', name:'Lat pulldown', meta:'3 × 12', rec:'lat width — full stretch', cue:'Superset with dips. Let the bar pull your arms FULLY overhead between reps — the stretch at the top is where lat width comes from. Pull to the upper chest, squeeze hard.', sets:{1:['130','140','140'],2:['130','140','140'],3:['130','140','140'],4:['130','140','140'],5:['130','140','140'],6:['130','140','140'],7:['130','140','140'],8:['130','140','140'],9:['130','140','140'],10:['110','120','120']} },
+    { ss:'C', name:'Facepull', meta:'3 × 15', rec:'green band, 2s pause', cue:'Superset with band external rotation. Pull to your forehead, elbows HIGH, 2-second pause at the end range. This covers your rear delts and cuff in one movement.', sets:{1:['grn','grn','grn'],2:['grn','grn','grn'],3:['grn','grn','grn'],4:['grn','grn','grn'],5:['grn','grn','grn'],6:['grn','grn','grn'],7:['grn','grn','grn'],8:['grn','grn','grn'],9:['grn','grn','grn'],10:['grn','grn']} },
+    { ss:'C', name:'Band external rotation', meta:'3 × 15', rec:'light band', cue:'Straight into these after facepulls. Elbow pinned, slow and controlled. Cuff dose number two of the week.', sets:{1:['lgt','lgt','lgt'],2:['lgt','lgt','lgt'],3:['lgt','lgt','lgt'],4:['lgt','lgt','lgt'],5:['lgt','lgt','lgt'],6:['lgt','lgt','lgt'],7:['lgt','lgt','lgt'],8:['lgt','lgt','lgt'],9:['lgt','lgt','lgt'],10:['lgt','lgt']} },
+    { inc:2, ss:'D', name:'DB lateral raise', meta:'3 × 15', rec:'per hand — shoulder width', cue:'Superset with calf raises — no rest needed between them. Lead with the elbow, stop at shoulder height. Second side-delt dose of the week; this is the primary driver of shoulder width.', sets:{1:['15','15','15'],2:['15','15','15'],3:['15','15','15'],4:['15','15','15'],5:['15','15','15'],6:['15','15','15'],7:['15','15','15'],8:['15','15','15'],9:['15','15','15'],10:['15','15','15']} },
+    { inc:10, ss:'D', name:'Standing calf raise', meta:'3 × 12', rec:'3s eccentric', cue:'Straight after laterals. Full stretch at the bottom, same progression as Monday.', sets:{1:['215','215','215'],2:['215','215','215'],3:['215','215','215'],4:['215','215','215'],5:['215','215','215'],6:['215','215','215'],7:['215','215','215'],8:['215','215','215'],9:['215','215','215'],10:['185','185']} },
+  ],
+  homeUpper: [
+    { name:'Pull-up practice (doorframe bar)', meta:'3 sets @ half max', rec:'NEVER to failure', cue:'If your max is 8, do sets of 4. Stop with plenty left every set. Frequency — not load — is what breaks a pull-up plateau, and at your arm length the practice matters more than usual. This is the main reason the bar was worth buying.', sets:{1:['BW','BW','BW'],2:['BW','BW','BW'],3:['BW','BW','BW'],4:['BW','BW','BW'],5:['BW','BW','BW'],6:['BW','BW','BW'],7:['BW','BW','BW'],8:['BW','BW','BW'],9:['BW','BW','BW'],10:['BW','BW']} },
+    { inc:2, name:'Swiss ball incline DB press', meta:'3 × 12', rec:'per hand — 45 degree angle', cue:'Sit on the ball, walk your feet out until your upper back rests on it at about 45 degrees. Targets the upper chest and clavicle area directly. Floor press is the fallback if the ball feels unstable.', sets:{1:['20','20','20'],2:['20','20','20'],3:['20','20','20'],4:['20','20','20'],5:['20','20','20'],6:['20','20','20'],7:['20','20','20'],8:['20','20','20'],9:['20','20','20'],10:['15','15','15']} },
+    { inc:2, ss:'A', name:'DB fly (floor)', meta:'3 × 15', rec:'per hand — chest stretch', cue:'Superset with lateral raises. Slight elbow bend, lower until you feel a deep chest stretch — the floor conveniently stops you before the shoulder gets stressed.', sets:{1:['15','15','15'],2:['15','15','15'],3:['15','15','15'],4:['15','15','15'],5:['15','15','15'],6:['15','15','15'],7:['15','15','15'],8:['15','15','15'],9:['15','15','15'],10:['12','12','12']} },
+    { inc:2, ss:'A', name:'DB lateral raise', meta:'3 × 15', rec:'per hand — second dose', cue:'Straight after flies. Lead with the elbow, stop at shoulder height, control the lowering.', sets:{1:['15','15','15'],2:['15','15','15'],3:['15','15','15'],4:['15','15','15'],5:['15','15','15'],6:['15','15','15'],7:['15','15','15'],8:['15','15','15'],9:['15','15','15'],10:['12','12']} },
+    { inc:2, ss:'B', name:'DB curl (incline on ball)', meta:'3 × 12', rec:'per hand — bicep length', cue:'Superset with overhead triceps. Lean back on the ball so your arms hang behind your torso — that stretch builds the long head and the peak. 3s lowering, turn the palm fully up at the top.', sets:{1:['20','20','20'],2:['20','20','20'],3:['20','20','20'],4:['20','20','20'],5:['20','20','20'],6:['20','20','20'],7:['20','20','20'],8:['20','20','20'],9:['20','20','20'],10:['15','15','15']} },
+    { inc:2, ss:'B', name:'Overhead DB triceps extension', meta:'3 × 12', rec:'one DB, both hands', cue:'NEW — and the biggest gap in your old program. Triceps are about two thirds of your arm mass. Overhead puts the long head on stretch, which is the version that actually adds size. Elbows point forward, lower slowly behind your head.', sets:{1:['25','25','25'],2:['25','25','25'],3:['25','25','25'],4:['25','25','25'],5:['25','25','25'],6:['25','25','25'],7:['25','25','25'],8:['25','25','25'],9:['25','25','25'],10:['20','20','20']} },
+    { inc:2, ss:'C', name:'Hammer curl', meta:'3 × 12', rec:'per hand — arm thickness', cue:'Superset with reverse curls. Neutral grip, strict — no swinging. Builds the brachialis underneath the bicep, which pushes it up and makes the arm look bigger from every angle.', sets:{1:['20','20','20'],2:['20','20','20'],3:['20','20','20'],4:['20','20','20'],5:['20','20','20'],6:['20','20','20'],7:['20','20','20'],8:['20','20','20'],9:['20','20','20'],10:['15','15','15']} },
+    { inc:2, ss:'C', name:'Reverse curl', meta:'2 × 15', rec:'per hand — forearm mass', cue:'Straight after hammers. Overhand grip, go light — this is much harder than it looks. Forearm development shows on long arms more than on anyone else.', sets:{1:['12','12'],2:['12','12'],3:['12','12'],4:['12','12'],5:['12','12'],6:['12','12'],7:['12','12'],8:['12','12'],9:['12','12'],10:['10','10']} },
+    { name:'Band pull-apart', meta:'2 × 20', rec:'light-medium band', cue:'Arms straight, squeeze the shoulder blades. Low fatigue, compounds over weeks. Fine to do these in front of the TV.', sets:{1:['lgt','lgt'],2:['lgt','lgt'],3:['lgt','lgt'],4:['lgt','lgt'],5:['lgt','lgt'],6:['lgt','lgt'],7:['lgt','lgt'],8:['lgt','lgt'],9:['lgt','lgt'],10:['lgt','lgt']} },
+    { name:'Dead hang', meta:'2 × 40s', rec:'grip + decompression', cue:'Steel doorframe bar, fully relaxed hang. Directly attacks the grip limitation behind your pull-up ceiling. Once a week, try one set hanging from a towel over the bar.', sets:{1:['40s','40s'],2:['40s','40s'],3:['40s','40s'],4:['40s','40s'],5:['40s','40s'],6:['40s','40s'],7:['40s','40s'],8:['40s','40s'],9:['40s','40s'],10:['30s','30s']} },
+  ],
+  powerPre: [
+    { name:'Spanish squat hold (warm-up)', meta:'2 × 45s', rec:'BEFORE cleans', cue:'Same as Monday — do this before anything else. Quiets the knee down before the most explosive session of the week.', sets:{1:['45s','45s'],2:['45s','45s'],3:['45s','45s'],4:['45s','45s'],5:['45s','45s'],6:['45s','45s'],7:['45s','45s'],8:['45s','45s'],9:['45s','45s'],10:['45s','45s']} },
+    { rest:150, name:'Hang clean', meta:'4 × 3', rec:'SPEED decides the load', cue:'FIRST real lift of the day, while you are fresh. Bar at the hang just above the knee. Hips drive, shrug, high pull, catch high in the power position — no deep squat receive needed. Controlled eccentric back to the hang, no dropping. If the bar slows at your hip, strip 10 lbs. Full 2.5 min rest — this is neural work, not conditioning.', sets:{1:['115','115','115','115'],2:['115','115','115','115'],3:['125','125','125','125'],4:['125','125','125','125'],5:['135','135','135','135'],6:['135','135','135','135'],7:['145','145','145','145'],8:['145','145','145','145'],9:['145','145','145','145'],10:['115','115','115']} },
+    { inc:5, rest:120, name:'Front squat', meta:'3 × 5', rec:'rack position + quads', cue:'Straight after cleans while the rack position is already grooved — this was your idea and it is the right one. Elbows HIGH, bar on the front delts not the hands, wrists loose. Upright torso means quad work that spares your knee.', sets:{1:['105','115','115'],2:['105','115','115'],3:['105','115','115'],4:['105','115','115'],5:['105','115','115'],6:['105','115','115'],7:['105','115','115'],8:['105','115','115'],9:['105','115','115'],10:['95','105','105']} },
+  ],
+  power: [
+    { inc:10, ss:'A', name:'Barbell hip thrust', meta:'3 × 10', rec:'glutes, no spinal load', cue:'Superset with landmine rotations. Replaces Good Mornings this block — Friday already has three spine-loading lifts and a fourth is exactly where your form broke down before. Drive through the heels, 1s squeeze at the top.', sets:{1:['225','245','245'],2:['225','245','245'],3:['225','245','245'],4:['225','245','245'],5:['225','245','245'],6:['225','245','245'],7:['225','245','245'],8:['225','245','245'],9:['225','245','245'],10:['185','205','205']} },
+    { ss:'A', name:'Landmine rotation', meta:'5 ea side', rec:'plate on the sleeve', cue:'Bar in a corner (towel to protect the wall), light plate on the sleeve. Hips BEFORE shoulders — the power comes from trunk rotation. No slamming, no wall needed, gym-legal.', sets:{1:['10','10','10'],2:['10','10','10'],3:['10','10','10'],4:['10','10','10'],5:['10','10','10'],6:['10','10','10'],7:['10','10','10'],8:['10','10','10'],9:['10','10','10'],10:['10','10']} },
+    { inc:5, name:'Seated calf raise', meta:'3 × 15', rec:'plates on lap', cue:'Last calf dose of the week. Full range, 1s pause at the bottom. Frequency across five sessions is what grows calves — this one does not need to be heroic.', sets:{1:['180','180','180'],2:['180','180','180'],3:['180','180','180'],4:['180','180','180'],5:['180','180','180'],6:['180','180','180'],7:['180','180','180'],8:['180','180','180'],9:['180','180','180'],10:['155','155']} },
+  ],
+  prehab: [
+    { name:'Band external rotation', meta:'15 ea', rec:'light band', cue:'Elbow pinned, slow both ways. Saturday maintenance dose, two days before Monday.', sets:{1:['lgt','lgt'],2:['lgt','lgt'],3:['lgt','lgt'],4:['lgt','lgt'],5:['lgt','lgt'],6:['lgt','lgt'],7:['lgt','lgt'],8:['lgt','lgt'],9:['lgt','lgt'],10:['lgt','lgt']} },
+    { name:'Band pull-apart', meta:'20 reps', rec:'light band', cue:'Arms straight, squeeze the blades. Keeps the rear delts and scapula honest.', sets:{1:['lgt','lgt'],2:['lgt','lgt'],3:['lgt','lgt'],4:['lgt','lgt'],5:['lgt','lgt'],6:['lgt','lgt'],7:['lgt','lgt'],8:['lgt','lgt'],9:['lgt','lgt'],10:['lgt','lgt']} },
+    { name:'Dead hang', meta:'30s', rec:'decompression', cue:'Relaxed hang on the home bar — decompresses the spine and shoulders going into Monday.', sets:{1:['30s','30s'],2:['30s','30s'],3:['30s','30s'],4:['30s','30s'],5:['30s','30s'],6:['30s','30s'],7:['30s','30s'],8:['30s','30s'],9:['30s','30s'],10:['30s','30s']} },
+    { name:'Single-leg calf raise', meta:'15 ea', rec:'full range', cue:'Fifth and final calf dose of the week. Even two easy sets compound over 10 weeks.', sets:{1:['BW','BW'],2:['BW','BW'],3:['BW','BW'],4:['BW','BW'],5:['BW','BW'],6:['BW','BW'],7:['BW','BW'],8:['BW','BW'],9:['BW','BW'],10:['BW','BW']} },
+    { name:'Hip 90/90 switches', meta:'8 ea side', rec:'BW — hip mobility', cue:'Rotate slowly between internal and external hip positions. Hip mobility feeds landing mechanics and knee health.', sets:{1:['BW','BW'],2:['BW','BW'],3:['BW','BW'],4:['BW','BW'],5:['BW','BW'],6:['BW','BW'],7:['BW','BW'],8:['BW','BW'],9:['BW','BW'],10:['BW','BW']} },
   ],
 };
 
@@ -3276,7 +3392,8 @@ function accRow(ex, weekN, dayN, isWorking, locked) {
   const inputs = ex.sets.map((v, si) => {
     const id = `${idBase}s${si}`;
     const disAttr = locked ? ' disabled' : '';
-    const checkFn = isWorking ? `handleSetCheck(this,true)` : `handleSetCheck(this,false)`;
+    const restArg = ex.rest ? `,${ex.rest}` : '';
+    const checkFn = isWorking ? `handleSetCheck(this,true${restArg})` : `handleSetCheck(this,false${restArg})`;
     return `<div class="set-wrap">
       <span class="set-lbl">S${si+1}</span>
       <div class="set-input-row">
@@ -3305,7 +3422,7 @@ function accRow(ex, weekN, dayN, isWorking, locked) {
     <div class="acc-header" onclick="toggleCue(this)">
       <div class="acc-header-left">
         <div class="acc-top">
-          <span class="acc-name">${ex.name}</span>
+          <span class="acc-name">${ex.name}</span>${ex.ss ? `<span class="ss-badge">SS ${ex.ss}</span>` : ''}
           <span class="acc-meta">${ex.meta||ex.vol}</span>
           <span class="acc-rec">rec: ${ex.rec}</span>
         </div>
@@ -3346,63 +3463,64 @@ function getPBTitle(dayN) {
   return 'Power block · explosiveness (15 min)';
 }
 
-function getVBCallout(weekN, slot) {
-  if (slot === 0) return 'Lower day. THE RULE this block: if last week\'s listed weight felt clean, this week\'s number is the plan — the app progresses so you don\'t have to remember. Calf volume = anti-cramp for Aug 22.';
-  if (slot === 1) return weekN === 1
-    ? 'No pressing today — you\'re walking into Thursday\'s Olympian session with a fresh shoulder. The DB external rotations are the centerpiece: real load, progressing weekly.'
-    : 'Posterior shoulder day. The DB external rotations and Y-T raises are why your arm holds up on tournament day — treat them like main lifts, not warm-ups.';
-  return 'Hex bar + Good Mornings resume the back progression properly this time. Second cuff dose today — twice-weekly loading is what actually builds tissue capacity.';
+function getGymCallout(weekN, slot) {
+  const phase = weekN <= 2 ? 'Foundation — sets of 10, technique before load. Film your front squat rack position this week.'
+    : weekN <= 5 ? 'Build — sets of 8. The Clean chip is the ONLY thing that raises weight now; baselines stay flat.'
+    : weekN <= 9 ? 'Peak volume — sets of 6, heaviest working sets of the block.'
+    : 'Deload — light loads, same movements. Flush fatigue before Block 2.';
+  if (slot === 'lower') return `Block 1 Week ${weekN}. ${phase} Spanish squat holds go FIRST today, before you touch a bar — they quiet the knee down before squats.`;
+  if (slot === 'pushPull') return `Push + pull. Clean and jerk first while you are fresh, then pull-ups before any rowing. Pull-up protocol: ${weekN <= 2 ? 'bodyweight sets, 1 rep shy of failure.' : weekN <= 4 ? 'bodyweight sets plus banded negatives, 4s down.' : weekN <= 6 ? '+10 lbs, sets of 5.' : weekN <= 8 ? '+20 lbs, sets of 5.' : 'test your new ceiling.'} Bench and row are a superset — alternate them.`;
+  return `Power day. Hang cleans FIRST, 2.5 min rest, speed decides the load. Front squat right after while the rack position is grooved, then the hex bar. Hip thrusts replace Good Mornings this block — three spine-loaded lifts is already enough for one day.`;
+}
+function getHomeCallout(slot) {
+  if (slot === 'homeUpper') return 'Home upper — the session that builds the chest, arms and forearms you asked for. Pull-up practice first: sets at about half your max, never to failure. Overhead triceps extensions are new and they are the biggest gap your old program had.';
+  return 'Home lower + core, placed on Tuesday so Friday power day gets fresh legs. Rear foot LOW on Bulgarians — about 12 inches, not the couch. Everything here is joint insurance plus your third calf dose of the week.';
 }
 
-function buildLiftDay(weekN, slot, w, loads, calDay) {
+function buildGymDay(weekN, slot, w, loads, calDay) {
   const locked = isWeekDone(weekN);
   const dayLabel = DAY_NAMES[calDay];
-  const slotTitles = ['Lower + hinge', 'Pull + posterior shoulder', 'Full body + power'];
-  const primaries = [
-    { key:'squat', name:'Back squat / safety bar', title:'Back squat · primary lift' },
-    { key:'bench', name:'Incline bench', title:'Incline bench · primary lift' },
-    { key:'dl', name:'Hex bar deadlift', title:'Hex bar deadlift · primary lift' },
-  ];
-  const accKeys = ['lower','pull','full'];
-
-  let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-lift">${slotTitles[slot]}</span></div>`;
+  const titles = { lower:'Lower body + hinge', pushPull:'Push + pull', power:'Power + posterior chain' };
+  const primaryMap = { lower:'squat', pushPull:'bench', power:'dl' };
+  const liftNames = { squat:'Back squat / safety bar', bench:'Incline bench', dl:'Hex bar deadlift' };
+  const slot_title = titles[slot] || slot;
+  const primaryKey = primaryMap[slot];
+  let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-lift">${slot_title}</span></div>`;
   if (locked) h += `<div class="locked-banner"><span>✓ Week ${weekN} completed — view only</span></div>`;
-  // Readiness check-in — adjusts today's primary loads if the night was rough
-  const readiness = getReadiness(weekN, slot);
+  // Check-in prompt for weeks 3, 5, 8
+  if (w.checkin && !locked && slot === 'lower') h += buildCheckinPrompt(weekN);
+  if (w.thanksgiving && !locked && slot === 'lower') h += `<div class="callout c-amber">Thanksgiving is Thursday this week and it lands in your heaviest week. If you are travelling, tell Claude and this becomes the deload week instead — do not try to force a peak week around a holiday.</div>`;
+  // Readiness check-in
+  const readiness = getReadiness(weekN, slot === 'lower' ? 0 : slot === 'pushPull' ? 1 : 2);
+  const slotIdx = slot === 'lower' ? 0 : slot === 'pushPull' ? 1 : 2;
   if (!locked) {
     const opts = [['rough','😴','Rough night'],['okay','😐','Okay'],['fresh','💪','Fresh']];
-    h += `<div class="ready-card" data-week="${weekN}" data-slot="${slot}">
+    h += `<div class="ready-card" data-week="${weekN}" data-slot="${slotIdx}">
       <span class="ready-q">How'd you sleep?</span>
       <div class="ready-chips">${opts.map(([v,e,l]) =>
         `<button class="ready-chip${readiness===v?' selected':''}" onclick="tapReadiness(this,'${v}')">${e} ${l}</button>`).join('')}
-      </div>
-    </div>`;
+      </div></div>`;
   }
   if (readiness === 'rough' && !locked) {
-    // Clone loads with ~7% reduction on primary working sets only
     loads = JSON.parse(JSON.stringify(loads));
     ['squat','bench','dl'].forEach(k => { loads[k].ws = loads[k].ws.map(x => r5(x * 0.93)); });
-    h += `<div class="callout c-amber">Loads adjusted −7% for recovery. A lighter session done well beats a planned session done badly — accessories stay as listed, go by feel.</div>`;
+    h += `<div class="callout c-amber">Loads adjusted −7% for recovery. Accessories stay as listed.</div>`;
   }
-  h += `<div class="callout c-blue">${getVBCallout(weekN, slot)}</div>`;
-  // Slot 0 primary: squat. Slot 2 primary: hex bar. Slot 1 primary: bench —
-  // unless this week routes pressing elsewhere (W1: press lives on the full-body
-  // day to keep the shoulder fresh pre-Olympian) or bans it (W4 noPress).
-  const p = primaries[slot];
-  const showPrimary = loads[p.key].ws.length > 0;
-  if (slot === 0 && showPrimary) h += `<div class="section"><div class="section-header">${p.title}</div>${liftRows(loads, p.key, p.name, w, slot, locked)}</div>`;
-  if (slot === 1 && !w.noPress && w.pressOn !== 'full' && loads.bench.ws.length) {
-    h += `<div class="section"><div class="section-header">Incline bench · primary lift (pain-free only)</div>${liftRows(loads, 'bench', 'Incline bench', w, slot, locked)}</div>`;
+  h += `<div class="callout c-blue">${getGymCallout(weekN, slot)}</div>`;
+  // Primary lift (power day: front squat goes first as a header accessory, then hex bar)
+  if (slot === 'power') {
+    // Speed work first: hang clean + front squat come BEFORE the heavy hex bar pull
+    h += `<div class="section"><div class="section-header">Warm-up + speed work · do these first</div>${accRows(ACC.powerPre, weekN, slotIdx, false, locked)}</div>`;
+    h += `<div class="section"><div class="section-header">Hex bar deadlift · primary lift</div>${liftRows(loads, 'dl', 'Hex bar deadlift', w, slotIdx, locked)}</div>`;
+  } else if (loads[primaryKey] && loads[primaryKey].ws.length) {
+    h += `<div class="section"><div class="section-header">${liftNames[primaryKey]} · primary lift</div>${liftRows(loads, primaryKey, liftNames[primaryKey], w, slotIdx, locked)}</div>`;
   }
-  if (slot === 2) {
-    if (loads.dl.ws.length) h += `<div class="section"><div class="section-header">Hex bar deadlift · primary lift</div>${liftRows(loads, 'dl', 'Hex bar deadlift', w, slot, locked)}</div>`;
-    if (w.pressOn === 'full' && loads.bench.ws.length) h += `<div class="section"><div class="section-header">Incline bench · primary lift (pain-free only)</div>${liftRows(loads, 'bench', 'Incline bench', w, slot, locked)}</div>`;
-  }
-  h += `<div class="section"><div class="section-header">Accessories · tap name for cues + last time</div>${accRows(ACC[accKeys[slot]], weekN, slot, false, locked)}</div>`;
+  h += `<div class="section"><div class="section-header">Accessories · tap for cues + last time</div>${accRows(ACC[slot], weekN, slotIdx, false, locked)}</div>`;
   if (!locked) {
-    h += `<div id="status-${weekN}-${slot}"></div>`;
-    h += `<button class="save-btn" onclick="saveSession(${weekN},${slot},'${dayLabel}')">Save session to Google Sheets</button>`;
+    h += `<div id="status-${weekN}-${slotIdx}"></div>`;
+    h += `<button class="save-btn" onclick="saveSession(${weekN},${slotIdx},'${dayLabel}')">Save session to Google Sheets</button>`;
   }
+  if (w.deload && slot === 'power') h += buildEndReport();
   return h + `<div class="spacer"></div>`;
 }
 
@@ -3414,7 +3532,7 @@ function buildEndReport() {
   <div class="section" style="margin-top:20px">
     <div class="section-header">Program complete · end-of-program report</div>
     <div class="report-hero">
-      <div class="report-title">🏐 Bridge block complete</div>
+      <div class="report-title">🏐 Block 1 — Hypertrophy complete</div>
       <div class="report-body">You finished. Now let's build the next block from your actual data.</div>
     </div>
     <div style="padding:4px 0">
@@ -3424,7 +3542,7 @@ function buildEndReport() {
       <div class="report-stat"><span class="report-stat-label">OHP TM</span><span><span class="report-stat-val">${TM.ohp} lbs</span>${gains.ohp !== 0 ? `<span class="report-delta" style="color:${gains.ohp > 0 ? 'var(--green)' : 'var(--red)'}">${gains.ohp > 0 ? '+' : ''}${gains.ohp}</span>` : ''}</span></div>
     </div>
   </div>
-  <div class="callout c-blue" style="margin-top:12px">Bridge block complete. Share your Google Sheet and we'll build the off-season program from your actual data.</div>`;
+  <div class="callout c-blue" style="margin-top:12px">Block 1 — Hypertrophy complete. Share your Google Sheet and we'll build the off-season program from your actual data.</div>`;
 }
 
 function buildWed(weekN, locked) {
@@ -3518,6 +3636,29 @@ function buildTournamentFriday(weekN, w, locked) {
   if (w.n === 9) h += buildEndReport();
   return h + `<div class="spacer"></div>`;
 }
+function buildHomeDay(weekN, slot, w, calDay) {
+  const locked = isWeekDone(weekN);
+  const dayLabel = DAY_NAMES[calDay];
+  const titles = { homeUpper:'Home — upper hypertrophy', homeLower:'Home — lower + core' };
+  const slotIdx = slot === 'homeUpper' ? 3 : 4;
+  let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-lift">${titles[slot]}</span></div>`;
+  if (locked) h += `<div class="locked-banner"><span>✓ Week ${weekN} completed — view only</span></div>`;
+  h += `<div class="callout c-blue">${getHomeCallout(slot)}</div>`;
+  h += `<div class="section"><div class="section-header">Exercises · tap for cues + last time</div>${accRows(ACC[slot], weekN, slotIdx, false, locked)}</div>`;
+  if (!locked) {
+    h += `<div id="status-${weekN}-${slotIdx}"></div>`;
+    h += `<button class="save-btn" onclick="saveSession(${weekN},${slotIdx},'${dayLabel}')">Save to Google Sheets</button>`;
+  }
+  return h + `<div class="spacer"></div>`;
+}
+function buildPrehab(weekN, w) {
+  const locked = isWeekDone(weekN);
+  let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-vb">Prehab · 15 min</span></div>`;
+  if (locked) h += `<div class="locked-banner"><span>✓ Week ${weekN} completed — view only</span></div>`;
+  h += `<div class="callout c-green">Saturday prehab — 15 minutes, no excuses. Two days before Monday's gym session. Shoulder and knee maintenance that compounds across the whole block.</div>`;
+  h += `<div class="section"><div class="section-header">Prehab circuit · tap to check off</div>${accRows(ACC.prehab, weekN, 5, false, locked)}</div>`;
+  return h + `<div class="spacer"></div>`;
+}
 function buildOffDay(weekN, w) {
   let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-vb">Recovery day</span></div>`;
   h += `<div class="callout c-green" style="margin-top:12px">No barbell today. Ten minutes of shoulder care + optional zone-2 — this is where the cuff actually rebuilds and the anti-cramp engine gets built.</div>`;
@@ -3582,14 +3723,17 @@ function buildWeekContent(weekIdx) {
   const w = WEEKS[weekIdx];
   const loads = calcLoads(w.n);
   let html = '';
-  const slotOf = { lower:0, pull:1, full:2 };
   for (let d = 0; d < 7; d++) {
     const token = (w.days && w.days[d]) || 'off';
     let content;
-    if (token in slotOf) content = buildLiftDay(w.n, slotOf[token], w, loads, d);
+    if (token === 'lower') content = buildGymDay(w.n, 'lower', w, loads, d);
+    else if (token === 'push-pull') content = buildGymDay(w.n, 'pushPull', w, loads, d);
+    else if (token === 'power') content = buildGymDay(w.n, 'power', w, loads, d);
+    else if (token === 'home-upper') content = buildHomeDay(w.n, 'homeUpper', w, d);
+    else if (token === 'home-lower') content = buildHomeDay(w.n, 'homeLower', w, d);
+    else if (token === 'prehab') content = buildPrehab(w.n, w);
     else if (token === 'activation') content = buildActivationDay(w.n, w);
     else if (token === 'tournament') content = buildTournamentSat(w.n, w);
-    else if (token === 'olympian') content = buildOlympianDay(w.n, w);
     else content = buildOffDay(w.n, w);
     const isActive = d === currentDayIdx;
     html += `<div class="day-screen${isActive?' active':''}" id="day-${weekIdx}-${d}">${content}</div>`;
@@ -3611,7 +3755,7 @@ function renderWeekInfo() {
   const badge = isWeekDone(w.n) ? '<span class="done-badge">Completed</span>' : '';
   document.getElementById('weekInfo').innerHTML = `<span class="week-title">${w.phase}</span><span class="week-meta">${w.dates} &middot; ${w.intensity} &middot; ${w.volume}</span>${badge}`;
   const heroLbl = document.getElementById('heroWeekLabel');
-  if (heroLbl) heroLbl.textContent = `Week ${w.n} of 6`;
+  if (heroLbl) heroLbl.textContent = `Week ${w.n} of 10`;
 }
 
 function renderDayStrip() {
@@ -3729,7 +3873,10 @@ async function saveSession(weekN, dayN, dayLabelOverride) {
     // Mark week as done after its last lifting day —
     // tournament weeks have no Friday session, so Tuesday (dayN 1) is their last lift day
     const wDef = WEEKS[weekN - 1];
-    const lastLiftDay = (wDef && wDef.lastLiftSlot !== undefined) ? wDef.lastLiftSlot : 2;
+    // lastLiftSlot is now a string ('power','pull',etc) or number for legacy weeks
+    const lastSlotToken = wDef && wDef.lastLiftSlot;
+    const slotTokenMap = {lower:0, 'push-pull':1, pushPull:1, power:2};
+    const lastLiftDay = typeof lastSlotToken === 'string' ? (slotTokenMap[lastSlotToken] !== undefined ? slotTokenMap[lastSlotToken] : 2) : (lastSlotToken !== undefined ? lastSlotToken : 2);
     if (dayN === lastLiftDay) {
       markWeekDone(weekN);
       clearChecksForWeek(weekN);
@@ -3763,6 +3910,72 @@ async function saveMaxes() {
   } catch(e) {
     statusEl.innerHTML='<div class="callout c-error" style="margin-top:8px">Save failed — check your connection</div>';
     btn.disabled=false; btn.textContent='Save maxes to sheet';
+  }
+}
+
+// ── Check-in prompt ──
+const CHECKIN_QUESTIONS = [
+  { id:'home', q:'Home sessions happening?', opts:['Both days','One day','Struggling'] },
+  { id:'knee', q:'Knee status vs last check?', opts:['Better','Same','Worse'] },
+  { id:'shoulder', q:'Shoulder status?', opts:['Better','Same','Worse'] },
+  { id:'progress', q:'Progressions on schedule?', opts:['Yes — chipping up','Most of them','Stalled on some'] },
+  { id:'energy', q:'Energy in sessions?', opts:['Strong','Moderate','Dragging'] },
+];
+let checkinState = {};
+function buildCheckinPrompt(weekN) {
+  // Only show if not already submitted this week
+  const c = loadCache();
+  if (c.checkins && c.checkins[`w${weekN}`]) return `<div class="callout c-green" style="margin:12px 16px 0">✓ Week ${weekN} check-in logged — thanks.</div>`;
+  return `<div class="checkin-card" id="checkinCard${weekN}">
+    <div class="checkin-title">📋 Week ${weekN} Check-in</div>
+    <div class="checkin-sub">Quick pulse — 30 seconds, then back to training</div>
+    ${CHECKIN_QUESTIONS.map(q => `
+      <div class="checkin-q">${q.q}</div>
+      <div class="checkin-opts">${q.opts.map(o =>
+        `<button class="checkin-opt" data-qid="${q.id}" data-val="${o}" onclick="tapCheckin(this)">${o}</button>`
+      ).join('')}</div>
+    `).join('')}
+    <textarea class="vb-notes" id="checkinNotes${weekN}" placeholder="Anything else? (optional)" rows="2" style="margin-top:8px"></textarea>
+    <button class="vb-save-btn" id="checkinSaveBtn${weekN}" onclick="submitCheckin(${weekN})" disabled>Submit check-in</button>
+  </div>`;
+}
+function tapCheckin(btn) {
+  const qid = btn.dataset.qid;
+  const val = btn.dataset.val;
+  checkinState[qid] = val;
+  // Highlight selected in this question
+  btn.closest('.checkin-opts').querySelectorAll('.checkin-opt').forEach(b => b.classList.toggle('selected', b === btn));
+  haptic(6);
+  // Enable submit when all questions answered
+  const allCards = document.querySelectorAll('.checkin-card');
+  allCards.forEach(card => {
+    const btn2 = card.querySelector('[id^="checkinSaveBtn"]');
+    if (btn2) btn2.disabled = CHECKIN_QUESTIONS.some(q => !checkinState[q.id]);
+  });
+}
+async function submitCheckin(weekN) {
+  const btn = document.getElementById(`checkinSaveBtn${weekN}`);
+  if (btn) { btn.disabled = true; btn.textContent = 'Logging...'; }
+  const notes = document.getElementById(`checkinNotes${weekN}`)?.value || '';
+  const date = new Date().toLocaleDateString('en-US');
+  const row = [date, `Week ${weekN}`,
+    checkinState.home||'', checkinState.knee||'', checkinState.shoulder||'',
+    checkinState.progress||'', checkinState.energy||'', notes];
+  try {
+    await fetch(SHEET_URL, {
+      method:'POST', mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ tab:'Check-ins', row })
+    });
+    const c = loadCache();
+    if (!c.checkins) c.checkins = {};
+    c.checkins[`w${weekN}`] = true;
+    saveCache(c);
+    checkinState = {};
+    haptic(20);
+    renderContent();
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Retry'; }
   }
 }
 
