@@ -1,4 +1,4 @@
-// VB Strength — Google Apps Script backend (version 2)
+// VB Strength — Google Apps Script backend (version 3)
 //
 // Paste this whole file into Extensions → Apps Script, then
 // Deploy → Manage deployments → edit (pencil) → Version: New version → Deploy.
@@ -7,6 +7,7 @@
 // Tabs
 //   Sets     — one row per set (the training log). Created automatically from Log the first time it's needed.
 //   Log      — the old one-row-per-exercise log. Kept untouched as a backup; nothing writes to it any more.
+//   Feedback — one row per exercise per session: how it felt (easy / right / grind) and an optional note.
 //   Program  — exercises, cues and target weights by week. The app fills it in the first time it opens.
 //   VB Sessions, Check-ins, Maxes — unchanged.
 //
@@ -19,10 +20,13 @@
 //   POST { tab, row }            single row (older app versions)
 //   POST { action:'seedProgram', rows }  fill the Program tab, only if it's empty
 
-var VERSION = 2;
+var VERSION = 3;
 var WEEK_COUNT = 10;
-var SETS_HEADER = ['Date', 'Week', 'Day', 'Session', 'Exercise ID', 'Exercise', 'Set', 'Value', 'Weight', 'Reps', 'Save ID'];
-var SETS_SAVEID_COL = 11;
+var SETS_HEADER = ['Date', 'Week', 'Day', 'Session', 'Exercise ID', 'Exercise', 'Set', 'Value', 'Weight', 'Reps', 'Save ID', 'Block'];
+var FEEDBACK_HEADER = ['Date', 'Week', 'Day', 'Session', 'Exercise ID', 'Exercise', 'Effort', 'Note', 'Save ID'];
+// Tabs whose rows carry a Save ID column: duplicates are detected from the sheet itself, not a short-lived cache
+var SAVEID_COL = { Sets: 11, Feedback: 9 };
+var TAB_WIDTH = { Sets: 12, Feedback: 9 };
 var PROGRAM_HEADER = ['Group', 'Order', 'Exercise ID', 'Name', 'Superset', 'Sets × reps', 'Rec', 'Rest (s)', 'Increment', 'Cue']
   .concat(weekHeaders_());
 
@@ -59,31 +63,33 @@ function doPost(e) {
     var tabName = data.tab || 'Log';
     if (tabName === 'Sets') ensureSets_(true);
     var ws = getOrCreateTab_(tabName);
+    if (tabName === 'Sets') ensureSetsHeader_(ws);
     var cache = CacheService.getScriptCache();
 
     // Ignore a save we've already written (double tap, retry after bad signal)
     var batchKey = data.saveId ? 'save:' + data.saveId : null;
     var partKey = (batchKey && data.part !== undefined) ? batchKey + ':' + data.part : null;
-    if (tabName === 'Sets' && data.saveId && setsHasSaveId_(ws, data.saveId)) {
+    var idCol = SAVEID_COL[tabName];
+    if (idCol && data.saveId && tabHasSaveId_(ws, idCol, data.saveId)) {
       return json_({ status: 'ok', written: 0, duplicate: true, version: VERSION });
     }
-    if (tabName !== 'Sets' && ((batchKey && cache.get(batchKey)) || (partKey && cache.get(partKey)))) {
+    if (!idCol && ((batchKey && cache.get(batchKey)) || (partKey && cache.get(partKey)))) {
       return json_({ status: 'ok', written: 0, duplicate: true, version: VERSION });
     }
 
     var rows = Array.isArray(data.rows) ? data.rows : (data.row ? [data.row] : []);
     rows = rows.filter(function (r) { return Array.isArray(r) && r.length; });
-    if (tabName === 'Sets') {
+    if (idCol) {
       rows = rows.map(function (r) {
-        var x = r.slice(0, SETS_HEADER.length);
-        while (x.length < SETS_HEADER.length) x.push('');
-        x[SETS_SAVEID_COL - 1] = data.saveId || '';
+        var x = r.slice(0, TAB_WIDTH[tabName]);
+        while (x.length < TAB_WIDTH[tabName]) x.push('');
+        x[idCol - 1] = data.saveId || '';
         return x;
       });
     }
     writeRows_(ws, rows);
 
-    if (tabName !== 'Sets') {
+    if (!idCol) {
       if (partKey) cache.put(partKey, '1', 21600);
       else if (batchKey) cache.put(batchKey, '1', 21600);
     }
@@ -115,6 +121,13 @@ function ensureSets_(haveLock) {
   }
 }
 
+// Older Sets tabs have 11 columns — add the Block header once, without touching any rows
+function ensureSetsHeader_(ws) {
+  if (ws.getRange(1, SETS_HEADER.length).getValue() !== 'Block') {
+    ws.getRange(1, SETS_HEADER.length).setValue('Block').setFontWeight('bold');
+  }
+}
+
 function convertLog_(logWs, tz) {
   if (!logWs || logWs.getLastRow() < 2) return [];
   var values = logWs.getDataRange().getValues();
@@ -140,19 +153,19 @@ function convertLog_(logWs, tz) {
   return out;
 }
 
-function setsHasSaveId_(ws, saveId) {
+function tabHasSaveId_(ws, idCol, saveId) {
   var last = ws.getLastRow();
   if (last < 2) return false;
   var start = Math.max(2, last - 3000);
-  var ids = ws.getRange(start, SETS_SAVEID_COL, last - start + 1, 1).getValues();
+  var ids = ws.getRange(start, idCol, last - start + 1, 1).getValues();
   for (var i = ids.length - 1; i >= 0; i--) if (ids[i][0] === saveId) return true;
   return false;
 }
 
 function isSaved_(saveId, tabName) {
-  if (tabName === 'Sets') {
-    var ws = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Sets');
-    return !!ws && setsHasSaveId_(ws, saveId);
+  if (SAVEID_COL[tabName]) {
+    var ws = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(tabName);
+    return !!ws && tabHasSaveId_(ws, SAVEID_COL[tabName], saveId);
   }
   return !!CacheService.getScriptCache().get('save:' + saveId);
 }
@@ -216,6 +229,11 @@ function getOrCreateTab_(tabName) {
     ws = ss.insertSheet(tabName);
     if (tabName === 'Log') ws.appendRow(['Date', 'Week', 'Day', 'Exercise', 'Sets', 'Reps', 'Set1', 'Set2', 'Set3', 'Set4', 'Set5', 'Notes']);
     if (tabName === 'Maxes') ws.appendRow(['Date', 'Squat TM', 'Bench TM', 'Hex DL TM', 'OHP TM']);
+  }
+  if (tabName === 'Feedback' && ws.getLastRow() === 0) {
+    ws.getRange(1, 1, 1, FEEDBACK_HEADER.length).setValues([FEEDBACK_HEADER]).setFontWeight('bold');
+    ws.setFrozenRows(1);
+    ws.getRange('H:H').setNumberFormat('@'); // notes stay exactly as typed
   }
   return ws;
 }

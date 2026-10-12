@@ -1030,11 +1030,79 @@ function liftRows(loads, key, name, w, dayN, locked) {
       checkHTML +
       `</div>`;
   });
+  if (!locked) h += effortRowHTML(w.n, dayN, key, name);
   return h;
 }
 
-function accRow(ex, weekN, dayN, isWorking, locked) {
+// ── Effort feedback — one tap (+ optional note) per logged exercise ──
+// `prep` rows (warm-up, primer, cool-down, prehab) are checked off but never logged.
+const EFFORT_LABELS = { easy: 'Easy', right: 'Right', grind: 'Grind' };
+function effortKey(weekN, dayN, exid) { return `${weekN}|${dayN}|${exid}`; }
+function getEffort(weekN, dayN, exid) {
+  const c = loadCache();
+  return (c.effort && c.effort[effortKey(weekN, dayN, exid)]) || { e: '', n: '' };
+}
+function setEffortState(weekN, dayN, exid, patch) {
+  const c = loadCache();
+  if (!c.effort) c.effort = {};
+  const k = effortKey(weekN, dayN, exid);
+  const cur = c.effort[k] || { e: '', n: '' };
+  c.effort[k] = { ...cur, ...patch };
+  if (!c.effort[k].e && !c.effort[k].n) delete c.effort[k];
+  saveCache(c);
+}
+function effortRowHTML(weekN, dayN, exid, name) {
+  const cur = getEffort(weekN, dayN, exid);
+  const chip = v => `<button class="prog-chip eff-chip eff-${v}${cur.e === v ? ' selected' : ''}" onclick="tapEffort(this,'${v}')">${EFFORT_LABELS[v]}</button>`;
+  const noteOpen = !!cur.n;
+  return `<div class="effort-row" data-week="${weekN}" data-day="${dayN}" data-exid="${exid}" data-name="${String(name).replace(/"/g, '&quot;')}">
+    <div class="effort-line">
+      <span class="prog-q">Felt</span>
+      ${chip('easy')}${chip('right')}${chip('grind')}
+      <button class="eff-note-btn${noteOpen ? ' has-note' : ''}" onclick="toggleEffortNote(this)" aria-label="Add a note">${noteOpen ? 'Note ✓' : 'Note'}</button>
+    </div>
+    <textarea class="eff-note" rows="2" maxlength="400" placeholder="Anything worth telling Claude — pain, gear, how the last reps moved"${noteOpen ? '' : ' hidden'} oninput="saveEffortNote(this)">${(cur.n || '').replace(/</g, '&lt;')}</textarea>
+  </div>`;
+}
+function tapEffort(btn, val) {
+  const row = btn.closest('.effort-row');
+  const { week, day, exid } = row.dataset;
+  const was = getEffort(week, day, exid).e;
+  const next = was === val ? '' : val; // tapping the same one again clears it
+  setEffortState(week, day, exid, { e: next });
+  row.querySelectorAll('.eff-chip').forEach(b => b.classList.toggle('selected', b.classList.contains('eff-' + next)));
+  haptic(10);
+}
+function toggleEffortNote(btn) {
+  const row = btn.closest('.effort-row');
+  const ta = row.querySelector('.eff-note');
+  ta.hidden = !ta.hidden;
+  if (!ta.hidden) ta.focus();
+}
+function saveEffortNote(ta) {
+  const row = ta.closest('.effort-row');
+  const { week, day, exid } = row.dataset;
+  setEffortState(week, day, exid, { n: ta.value.trim() });
+  const b = row.querySelector('.eff-note-btn');
+  const has = !!ta.value.trim();
+  b.classList.toggle('has-note', has);
+  b.textContent = has ? 'Note ✓' : 'Note';
+}
+// Feedback rows for the exercises on screen that were rated or noted
+function collectFeedbackRows(weekN, dayN, session, date, dayLabel) {
+  const rows = [];
+  document.querySelectorAll(`.effort-row[data-week="${weekN}"][data-day="${dayN}"]`).forEach(row => {
+    const exid = row.dataset.exid;
+    const cur = getEffort(weekN, dayN, exid);
+    if (!cur.e && !cur.n) return;
+    rows.push([date, `Week ${weekN}`, dayLabel, session, exid, row.dataset.name, cur.e, cur.n, '']);
+  });
+  return rows;
+}
+
+function accRow(ex, weekN, dayN, isWorking, locked, prep) {
   const idBase = `w${weekN}d${dayN}${ex.name.replace(/\s/g,'').substring(0,8)}`;
+  const nologAttr = prep ? ' data-nolog="1"' : '';
   const inputs = ex.sets.map((v, si) => {
     const id = `${idBase}s${si}`;
     const disAttr = locked ? ' disabled' : '';
@@ -1043,7 +1111,7 @@ function accRow(ex, weekN, dayN, isWorking, locked) {
     return `<div class="set-wrap">
       <span class="set-lbl">S${si+1}</span>
       <div class="set-input-row">
-        <input id="${id}" class="set-input" data-week="${weekN}" data-day="${dayN}" data-ex="${ex.name}" data-exid="${ex.id || exId(ex.name)}" data-s="${si}" type="text" value="${v}" inputmode="text"${disAttr}>
+        <input id="${id}" class="set-input" data-week="${weekN}" data-day="${dayN}" data-ex="${ex.name}" data-exid="${ex.id || exId(ex.name)}" data-s="${si}" type="text" value="${v}" inputmode="text"${disAttr}${nologAttr}>
         ${!locked ? `<div class="set-check" onclick="${checkFn}"></div>` : ''}
       </div>
     </div>`;
@@ -1081,11 +1149,12 @@ function accRow(ex, weekN, dayN, isWorking, locked) {
       <div class="set-inputs">${inputs}</div>
       ${autofillBtn}
       ${verdictHTML}
+      ${(prep || locked) ? '' : effortRowHTML(weekN, dayN, ex.id || exId(ex.name), ex.name)}
     </div>
   </div>`;
 }
 
-function accRows(arr, weekN, dayN, isWorking, locked) {
+function accRows(arr, weekN, dayN, isWorking, locked, prep) {
   return arr.map(ex => {
     let sets = Array.isArray(ex.sets) ? ex.sets : (ex.sets[weekN] || []);
     if (!sets.length) return ''; // exercise not programmed this week
@@ -1094,7 +1163,7 @@ function accRows(arr, weekN, dayN, isWorking, locked) {
       const off = getProgOffset(ex.name);
       if (off) sets = sets.map(v => bumpVal(v, off));
     }
-    return accRow({ ...ex, sets, baseSets: ex.sets }, weekN, dayN, isWorking, locked);
+    return accRow({ ...ex, sets, baseSets: ex.sets }, weekN, dayN, isWorking, locked, prep);
   }).join('');
 }
 
@@ -1156,9 +1225,9 @@ function buildGymDay(weekN, slot, w, loads, calDay) {
   h += `<div class="callout c-blue">${getGymCallout(weekN, slot)}</div>`;
   // Warm-up — identical general block every day, then a primer specific to today
   const primers = { lower: ACC.primerLower, pushPull: ACC.primerPushPull, power: ACC.primerPower };
-  h += `<div class="section"><div class="section-header">Warm-up · same every day</div>${accRows(ACC.warmupGeneral, weekN, slotIdx, false, locked)}</div>`;
+  h += `<div class="section"><div class="section-header">Warm-up · same every day</div>${accRows(ACC.warmupGeneral, weekN, slotIdx, false, locked, true)}</div>`;
   if (primers[slot]) {
-    h += `<div class="section"><div class="section-header">Primer · today only</div>${accRows(primers[slot], weekN, slotIdx, false, locked)}</div>`;
+    h += `<div class="section"><div class="section-header">Primer · today only</div>${accRows(primers[slot], weekN, slotIdx, false, locked, true)}</div>`;
   }
   // Primary lift (power day: speed work comes before the heavy hex bar pull)
   if (slot === 'power') {
@@ -1176,7 +1245,7 @@ function buildGymDay(weekN, slot, w, loads, calDay) {
   }
   const cooldowns = { lower: ACC.cooldownLower, pushPull: ACC.cooldownPushPull, power: ACC.cooldownPower };
   if (cooldowns[slot]) {
-    h += `<div class="section"><div class="section-header">Cool-down · optional</div>${accRows(cooldowns[slot], weekN, slotIdx, false, locked)}</div>`;
+    h += `<div class="section"><div class="section-header">Cool-down · optional</div>${accRows(cooldowns[slot], weekN, slotIdx, false, locked, true)}</div>`;
   }
   if (!locked) {
     h += `<div id="status-${weekN}-${slotIdx}"></div>`;
@@ -1309,7 +1378,7 @@ function buildHomeDay(weekN, slot, w, calDay) {
   h += `<div class="callout c-blue">${getHomeCallout(slot)}</div>`;
   h += `<div class="section"><div class="section-header">Exercises · tap for cues + last time</div>${accRows(ACC[slot], weekN, slotIdx, false, locked)}</div>`;
   const homeCool = slot === 'homeUpper' ? ACC.cooldownHomeUpper : ACC.cooldownHomeLower;
-  h += `<div class="section"><div class="section-header">Cool-down · optional</div>${accRows(homeCool, weekN, slotIdx, false, locked)}</div>`;
+  h += `<div class="section"><div class="section-header">Cool-down · optional</div>${accRows(homeCool, weekN, slotIdx, false, locked, true)}</div>`;
   if (!locked) {
     h += `<div id="status-${weekN}-${slotIdx}"></div>`;
     h += `<button class="save-btn" onclick="saveSession(${weekN},${slotIdx},'${dayLabel}',this)">Save to Google Sheets</button>`;
@@ -1322,7 +1391,7 @@ function buildPrehab(weekN, w) {
   let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-vb">Prehab · 15 min</span></div>`;
   if (locked) h += `<div class="locked-banner"><span>✓ Week ${weekN} completed — view only</span></div>`;
   h += `<div class="callout c-green">Saturday prehab — 15 minutes, no excuses. Two days before Monday's gym session. Shoulder and knee maintenance that compounds across the whole block.</div>`;
-  h += `<div class="section"><div class="section-header">Prehab circuit · tap to check off</div>${accRows(ACC.prehab, weekN, 5, false, locked)}</div>`;
+  h += `<div class="section"><div class="section-header">Prehab circuit · tap to check off</div>${accRows(ACC.prehab, weekN, 5, false, locked, true)}</div>`;
   h += `<div class="section"><div class="section-header">Zone 2 · the cramping lever</div>${accRows([{ rest:0, name:'Zone 2 aerobic', meta:'30-40 min', rec:'conversational pace', cue:'Brisk walk with the stroller, home stairs, or bike/stairmaster if you are at the gym. You must be able to hold a conversation — if you cannot, slow down. This is the piece that actually raises the ceiling you played under in the finals, and it only works if it is boring and consistent. Sunday counts as a second dose if life allows.', sets:['30-40 min'] }], weekN, 5, false, locked)}</div>`;
   return h + `<div class="spacer"></div>`;
 }
@@ -1496,7 +1565,7 @@ const INPUT_IDS = {}; // exercise name → id, filled from the inputs on screen
 function getInputsForDay(weekN, dayN) {
   const data = {};
   // Accessories
-  document.querySelectorAll(`.set-input[data-week="${weekN}"][data-day="${dayN}"]`).forEach(inp => {
+  document.querySelectorAll(`.set-input[data-week="${weekN}"][data-day="${dayN}"]:not([data-nolog])`).forEach(inp => {
     const ex = inp.getAttribute('data-ex');
     const s = parseInt(inp.getAttribute('data-s'));
     if (inp.dataset.exid) INPUT_IDS[ex] = inp.dataset.exid;
@@ -1521,6 +1590,7 @@ function getInputsForDay(weekN, dayN) {
 
 const _savingSessions = {};
 const _lastSessionSave = {};
+const _lastFeedbackSig = {};
 async function saveSession(weekN, dayN, dayLabelOverride, btnEl) {
   const lockKey = `${weekN}-${dayN}`;
   if (_savingSessions[lockKey]) return; // ignore repeat taps while a save is running
@@ -1547,7 +1617,7 @@ async function saveSession(weekN, dayN, dayLabelOverride, btnEl) {
       sets.forEach((v, i) => {
         if (v === undefined || v === null || v === '' || v === '-' || /^-×/.test(v)) return;
         const pv = parseSetValue(v);
-        setRows.push([date, `Week ${weekN}`, dayLabel, session, id, name, i + 1, String(v), pv.weight, pv.reps, '']);
+        setRows.push([date, `Week ${weekN}`, dayLabel, session, id, name, i + 1, String(v), pv.weight, pv.reps, '', PROGRAM_BLOCK]);
       });
     });
     // A second tap on an identical session within 2 minutes is ignored
@@ -1561,6 +1631,14 @@ async function saveSession(weekN, dayN, dayLabelOverride, btnEl) {
     const saveId = newSaveId();
     _lastSessionSave[lockKey] = { sig, at: Date.now() };
     queueSave({ id: saveId, tab: 'Sets', rows: setRows, legacy, label: `${dayLabel} session` });
+    // How each exercise felt (Easy / Right / Grind + note) goes in its own small job.
+    // Only re-sent if something changed since the last save of this day.
+    const fbRows = collectFeedbackRows(weekN, dayN, session, date, dayLabel);
+    const fbSig = JSON.stringify(fbRows.map(r => r.slice(4, 8)));
+    if (fbRows.length && _lastFeedbackSig[lockKey] !== fbSig) {
+      _lastFeedbackSig[lockKey] = fbSig;
+      queueSave({ id: newSaveId(), tab: 'Feedback', rows: fbRows, legacy: fbRows.map(r => ({ tab: 'Feedback', row: r })), label: `${dayLabel} feedback` });
+    }
     applyLocalHistory(); // "last time" includes this session straight away
     if (statusEl) statusEl.innerHTML = syncNoteHTML(saveId);
     if (btn) { btn.textContent = 'Saved ✓'; setTimeout(()=>{ btn.disabled=false; btn.textContent='Save session to Google Sheets'; }, 3000); }

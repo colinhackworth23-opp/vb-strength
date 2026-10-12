@@ -1,6 +1,9 @@
 // VB Strength — built-in program (weeks, exercise groups).
 // The Program tab in the Google Sheet overrides the exercise groups once it exists.
 
+// Which training block new log rows belong to (written to the Sets tab's Block column)
+const PROGRAM_BLOCK = 'fall-2026-b1';
+
 // ── Data ──
 const WEEKS = [
   { n:1, phase:'Foundation', dates:'Sep 28 – Oct 4', intensity:'65% TM', volume:'4×10', rpe:'6', reps:10,
