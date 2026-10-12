@@ -2023,7 +2023,7 @@ function updateSyncPill(state, pending) {
     pill.hidden = false;
     pill.classList.remove('ok');
     const n = pending === 1 ? '1 save' : `${pending} saves`;
-    pill.textContent = state === 'sending' ? `Syncing ${n}…` : `${n} waiting for signal · tap to retry`;
+    pill.textContent = state === 'sending' ? `Syncing ${n}…` : `${n} waiting · tap to retry`;
   } else if (!pill.hidden) {
     pill.classList.add('ok');
     pill.textContent = 'All saved to Google Sheets ✓';

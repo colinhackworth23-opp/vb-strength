@@ -1,4 +1,5 @@
 // VB Strength — service worker
+// Caches the page plus app.css, program.js, sync.js, app.js and icon.png as they're fetched.
 // Strategy: network-first with a short timeout. Every open tries the network for
 // fresh code (so deploys show up on the next open with decent signal), but if the
 // network hasn't answered within NETWORK_TIMEOUT_MS and a saved copy exists, the
@@ -30,7 +31,14 @@ self.addEventListener('fetch', (e) => {
 
   const network = caches.open(CACHE).then((cache) =>
     fetch(e.request).then((res) => {
-      if (res && res.ok) cache.put(e.request, res.clone());
+      if (res && res.ok) {
+        cache.put(e.request, res.clone());
+        // Drop older versions of the same file (app.js?v=old) so the cache doesn't grow with every deploy
+        if (url.search) cache.keys().then((keys) => keys.forEach((k) => {
+          const ku = new URL(k.url);
+          if (ku.pathname === url.pathname && ku.search !== url.search) cache.delete(k);
+        }));
+      }
       return res;
     })
   );
