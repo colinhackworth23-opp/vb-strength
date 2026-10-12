@@ -260,9 +260,9 @@ body {
   position: sticky;
   top: 0;
   z-index: 20;
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  backdrop-filter: blur(10px) saturate(170%);
+  -webkit-backdrop-filter: blur(10px) saturate(170%);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
 }
 .header-top { padding: 0; }
 
@@ -1009,9 +1009,9 @@ body {
   display: flex;
   padding: var(--s2) 0 env(safe-area-inset-bottom, 12px);
   z-index: 30;
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  backdrop-filter: blur(10px) saturate(170%);
+  -webkit-backdrop-filter: blur(10px) saturate(170%);
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
 }
 .nav-btn {
   flex: 1;
@@ -2468,6 +2468,39 @@ function loadCache() {
 function saveCache(data) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch(e) { /* quota exceeded or storage blocked — fail silently */ }
 }
+// ── Sheet reads — one shared request per tab, with a copy kept on the phone ──
+// The app paints from the saved copy instantly, then refreshes it in the background.
+const TAB_CACHE_PREFIX = 'vb-strength-tab-';
+const _tabInflight = {};
+function getCachedTab(tab) {
+  try {
+    const c = JSON.parse(localStorage.getItem(TAB_CACHE_PREFIX + tab));
+    return c && c.data ? c.data : null;
+  } catch(e) { return null; }
+}
+// Resolves to { data, changed } — `changed` is false when the sheet matches the saved copy.
+// Pass { fresh: true } after a write so an older in-flight read isn't reused.
+function fetchTab(tab, opts) {
+  const fresh = opts && opts.fresh;
+  if (!fresh && _tabInflight[tab]) return _tabInflight[tab];
+  const req = fetch(SHEET_URL + '?tab=' + encodeURIComponent(tab))
+    .then(r => r.json())
+    .then(data => {
+      const str = JSON.stringify(data);
+      let prev = null;
+      try { prev = localStorage.getItem(TAB_CACHE_PREFIX + tab); } catch(e) {}
+      const changed = !prev || JSON.stringify((JSON.parse(prev) || {}).data) !== str;
+      if (changed) {
+        try { localStorage.setItem(TAB_CACHE_PREFIX + tab, JSON.stringify({ t: Date.now(), data })); } catch(e) { /* storage full or blocked */ }
+      }
+      return { data, changed };
+    })
+    .finally(() => { if (_tabInflight[tab] === req) delete _tabInflight[tab]; });
+  _tabInflight[tab] = req;
+  return req;
+}
+const tabRows = d => (d && d.rows ? d.rows.slice(1) : []);
+
 function saveInputToCache(key, value) {
   const cache = loadCache();
   if (!cache.inputs) cache.inputs = {};
@@ -2685,10 +2718,23 @@ function parseSetCell(val) {
   if (!isNaN(numOnly)) return { weight: numOnly, reps: 1 };
   return null;
 }
-async function loadLastTimeData() {
+// Paint "last time" + PR data from the saved copy, before any network call
+function applyCachedLogData() {
+  const cached = getCachedTab('Log');
+  if (cached) { try { applyLogData(cached); } catch(e) {} }
+}
+// Returns true when fresh data differed from the saved copy (caller re-renders only then)
+async function loadLastTimeData(opts) {
   try {
-    const res = await fetch(SHEET_URL + '?tab=Log');
-    const data = await res.json();
+    const { data, changed } = await fetchTab('Log', opts);
+    if (changed) applyLogData(data);
+    return changed;
+  } catch(e) {
+    return false; // offline — keep whatever the saved copy gave us
+  }
+}
+function applyLogData(data) {
+  {
     if (!data.rows || data.rows.length < 2) return;
     const rows = data.rows.slice(1); // skip header
     // Reset PR history before re-populating (handles re-fetch after a save)
@@ -2721,8 +2767,6 @@ async function loadLastTimeData() {
       }
     });
     LAST_TIME_LOADED = true;
-  } catch(e) {
-    // Silently fail — last-time display will simply not render
   }
 }
 function getLastTime(exerciseName) {
@@ -3385,7 +3429,7 @@ const ACC = {
     { inc:5, rest:120, name:'Front squat', meta:'3 × 5', rec:'rack position + quads', cue:'Straight after cleans while the rack position is already grooved — this was your idea and it is the right one. Elbows HIGH, bar on the front delts not the hands, wrists loose. Upright torso means quad work that spares your knee.', sets:{1:['105','115','115'],2:['105','115','115'],3:['105','115','115'],4:['105','115','115'],5:['105','115','115'],6:['105','115','115'],7:['105','115','115'],8:['105','115','115'],9:['105','115','115'],10:['95','105','105']} },
   ],
   power: [
-    { inc:10, ss:'A', name:'Barbell hip thrust', meta:'3 × 10', rec:'glutes, no spinal load', cue:'Superset with landmine rotations. Replaces Good Mornings this block — Friday already has three spine-loading lifts and a fourth is exactly where your form broke down before. Drive through the heels, 1s squeeze at the top.', sets:{1:['225','245','245'],2:['225','245','245'],3:['225','245','245'],4:['225','245','245'],5:['225','245','245'],6:['225','245','245'],7:['225','245','245'],8:['225','245','245'],9:['225','245','245'],10:['185','205','205']} },
+    { inc:10, ss:'A', name:'Barbell hip thrust', meta:'3 × 10', rec:'glutes, no spinal load', cue:'Superset with landmine rotations. Replaces Good Mornings this block — Friday already has three spine-loading lifts and a fourth is exactly where your form broke down before. Drive through the heels, 1s squeeze at the top.', sets:{1:['225','245','245'],2:['235', '255', '305'],3:['245', '275', '315'],4:['255', '285', '325'],5:['255', '285', '325'],6:['265', '295', '335'],7:['265', '295', '335'],8:['275', '305', '340'],9:['275', '305', '340'],10:['225', '245', '265']} },
     { ss:'A', name:'Landmine rotation', meta:'5 ea side', rec:'plate on the sleeve', cue:'Bar in a corner (towel to protect the wall), light plate on the sleeve. Hips BEFORE shoulders — the power comes from trunk rotation. No slamming, no wall needed, gym-legal.', sets:{1:['10','10','10'],2:['10','10','10'],3:['10','10','10'],4:['10','10','10'],5:['10','10','10'],6:['10','10','10'],7:['10','10','10'],8:['10','10','10'],9:['10','10','10'],10:['10','10']} },
     { inc:5, name:'Seated calf raise', meta:'3 × 15', rec:'plates on lap', cue:'Last calf dose of the week. Full range, 1s pause at the bottom. Frequency across five sessions is what grows calves — this one does not need to be heroic.', sets:{1:['180','180','180'],2:['180','180','180'],3:['180','180','180'],4:['180','180','180'],5:['180','180','180'],6:['180','180','180'],7:['180','180','180'],8:['180','180','180'],9:['180','180','180'],10:['155','155']} },
   ],
@@ -3629,7 +3673,7 @@ function buildGymDay(weekN, slot, w, loads, calDay) {
   }
   if (!locked) {
     h += `<div id="status-${weekN}-${slotIdx}"></div>`;
-    h += `<button class="save-btn" onclick="saveSession(${weekN},${slotIdx},'${dayLabel}')">Save session to Google Sheets</button>`;
+    h += `<button class="save-btn" onclick="saveSession(${weekN},${slotIdx},'${dayLabel}',this)">Save session to Google Sheets</button>`;
     h += `<button class="share-btn" onclick="shareDay(${weekN-1},${calDay},'Block 1 · Week ${weekN} · ${dayLabel} — ${slot_title}')">Share this workout</button>`;
   }
   if (w.deload && slot === 'power') h += buildEndReport();
@@ -3708,7 +3752,7 @@ function buildSat(weekN, locked) {
   h += `<div class="section"><div class="section-header">Arm pump · tap name for cues</div>${accRows(PUMP, weekN, 5, false, locked)}</div>`;
   h += `<div class="callout c-amber">Keep it fun. No PRs today — just a good pump and get out in 45 min.</div>`;
   if (!locked) {
-    h += `<div id="status-${weekN}-5"></div><button class="save-btn" onclick="saveSession(${weekN},5)">Save session to Google Sheets</button>`;
+    h += `<div id="status-${weekN}-5"></div><button class="save-btn" onclick="saveSession(${weekN},5,undefined,this)">Save session to Google Sheets</button>`;
   }
   return h + `<div class="spacer"></div>`;
 }
@@ -3761,7 +3805,7 @@ function buildHomeDay(weekN, slot, w, calDay) {
   h += `<div class="section"><div class="section-header">Cool-down · optional</div>${accRows(homeCool, weekN, slotIdx, false, locked)}</div>`;
   if (!locked) {
     h += `<div id="status-${weekN}-${slotIdx}"></div>`;
-    h += `<button class="save-btn" onclick="saveSession(${weekN},${slotIdx},'${dayLabel}')">Save to Google Sheets</button>`;
+    h += `<button class="save-btn" onclick="saveSession(${weekN},${slotIdx},'${dayLabel}',this)">Save to Google Sheets</button>`;
     h += `<button class="share-btn" onclick="shareDay(${weekN-1},${calDay},'Block 1 · Week ${weekN} · ${dayLabel} — ${titles[slot]}')">Share this workout</button>`;
   }
   return h + `<div class="spacer"></div>`;
@@ -3966,10 +4010,15 @@ function getInputsForDay(weekN, dayN) {
   return data;
 }
 
-async function saveSession(weekN, dayN, dayLabelOverride) {
+const _savingSessions = {};
+async function saveSession(weekN, dayN, dayLabelOverride, btnEl) {
+  const lockKey = `${weekN}-${dayN}`;
+  if (_savingSessions[lockKey]) return; // ignore repeat taps while a save is running
+  _savingSessions[lockKey] = true;
   const statusEl = document.getElementById(`status-${weekN}-${dayN}`);
-  const btn = document.querySelector(`button[onclick="saveSession(${weekN},${dayN})"]`);
+  const btn = btnEl || document.querySelector(`button[onclick="saveSession(${weekN},${dayN})"]`);
   if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+  if (navigator.vibrate) { try { navigator.vibrate(15); } catch(e){} }
   // Snapshot PRs BEFORE saving so we can compare this session against history
   const prSnapshot = snapshotPRs();
   const sessionLifts = (dayN === 0 || dayN === 1 || dayN === 2) ? getSessionLiftBests(weekN, dayN) : [];
@@ -3977,12 +4026,16 @@ async function saveSession(weekN, dayN, dayLabelOverride) {
   const date = new Date().toLocaleDateString('en-US');
   const dayLabel = dayLabelOverride || DAY_NAMES[dayN]; // fix: Friday no longer saved as 'Wednesday'
   try {
-    for (const [ex, sets] of Object.entries(inputs)) {
+    const entries = Object.entries(inputs);
+    let done = 0;
+    for (const [ex, sets] of entries) {
       await fetch(SHEET_URL, {
         method:'POST', mode:'no-cors',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({tab:'Log', row:[date,`Week ${weekN}`,dayLabel,ex,sets.length,'',...sets]})
       });
+      done++;
+      if (btn) btn.textContent = `Saving ${done}/${entries.length}...`;
     }
     if (statusEl) statusEl.innerHTML = `<div class="callout c-success" style="margin-top:8px">Session saved to Google Sheets</div>`;
     if (btn) { btn.textContent = 'Saved ✓'; setTimeout(()=>{ btn.disabled=false; btn.textContent='Save session to Google Sheets'; }, 3000); }
@@ -4006,10 +4059,12 @@ async function saveSession(weekN, dayN, dayLabelOverride) {
       setTimeout(() => celebratePRs(prs), 600);
     }
     // Refresh last-time + PR data in background so future sessions see this one
-    loadLastTimeData();
+    loadLastTimeData({ fresh: true });
   } catch(e) {
     if (statusEl) statusEl.innerHTML = `<div class="callout c-error" style="margin-top:8px">Save failed — check your connection</div>`;
     if (btn) { btn.disabled=false; btn.textContent='Save session to Google Sheets'; }
+  } finally {
+    delete _savingSessions[lockKey];
   }
 }
 
@@ -4243,7 +4298,7 @@ async function saveVBSession() {
       closeVBLogger();
       btn.textContent = 'Save session';
       btn.disabled = false;
-      loadActivity();
+      loadActivity({ fresh: true });
     }, 700);
   } catch(e) {
     btn.textContent = 'Save failed — retry';
@@ -4279,21 +4334,38 @@ function weekGroupLabel(weekStart, now) {
   return `${diff} weeks ago`;
 }
 
-async function loadActivity() {
+async function loadActivity(opts) {
   const el = document.getElementById('activity-content');
   const firstLoad = !el.dataset.loaded;
-  if (firstLoad) el.innerHTML =
+  // Show the saved copy immediately if we have one
+  const cachedLog = getCachedTab('Log');
+  const cachedVB = getCachedTab('VB Sessions');
+  let painted = false;
+  if (cachedLog || cachedVB) {
+    try { paintActivity(el, tabRows(cachedLog), tabRows(cachedVB)); painted = true; } catch(e) {}
+  }
+  if (!painted && firstLoad) el.innerHTML =
     '<div class="skel-group"></div>' +
     Array.from({length: 4}, (_, i) => `<div class="skel-row" style="animation-delay:${i * 0.08}s"><div class="skel-icon"></div><div class="skel-lines"><div class="skel-line" style="width:${55 + (i%3)*12}%"></div><div class="skel-line thin" style="width:${30 + (i%2)*15}%"></div></div></div>`).join('');
   try {
-    // Fetch both tabs in parallel; tolerate VB Sessions tab not existing yet
-    const [liftRes, vbRes] = await Promise.allSettled([
-      fetch(SHEET_URL + '?tab=Log').then(r => r.json()),
-      fetch(SHEET_URL + '?tab=' + encodeURIComponent('VB Sessions')).then(r => r.json()),
-    ]);
-    const liftRows = liftRes.status === 'fulfilled' && liftRes.value.rows ? liftRes.value.rows.slice(1) : [];
-    const vbRows = vbRes.status === 'fulfilled' && vbRes.value.rows ? vbRes.value.rows.slice(1) : [];
+    // Refresh both tabs in parallel (shares any read already in flight); tolerate VB Sessions tab not existing yet
+    const [liftRes, vbRes] = await Promise.allSettled([fetchTab('Log', opts), fetchTab('VB Sessions', opts)]);
+    const liftOk = liftRes.status === 'fulfilled', vbOk = vbRes.status === 'fulfilled';
+    if (!liftOk && !vbOk) throw new Error('offline');
+    const changed = !painted || (liftOk && liftRes.value.changed) || (vbOk && vbRes.value.changed);
+    if (!changed) return;
+    const liftRows = liftOk ? tabRows(liftRes.value.data) : tabRows(cachedLog);
+    const vbRows = vbOk ? tabRows(vbRes.value.data) : tabRows(cachedVB);
+    paintActivity(el, liftRows, vbRows);
+  } catch(e) {
+    // Only show an error when there's nothing on screen — a failed background
+    // refresh keeps the saved feed visible
+    if (!painted && firstLoad) el.innerHTML = '<div class="empty-state">Could not load activity.<br>Check your internet connection.</div>';
+  }
+}
 
+function paintActivity(el, liftRows, vbRows) {
+  {
     // Group lifting by date+day to collapse multiple exercises into one entry
     const liftSessions = {};
     liftRows.forEach(r => {
@@ -4379,10 +4451,6 @@ async function loadActivity() {
     });
     el.innerHTML = html + '<div class="spacer"></div>';
     el.dataset.loaded = '1';
-  } catch(e) {
-    // Only clobber the view with an error on first load — a failed background
-    // refresh keeps the previously rendered feed on screen
-    if (firstLoad) el.innerHTML = '<div class="empty-state">Could not load activity.<br>Check your internet connection.</div>';
   }
 }
 
@@ -4415,12 +4483,13 @@ applyTheme(getStoredTheme());
 
 // ── Init ──
 applyCachedTMs();
+applyCachedLogData(); // "last time" values from the saved copy, so they're there on first paint
 renderWeekStrip();
 renderWeekInfo();
 renderDayStrip();
 renderContent();
-// Fetch last-time data in background — re-render once available so values appear without blocking the initial paint
-loadLastTimeData().then(() => renderContent());
+// Refresh from Google in the background — re-render only if anything actually changed
+loadLastTimeData().then(changed => { if (changed) renderContent(); });
 // Service worker — network-first app shell so deploys appear on next open,
 // with offline fallback. Relative path keeps the scope at the repo folder.
 if ('serviceWorker' in navigator) {
