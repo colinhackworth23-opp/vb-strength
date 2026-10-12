@@ -113,9 +113,30 @@ function tickNumber(inp, from, to, dur) {
 // 'Hold' (or silence) keeps the current level. Verdicts are stored per
 // week+exercise so re-tapping is idempotent.
 function progKey(exName) { return exName.replace(/\s/g,'').toLowerCase(); }
+// Signature of each exercise's planned numbers (all weeks), filled in as cards render.
+// If the numbers change in the Program tab, an earned offset no longer applies —
+// the new numbers in the sheet are the plan.
+const BASE_SIG = {};
 function getProgOffset(exName) {
   const c = loadCache();
-  return (c.prog && c.prog[progKey(exName)]) || 0;
+  const pk = progKey(exName);
+  const off = (c.prog && c.prog[pk]) || 0;
+  if (!off) return 0;
+  const sig = BASE_SIG[pk];
+  if (!sig) return off;
+  if (!c.progSig) c.progSig = {};
+  if (!c.progSig[pk]) { c.progSig[pk] = sig; saveCache(c); return off; }
+  if (c.progSig[pk] !== sig) { delete c.prog[pk]; delete c.progSig[pk]; saveCache(c); return 0; }
+  return off;
+}
+function addProgOffset(exName, delta) {
+  const c = loadCache();
+  const pk = progKey(exName);
+  if (!c.prog) c.prog = {};
+  if (!c.progSig) c.progSig = {};
+  c.prog[pk] = (c.prog[pk] || 0) + delta;
+  if (BASE_SIG[pk]) c.progSig[pk] = BASE_SIG[pk];
+  saveCache(c);
 }
 function setVerdict(weekN, exName, verdict, inc) {
   const c = loadCache();
@@ -128,6 +149,8 @@ function setVerdict(weekN, exName, verdict, inc) {
   // Undo previous verdict's effect, apply new one
   if (prev === 'clean') c.prog[pk] = (c.prog[pk] || 0) - inc;
   if (verdict === 'clean') c.prog[pk] = (c.prog[pk] || 0) + inc;
+  if (!c.progSig) c.progSig = {};
+  if (BASE_SIG[pk]) c.progSig[pk] = BASE_SIG[pk];
   c.verdicts[vk] = verdict;
   saveCache(c);
 }
@@ -271,7 +294,7 @@ function applyHistory(entries) {
   const groups = {};
   entries.forEach(e => {
     const key = e.session + '|' + e.id;
-    const g = groups[key] || (groups[key] = { date: e.date, order: e.order, sets: [] });
+    const g = groups[key] || (groups[key] = { date: e.date, order: e.order, week: e.week, sets: [] });
     g.sets[e.set > 0 ? e.set - 1 : g.sets.length] = e.value;
     if (e.order > g.order) g.order = e.order;
     // PRs — primary lifts only
@@ -291,7 +314,7 @@ function applyHistory(entries) {
     if (prev && (prev.date > g.date || (+prev.date === +g.date && prev.order > g.order))) return;
     const sets = g.sets.filter(v => v !== undefined && v !== '');
     if (!sets.length) return;
-    LAST_TIME[id] = { date: g.date, order: g.order, dateRaw: g.date.toISOString(), displayDate: `${g.date.getMonth()+1}/${g.date.getDate()}`, sets: sets.map(String) };
+    LAST_TIME[id] = { date: g.date, order: g.order, week: g.week, dateRaw: g.date.toISOString(), displayDate: `${g.date.getMonth()+1}/${g.date.getDate()}`, sets: sets.map(String) };
   });
   LAST_TIME_LOADED = true;
 }
@@ -842,6 +865,133 @@ function toggleCue(header) {
 let currentWeekIdx = getTodayWeekIdx();
 let currentDayIdx = getTodayDayIdx();
 
+// ── Suggested targets — from what you actually lifted last time ──
+// Compares your last session's top set with what the plan asked for that week.
+// Beat it by at least one increment → suggest moving the plan up by the difference.
+// Missed it by at least one increment → suggest moving it down. You confirm either way.
+function numericTop(sets) {
+  const n = (sets || []).map(v => parseFloat(String(v).replace(/^\+/, ''))).filter(x => !isNaN(x));
+  return n.length ? Math.max(...n) : null;
+}
+function getSuggestion(ex, weekN) {
+  if (!ex.inc || weekN !== getTodayWeekIdx() + 1) return null; // only on this week's cards
+  const last = getLastTime(ex.id || ex.name);
+  if (!last) return null;
+  const lastTop = numericTop(last.sets);
+  if (lastTop === null) return null;
+  const off = getProgOffset(ex.name);
+  const lastWeekN = parseInt(String(last.week || '').replace(/\D/g, ''), 10);
+  const base = ex.baseSets || ex.sets;
+  const plannedThenRaw = Array.isArray(base) ? base : (base && base[lastWeekN]);
+  const plannedThen = plannedThenRaw && plannedThenRaw.length ? numericTop(plannedThenRaw.map(v => bumpVal(v, off))) : numericTop(ex.sets);
+  if (plannedThen === null) return null;
+  const diff = lastTop - plannedThen;
+  if (Math.abs(diff) < ex.inc) return null; // within one increment of the plan — leave it
+  const delta = diff; // match what you actually lifted
+  const c = loadCache();
+  const key = `${last.dateRaw}|${last.order}`;
+  if (c.sugDismiss && c.sugDismiss[progKey(ex.name)] === key) return null;
+  return { delta, lastTop, plannedThen, key };
+}
+function suggestionHTML(ex, weekN) {
+  const s = getSuggestion(ex, weekN);
+  if (!s) return '';
+  const up = s.delta > 0;
+  const label = up ? `Use +${s.delta}` : `Drop ${-s.delta}`;
+  return `<div class="acc-suggest" data-ex="${ex.name}" data-delta="${s.delta}" data-key="${s.key}">
+    <span class="acc-suggest-text">Last time: top set ${s.lastTop}, plan was ${s.plannedThen}.</span>
+    <span class="acc-suggest-btns">
+      <button class="prog-chip prog-clean" onclick="acceptSuggestion(this)">${label}</button>
+      <button class="prog-chip prog-hold" onclick="dismissSuggestion(this)">Keep plan</button>
+    </span>
+  </div>`;
+}
+function acceptSuggestion(btn) {
+  const wrap = btn.closest('.acc-suggest');
+  addProgOffset(wrap.dataset.ex, parseFloat(wrap.dataset.delta));
+  haptic(15);
+  renderContent();
+}
+function dismissSuggestion(btn) {
+  const wrap = btn.closest('.acc-suggest');
+  const c = loadCache();
+  if (!c.sugDismiss) c.sugDismiss = {};
+  c.sugDismiss[progKey(wrap.dataset.ex)] = wrap.dataset.key;
+  saveCache(c);
+  haptic(8);
+  wrap.remove();
+}
+
+// ── Program tab — exercises, cues and targets live in the Google Sheet ──
+// Columns: Group | Order | Exercise ID | Name | Superset | Sets × reps | Rec | Rest (s) | Increment | Cue | W1 … W10
+// Each week cell lists that week's sets, e.g. "225 / 245 / 245". Empty = not programmed that week.
+const PROGRAM_WEEKS = 10;
+const DEFAULT_ACC = JSON.parse(JSON.stringify(ACC)); // the built-in program, used to fill an empty tab
+function programRowsFromDefaults() {
+  const rows = [];
+  Object.entries(DEFAULT_ACC).forEach(([group, list]) => list.forEach((ex, i) => {
+    const weeks = [];
+    for (let w = 1; w <= PROGRAM_WEEKS; w++) {
+      const s = Array.isArray(ex.sets) ? ex.sets : (ex.sets[w] || []);
+      weeks.push(s.join(' / '));
+    }
+    rows.push([group, i + 1, exId(ex.name), ex.name, ex.ss || '', ex.meta || ex.vol || '', ex.rec || '',
+      ex.rest !== undefined ? ex.rest : '', ex.inc !== undefined ? ex.inc : '', ex.cue || '', ...weeks]);
+  }));
+  return rows;
+}
+function parseWeekCell(v) {
+  const s = String(v === null || v === undefined ? '' : v).trim();
+  return s ? s.split(/\s*\/\s*/) : [];
+}
+function applyProgramRows(rows) {
+  const groups = {};
+  const num = v => (v === '' || v === null || v === undefined || isNaN(Number(v))) ? undefined : Number(v);
+  rows.forEach(r => {
+    const group = String(r[0] || '').trim();
+    const name = String(r[3] || '').trim();
+    if (!group || !name) return;
+    const sets = {};
+    for (let w = 1; w <= PROGRAM_WEEKS; w++) sets[w] = parseWeekCell(r[9 + w]);
+    const ex = { id: String(r[2] || '').trim() || exId(name), name, sets, meta: String(r[5] || ''), rec: String(r[6] || ''), cue: String(r[9] || '') };
+    const order = num(r[1]);
+    ex._order = order === undefined ? 9999 : order;
+    if (String(r[4] || '').trim()) ex.ss = String(r[4]).trim();
+    const rest = num(r[7]); if (rest !== undefined) ex.rest = rest;
+    const inc = num(r[8]); if (inc) ex.inc = inc;
+    (groups[group] = groups[group] || []).push(ex);
+  });
+  if (!Object.keys(groups).length) return false;
+  // Groups in the sheet replace the built-in ones; any group missing from the sheet keeps the built-in version
+  Object.keys(DEFAULT_ACC).forEach(g => {
+    ACC[g] = groups[g] ? groups[g].sort((a, b) => a._order - b._order) : JSON.parse(JSON.stringify(DEFAULT_ACC[g]));
+  });
+  Object.keys(groups).forEach(g => { if (!DEFAULT_ACC[g]) ACC[g] = groups[g].sort((a, b) => a._order - b._order); });
+  return true;
+}
+function applyCachedProgram() {
+  const rows = tabRows(getCachedTab('Program'));
+  if (rows.length) { try { applyProgramRows(rows); } catch(e) {} }
+}
+// Returns true when the program changed (caller re-renders)
+async function loadProgram() {
+  try {
+    const r = await fetchTab('Program', { full: true });
+    const rows = tabRows(r.data);
+    if (rows.length) return r.changed ? applyProgramRows(rows) : false;
+    // Empty tab: fill it from the built-in program, if this Apps Script supports it
+    if ((await getServerVersion()) >= 2) {
+      await fetch(SHEET_URL, {
+        method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'seedProgram', rows: programRowsFromDefaults() })
+      });
+      const again = await fetchTab('Program', { fresh: true, full: true });
+      if (tabRows(again.data).length) applyProgramRows(tabRows(again.data));
+    }
+  } catch(e) { /* offline — keep the program on the phone */ }
+  return false;
+}
+
 // ── Builders ──
 function calcLoads(weekN) {
   const w = WEEKS[weekN - 1];
@@ -919,13 +1069,13 @@ function accRow(ex, weekN, dayN, isWorking, locked) {
       <div class="acc-header-left">
         <div class="acc-top">
           <span class="acc-name">${ex.name}</span>${ex.ss ? `<span class="ss-badge">SS ${ex.ss}</span>` : ''}
-          <span class="acc-meta">${ex.meta||ex.vol}</span>
+          <span class="acc-meta">${ex.meta||ex.vol||''}</span>
           <span class="acc-rec">rec: ${ex.rec}</span>
         </div>
       </div>
       <span class="acc-chevron">▾</span>
     </div>
-    ${formatLastTime(ex.id || ex.name)}${typeof progLine !== 'undefined' ? progLine : ''}
+    ${formatLastTime(ex.id || ex.name)}${typeof progLine !== 'undefined' ? progLine : ''}${locked ? '' : suggestionHTML(ex, weekN)}
     <div class="acc-cue">${ex.cue}</div>
     <div class="acc-body">
       <div class="set-inputs">${inputs}</div>
@@ -939,11 +1089,12 @@ function accRows(arr, weekN, dayN, isWorking, locked) {
   return arr.map(ex => {
     let sets = Array.isArray(ex.sets) ? ex.sets : (ex.sets[weekN] || []);
     if (!sets.length) return ''; // exercise not programmed this week
+    if (ex.inc) BASE_SIG[progKey(ex.name)] = JSON.stringify(ex.sets);
     if (ex.inc) {
       const off = getProgOffset(ex.name);
       if (off) sets = sets.map(v => bumpVal(v, off));
     }
-    return accRow({ ...ex, sets }, weekN, dayN, isWorking, locked);
+    return accRow({ ...ex, sets, baseSets: ex.sets }, weekN, dayN, isWorking, locked);
   }).join('');
 }
 
@@ -1897,13 +2048,14 @@ onSync(ev => {
 
 // ── Init ──
 applyCachedTMs();
+applyCachedProgram(); // targets and cues from the Program tab copy on the phone
 applyLocalHistory(); // "last time" values from the copy on the phone, so they're there on first paint
 renderWeekStrip();
 renderWeekInfo();
 renderDayStrip();
 renderContent();
 // Refresh from Google in the background — re-render only if anything actually changed
-loadLastTimeData().then(changed => { if (changed) renderContent(); });
+Promise.all([loadProgram(), loadLastTimeData()]).then(([p, h]) => { if (p || h) renderContent(); });
 // Send anything saved while offline last time
 if (pendingCount()) { updateSyncPill('waiting', pendingCount()); flushOutbox(); }
 // Service worker — network-first app shell so deploys appear on next open,

@@ -2160,3 +2160,21 @@ body {
 }
 .sync-pill.ok { color: var(--accent); }
 .sync-pill[hidden] { display: none; }
+
+/* ── Suggested target — "last time you beat the plan" ── */
+.acc-suggest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  margin: 0 var(--s4) var(--s2);
+  padding: var(--s2) var(--s3);
+  border-radius: 10px;
+  background: var(--accent-bg);
+  font-family: var(--f-num);
+  font-size: 12px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.acc-suggest-btns { display: flex; gap: var(--s2); }

@@ -59,7 +59,7 @@ function fetchTab(tab, opts) {
     let cached = null;
     try { cached = JSON.parse(localStorage.getItem(TAB_CACHE_PREFIX + tab)); } catch(e) {}
     const cachedRows = cached && cached.data && Array.isArray(cached.data.rows) ? cached.data.rows : null;
-    const canIncrement = cachedRows && cachedRows.length > 0 && cached.fullAt && (Date.now() - cached.fullAt) < TAB_FULL_REFRESH_MS;
+    const canIncrement = !(opts && opts.full) && cachedRows && cachedRows.length > 0 && cached.fullAt && (Date.now() - cached.fullAt) < TAB_FULL_REFRESH_MS;
     if (canIncrement) {
       const from = cachedRows.length;
       const inc = await requestTab(tab, from);
