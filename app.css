@@ -2135,3 +2135,28 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 .theme-opt:active { transform: scale(0.96); }
+
+/* ── Sync status pill — shows only while a save is waiting to reach Google Sheets ── */
+.sync-pill {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  max-width: calc(100% - 32px);
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-family: var(--f-num);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+  cursor: pointer;
+}
+.sync-pill.ok { color: var(--accent); }
+.sync-pill[hidden] { display: none; }

@@ -229,60 +229,94 @@ function parseSetCell(val) {
   if (!isNaN(numOnly)) return { weight: numOnly, reps: 1 };
   return null;
 }
-// Paint "last time" + PR data from the saved copy, before any network call
-function applyCachedLogData() {
-  const cached = getCachedTab('Log');
-  if (cached) { try { applyLogData(cached); } catch(e) {} }
+// ── History — the Sets tab (one row per set), falling back to the old Log tab ──
+// Entries: { date: Date, session, id, name, set, value }
+function historyFromSets(rows) {
+  const out = [];
+  rows.forEach((r, i) => {
+    const date = new Date(r[0]);
+    if (!r[0] || isNaN(date.getTime()) || !r[4]) return;
+    out.push({ date, order: i, week: r[1], day: r[2], session: String(r[3] || ''), id: String(r[4]), name: String(r[5] || r[4]), set: Number(r[6]) || 0, value: r[7] });
+  });
+  return out;
 }
-// Returns true when fresh data differed from the saved copy (caller re-renders only then)
-async function loadLastTimeData(opts) {
-  try {
-    const { data, changed } = await fetchTab('Log', opts);
-    if (changed) applyLogData(data);
-    return changed;
-  } catch(e) {
-    return false; // offline — keep whatever the saved copy gave us
-  }
-}
-function applyLogData(data) {
-  {
-    if (!data.rows || data.rows.length < 2) return;
-    const rows = data.rows.slice(1); // skip header
-    // Reset PR history before re-populating (handles re-fetch after a save)
-    Object.keys(PR_HISTORY).forEach(k => PR_HISTORY[k] = { e1rm: 0, repMaxes: {} });
-    rows.forEach(r => {
-      const dateRaw = r[0];
-      const exRaw = (r[3] || '').toString();
-      if (!dateRaw || !exRaw) return;
-      const exName = exRaw.split('__')[0].trim().toLowerCase();
-      const sets = r.slice(6).filter(v => v !== '' && v !== null && v !== undefined);
-      if (!sets.length) return;
-      const parsed = new Date(dateRaw);
-      if (isNaN(parsed.getTime())) return;
-      const displayDate = `${parsed.getMonth()+1}/${parsed.getDate()}`;
-      const prev = LAST_TIME[exName];
-      if (!prev || new Date(prev.dateRaw) < parsed) {
-        LAST_TIME[exName] = { dateRaw, displayDate, sets };
-      }
-      // PR tracking — only primary lifts
-      const liftKey = matchPrimaryLiftKey(exRaw);
-      if (liftKey && PR_HISTORY[liftKey]) {
-        sets.forEach(cell => {
-          const setData = parseSetCell(cell);
-          if (!setData || !setData.weight || !setData.reps) return;
-          const e1rm = epleyE1RM(setData.weight, setData.reps);
-          if (e1rm > PR_HISTORY[liftKey].e1rm) PR_HISTORY[liftKey].e1rm = e1rm;
-          const rm = PR_HISTORY[liftKey].repMaxes;
-          if (!rm[setData.reps] || setData.weight > rm[setData.reps]) rm[setData.reps] = setData.weight;
-        });
-      }
+function historyFromLog(rows) {
+  const out = [];
+  rows.forEach((r, i) => {
+    const date = new Date(r[0]);
+    const exRaw = (r[3] || '').toString();
+    if (!r[0] || isNaN(date.getTime()) || !exRaw) return;
+    const session = `${r[0]}|${r[2]}`;
+    r.slice(6, 11).forEach((v, s) => {
+      if (v === '' || v === null || v === undefined || v === '-') return;
+      out.push({ date, order: i, week: r[1], day: r[2], session, id: exId(exRaw), name: exRaw.split('__')[0].trim(), set: s + 1, value: v });
     });
-    LAST_TIME_LOADED = true;
-  }
+  });
+  return out;
 }
-function getLastTime(exerciseName) {
-  const key = (exerciseName || '').trim().toLowerCase();
-  return LAST_TIME[key] || null;
+let HISTORY_SOURCE = null; // 'Sets' once the new tab exists, else 'Log'
+function currentHistory() {
+  const sets = getCachedTab('Sets');
+  let entries = [];
+  if (sets && sets.rows && sets.rows.length > 1) { entries = historyFromSets(tabRows(sets)); HISTORY_SOURCE = 'Sets'; }
+  else { entries = historyFromLog(tabRows(getCachedTab('Log'))); HISTORY_SOURCE = 'Log'; }
+  // Saves still waiting in the outbox count too, so a session shows up the moment it's saved
+  return entries.concat(historyFromSets(pendingRows('Sets')).map(e => ({ ...e, order: e.order + 1e6 })));
+}
+function applyHistory(entries) {
+  Object.keys(LAST_TIME).forEach(k => delete LAST_TIME[k]);
+  if (!entries.length) return;
+  Object.keys(PR_HISTORY).forEach(k => PR_HISTORY[k] = { e1rm: 0, repMaxes: {} });
+  // Group sets into one entry per exercise per session
+  const groups = {};
+  entries.forEach(e => {
+    const key = e.session + '|' + e.id;
+    const g = groups[key] || (groups[key] = { date: e.date, order: e.order, sets: [] });
+    g.sets[e.set > 0 ? e.set - 1 : g.sets.length] = e.value;
+    if (e.order > g.order) g.order = e.order;
+    // PRs — primary lifts only
+    if (PR_HISTORY[e.id]) {
+      const sd = parseSetCell(e.value);
+      if (sd && sd.weight && sd.reps) {
+        const h = PR_HISTORY[e.id];
+        const e1 = epleyE1RM(sd.weight, sd.reps);
+        if (e1 > h.e1rm) h.e1rm = e1;
+        if (!h.repMaxes[sd.reps] || sd.weight > h.repMaxes[sd.reps]) h.repMaxes[sd.reps] = sd.weight;
+      }
+    }
+  });
+  Object.entries(groups).forEach(([key, g]) => {
+    const id = key.slice(key.lastIndexOf('|') + 1);
+    const prev = LAST_TIME[id];
+    if (prev && (prev.date > g.date || (+prev.date === +g.date && prev.order > g.order))) return;
+    const sets = g.sets.filter(v => v !== undefined && v !== '');
+    if (!sets.length) return;
+    LAST_TIME[id] = { date: g.date, order: g.order, dateRaw: g.date.toISOString(), displayDate: `${g.date.getMonth()+1}/${g.date.getDate()}`, sets: sets.map(String) };
+  });
+  LAST_TIME_LOADED = true;
+}
+// "Last time" + PR data from the copy on the phone, before any network call
+function applyLocalHistory() {
+  try { applyHistory(currentHistory()); } catch(e) {}
+}
+// Refresh history from Google. Returns true when anything changed (caller re-renders only then).
+async function loadLastTimeData(opts) {
+  let changed = false;
+  try {
+    const sets = await fetchTab('Sets', opts);
+    changed = sets.changed;
+    if (!(sets.data.rows && sets.data.rows.length > 1)) {
+      const log = await fetchTab('Log', opts); // older script, or Sets not created yet
+      changed = changed || log.changed;
+    }
+  } catch(e) {
+    return false; // offline — keep what's on the phone
+  }
+  if (changed) applyLocalHistory();
+  return changed;
+}
+function getLastTime(exerciseNameOrId) {
+  return LAST_TIME[exId(exerciseNameOrId)] || null;
 }
 function formatLastTime(exerciseName) {
   const data = getLastTime(exerciseName);
@@ -859,7 +893,7 @@ function accRow(ex, weekN, dayN, isWorking, locked) {
     return `<div class="set-wrap">
       <span class="set-lbl">S${si+1}</span>
       <div class="set-input-row">
-        <input id="${id}" class="set-input" data-week="${weekN}" data-day="${dayN}" data-ex="${ex.name}" data-s="${si}" type="text" value="${v}" inputmode="text"${disAttr}>
+        <input id="${id}" class="set-input" data-week="${weekN}" data-day="${dayN}" data-ex="${ex.name}" data-exid="${ex.id || exId(ex.name)}" data-s="${si}" type="text" value="${v}" inputmode="text"${disAttr}>
         ${!locked ? `<div class="set-check" onclick="${checkFn}"></div>` : ''}
       </div>
     </div>`;
@@ -891,7 +925,7 @@ function accRow(ex, weekN, dayN, isWorking, locked) {
       </div>
       <span class="acc-chevron">▾</span>
     </div>
-    ${formatLastTime(ex.name)}${typeof progLine !== 'undefined' ? progLine : ''}
+    ${formatLastTime(ex.id || ex.name)}${typeof progLine !== 'undefined' ? progLine : ''}
     <div class="acc-cue">${ex.cue}</div>
     <div class="acc-body">
       <div class="set-inputs">${inputs}</div>
@@ -1307,12 +1341,14 @@ function showScreen(name) {
 }
 
 // ── Google Sheets ──
+const INPUT_IDS = {}; // exercise name → id, filled from the inputs on screen
 function getInputsForDay(weekN, dayN) {
   const data = {};
   // Accessories
   document.querySelectorAll(`.set-input[data-week="${weekN}"][data-day="${dayN}"]`).forEach(inp => {
     const ex = inp.getAttribute('data-ex');
     const s = parseInt(inp.getAttribute('data-s'));
+    if (inp.dataset.exid) INPUT_IDS[ex] = inp.dataset.exid;
     if (!data[ex]) data[ex] = [];
     data[ex][s] = inp.value || '-';
   });
@@ -1333,6 +1369,7 @@ function getInputsForDay(weekN, dayN) {
 }
 
 const _savingSessions = {};
+const _lastSessionSave = {};
 async function saveSession(weekN, dayN, dayLabelOverride, btnEl) {
   const lockKey = `${weekN}-${dayN}`;
   if (_savingSessions[lockKey]) return; // ignore repeat taps while a save is running
@@ -1348,10 +1385,33 @@ async function saveSession(weekN, dayN, dayLabelOverride, btnEl) {
   const date = new Date().toLocaleDateString('en-US');
   const dayLabel = dayLabelOverride || DAY_NAMES[dayN]; // fix: Friday no longer saved as 'Wednesday'
   try {
-    const rows = Object.entries(inputs).map(([ex, sets]) =>
-      [date, `Week ${weekN}`, dayLabel, ex, sets.length, '', ...sets]);
-    await postRowsToSheet('Log', rows);
-    if (statusEl) statusEl.innerHTML = `<div class="callout c-success" style="margin-top:8px">Session saved to Google Sheets</div>`;
+    const now = new Date();
+    const session = localSessionId(now, dayLabel);
+    const setRows = [];
+    const legacy = [];
+    Object.entries(inputs).forEach(([ex, sets]) => {
+      legacy.push({ tab: 'Log', row: [date, `Week ${weekN}`, dayLabel, ex, sets.length, '', ...sets] });
+      const id = (INPUT_IDS[ex]) || exId(ex);
+      const name = ex.split('__')[0].trim();
+      sets.forEach((v, i) => {
+        if (v === undefined || v === null || v === '' || v === '-' || /^-×/.test(v)) return;
+        const pv = parseSetValue(v);
+        setRows.push([date, `Week ${weekN}`, dayLabel, session, id, name, i + 1, String(v), pv.weight, pv.reps, '']);
+      });
+    });
+    // A second tap on an identical session within 2 minutes is ignored
+    const sig = JSON.stringify(setRows.map(r => r.slice(4, 8)));
+    const last = _lastSessionSave[lockKey];
+    if (last && last.sig === sig && Date.now() - last.at < 120000) {
+      if (statusEl) statusEl.innerHTML = `<div class="callout c-success sync-note" style="margin-top:8px">Already saved — no duplicate added.</div>`;
+      if (btn) { btn.textContent = 'Saved ✓'; setTimeout(()=>{ btn.disabled=false; btn.textContent='Save session to Google Sheets'; }, 3000); }
+      return;
+    }
+    const saveId = newSaveId();
+    _lastSessionSave[lockKey] = { sig, at: Date.now() };
+    queueSave({ id: saveId, tab: 'Sets', rows: setRows, legacy, label: `${dayLabel} session` });
+    applyLocalHistory(); // "last time" includes this session straight away
+    if (statusEl) statusEl.innerHTML = syncNoteHTML(saveId);
     if (btn) { btn.textContent = 'Saved ✓'; setTimeout(()=>{ btn.disabled=false; btn.textContent='Save session to Google Sheets'; }, 3000); }
     // Mark week as done after its last lifting day —
     // tournament weeks have no Friday session, so Tuesday (dayN 1) is their last lift day
@@ -1372,10 +1432,8 @@ async function saveSession(weekN, dayN, dayLabelOverride, btnEl) {
       // Slight delay so the "Saved ✓" feedback registers before the celebration
       setTimeout(() => celebratePRs(prs), 600);
     }
-    // Refresh last-time + PR data in background so future sessions see this one
-    loadLastTimeData({ fresh: true });
   } catch(e) {
-    if (statusEl) statusEl.innerHTML = `<div class="callout c-error" style="margin-top:8px">Save failed — check your connection</div>`;
+    if (statusEl) statusEl.innerHTML = `<div class="callout c-error" style="margin-top:8px">Couldn't save — try again</div>`;
     if (btn) { btn.disabled=false; btn.textContent='Save session to Google Sheets'; }
   } finally {
     delete _savingSessions[lockKey];
@@ -1388,8 +1446,9 @@ async function saveMaxes() {
   btn.disabled=true; btn.textContent='Saving...';
   const row = [new Date().toLocaleDateString('en-US'), document.getElementById('tm-squat').value, document.getElementById('tm-bench').value, document.getElementById('tm-dl').value, document.getElementById('tm-ohp').value];
   try {
-    await fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({tab:'Maxes',row})});
-    statusEl.innerHTML='<div class="callout c-success" style="margin-top:8px">Maxes saved to Google Sheets</div>';
+    const saveId = newSaveId();
+    queueSave({ id: saveId, tab: 'Maxes', rows: [row], legacy: [{ tab: 'Maxes', row }], label: 'Maxes' });
+    statusEl.innerHTML = syncNoteHTML(saveId);
     btn.textContent='Saved ✓';
     setTimeout(()=>{btn.disabled=false;btn.textContent='Save maxes to sheet';},3000);
   } catch(e) {
@@ -1529,11 +1588,7 @@ async function submitCheckin(weekN) {
     checkinState.home||'', checkinState.knee||'', checkinState.shoulder||'',
     checkinState.progress||'', checkinState.energy||'', notes];
   try {
-    await fetch(SHEET_URL, {
-      method:'POST', mode:'no-cors',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ tab:'Check-ins', row })
-    });
+    queueSave({ id: newSaveId(), tab: 'Check-ins', rows: [row], legacy: [{ tab: 'Check-ins', row }], label: `Week ${weekN} check-in` });
     const c = loadCache();
     if (!c.checkins) c.checkins = {};
     c.checkins[`w${weekN}`] = true;
@@ -1601,18 +1656,14 @@ async function saveVBSession() {
   const date = new Date().toLocaleDateString('en-US');
   const row = [date, vbState.type, vbState.felt, vbState.pain.join(', '), vbState.notes];
   try {
-    await fetch(SHEET_URL, {
-      method: 'POST', mode: 'no-cors',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ tab: 'VB Sessions', row })
-    });
+    queueSave({ id: newSaveId(), tab: 'VB Sessions', rows: [row], legacy: [{ tab: 'VB Sessions', row }], label: 'Volleyball session' });
     btn.textContent = 'Saved ✓';
     haptic(12);
     setTimeout(() => {
       closeVBLogger();
       btn.textContent = 'Save session';
       btn.disabled = false;
-      loadActivity({ fresh: true });
+      loadActivity();
     }, 700);
   } catch(e) {
     btn.textContent = 'Save failed — retry';
@@ -1648,29 +1699,41 @@ function weekGroupLabel(weekStart, now) {
   return `${diff} weeks ago`;
 }
 
+// One row per exercise per session, in the shape paintActivity expects: [date, week, day, exercise]
+function activityLiftRows() {
+  const seen = {};
+  const out = [];
+  currentHistory().forEach(e => {
+    const key = e.session + '|' + e.id;
+    if (seen[key]) return;
+    seen[key] = true;
+    out.push([e.date.toISOString(), e.week, e.day, e.name, e.session]);
+  });
+  return out;
+}
+function activityVBRows() {
+  return tabRows(getCachedTab('VB Sessions')).concat(pendingRows('VB Sessions'));
+}
 async function loadActivity(opts) {
   const el = document.getElementById('activity-content');
   const firstLoad = !el.dataset.loaded;
-  // Show the saved copy immediately if we have one
-  const cachedLog = getCachedTab('Log');
-  const cachedVB = getCachedTab('VB Sessions');
+  // Show what's on the phone immediately
+  const hasLocal = getCachedTab('Sets') || getCachedTab('Log') || getCachedTab('VB Sessions') || pendingCount();
   let painted = false;
-  if (cachedLog || cachedVB) {
-    try { paintActivity(el, tabRows(cachedLog), tabRows(cachedVB)); painted = true; } catch(e) {}
+  if (hasLocal) {
+    try { paintActivity(el, activityLiftRows(), activityVBRows()); painted = true; } catch(e) {}
   }
   if (!painted && firstLoad) el.innerHTML =
     '<div class="skel-group"></div>' +
     Array.from({length: 4}, (_, i) => `<div class="skel-row" style="animation-delay:${i * 0.08}s"><div class="skel-icon"></div><div class="skel-lines"><div class="skel-line" style="width:${55 + (i%3)*12}%"></div><div class="skel-line thin" style="width:${30 + (i%2)*15}%"></div></div></div>`).join('');
   try {
-    // Refresh both tabs in parallel (shares any read already in flight); tolerate VB Sessions tab not existing yet
-    const [liftRes, vbRes] = await Promise.allSettled([fetchTab('Log', opts), fetchTab('VB Sessions', opts)]);
+    // Refresh in parallel (shares any read already in flight); tolerate VB Sessions tab not existing yet
+    const [liftRes, vbRes] = await Promise.allSettled([loadLastTimeData(opts), fetchTab('VB Sessions', opts)]);
     const liftOk = liftRes.status === 'fulfilled', vbOk = vbRes.status === 'fulfilled';
-    if (!liftOk && !vbOk) throw new Error('offline');
-    const changed = !painted || (liftOk && liftRes.value.changed) || (vbOk && vbRes.value.changed);
+    if (!vbOk && !(liftOk && liftRes.value) && !painted) throw new Error('offline');
+    const changed = !painted || (liftOk && liftRes.value) || (vbOk && vbRes.value.changed);
     if (!changed) return;
-    const liftRows = liftOk ? tabRows(liftRes.value.data) : tabRows(cachedLog);
-    const vbRows = vbOk ? tabRows(vbRes.value.data) : tabRows(cachedVB);
-    paintActivity(el, liftRows, vbRows);
+    paintActivity(el, activityLiftRows(), activityVBRows());
   } catch(e) {
     // Only show an error when there's nothing on screen — a failed background
     // refresh keeps the saved feed visible
@@ -1689,7 +1752,7 @@ function paintActivity(el, liftRows, vbRows) {
       const ex = r[3];
       const d = parseSheetDate(dateRaw);
       if (!d || !day) return;
-      const key = `${dateRaw}|${day}`;
+      const key = r[4] || `${dateRaw}|${day}`;
       if (!liftSessions[key]) liftSessions[key] = { date: d, dateRaw, week, day, exercises: [] };
       liftSessions[key].exercises.push((ex || '').toString().split('__')[0]);
     });
@@ -1795,15 +1858,54 @@ function setTheme(theme) {
 // Apply stored theme as early as possible (before init render)
 applyTheme(getStoredTheme());
 
+// ── Sync status ──
+// Under the save button: what happened to this save. Above the nav: anything still waiting.
+function syncNoteHTML(saveId) {
+  return `<div class="callout c-success sync-note" data-save-id="${saveId}" style="margin-top:8px">Saved on your phone · sending to Google Sheets…</div>`;
+}
+let _syncPillTimer = null;
+function updateSyncPill(state, pending) {
+  const pill = document.getElementById('syncPill');
+  if (!pill) return;
+  clearTimeout(_syncPillTimer);
+  if (pending > 0) {
+    pill.hidden = false;
+    pill.classList.remove('ok');
+    const n = pending === 1 ? '1 save' : `${pending} saves`;
+    pill.textContent = state === 'sending' ? `Syncing ${n}…` : `${n} waiting for signal · tap to retry`;
+  } else if (!pill.hidden) {
+    pill.classList.add('ok');
+    pill.textContent = 'All saved to Google Sheets ✓';
+    _syncPillTimer = setTimeout(() => { pill.hidden = true; }, 2500);
+  }
+}
+onSync(ev => {
+  updateSyncPill(ev.type, ev.pending);
+  if (ev.type === 'synced' && ev.job) {
+    document.querySelectorAll(`.sync-note[data-save-id="${ev.job.id}"]`).forEach(el => { el.textContent = 'Saved to Google Sheets ✓'; });
+    // Pull the synced rows back down so the copy on the phone matches the sheet
+    if (ev.job.tab === 'Sets') loadLastTimeData({ fresh: true });
+    if (ev.job.tab === 'VB Sessions') fetchTab('VB Sessions', { fresh: true }).catch(() => {});
+  }
+  if (ev.type === 'waiting') {
+    const waiting = new Set(loadOutbox().map(j => j.id));
+    document.querySelectorAll('.sync-note[data-save-id]').forEach(el => {
+      if (waiting.has(el.dataset.saveId)) el.textContent = 'Saved on your phone · will send to Google Sheets when you have signal';
+    });
+  }
+});
+
 // ── Init ──
 applyCachedTMs();
-applyCachedLogData(); // "last time" values from the saved copy, so they're there on first paint
+applyLocalHistory(); // "last time" values from the copy on the phone, so they're there on first paint
 renderWeekStrip();
 renderWeekInfo();
 renderDayStrip();
 renderContent();
 // Refresh from Google in the background — re-render only if anything actually changed
 loadLastTimeData().then(changed => { if (changed) renderContent(); });
+// Send anything saved while offline last time
+if (pendingCount()) { updateSyncPill('waiting', pendingCount()); flushOutbox(); }
 // Service worker — network-first app shell so deploys appear on next open,
 // with offline fallback. Relative path keeps the scope at the repo folder.
 if ('serviceWorker' in navigator) {
