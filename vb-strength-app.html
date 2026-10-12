@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="icon.png">
 <link rel="icon" type="image/png" href="icon.png">
 <title>VB Strength Program</title>
-<link rel="stylesheet" href="app.css?v=20261012e">
+<link rel="stylesheet" href="app.css?v=20261012f">
 </head>
 <body>
 <div class="app">
@@ -120,6 +120,9 @@
       <text x="41" y="114" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace" font-size="10" font-weight="600" fill="#bfb8a8" letter-spacing="1.6">CHICAGO · BLOCK 1 · HYPERTROPHY + FOUNDATION</text>
     </svg>
 </div>
+
+<!-- WEEKLY PROPOSALS — shown only when the Sunday assessment has changes waiting -->
+<button class="prop-banner" id="propBanner" hidden onclick="openProposalSheet()"></button>
 
 <!-- MAIN HEADER — sticky nav, sits below hero -->
 <div class="main-header" id="mainHeader">
@@ -317,9 +320,10 @@
 </div>
 
 <button class="sync-pill" id="syncPill" hidden onclick="flushOutbox()"></button>
-<script src="program.js?v=20261012e"></script>
-<script src="sync.js?v=20261012e"></script>
-<script src="app.js?v=20261012e"></script>
+<script src="program.js?v=20261012f"></script>
+<script src="sync.js?v=20261012f"></script>
+<script src="proposals.js?v=20261012f"></script>
+<script src="app.js?v=20261012f"></script>
 </div>
 </body>
 </html>

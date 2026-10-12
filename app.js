@@ -1143,7 +1143,7 @@ function accRow(ex, weekN, dayN, isWorking, locked, prep) {
       </div>
       <span class="acc-chevron">▾</span>
     </div>
-    ${formatLastTime(ex.id || ex.name)}${typeof progLine !== 'undefined' ? progLine : ''}${locked ? '' : suggestionHTML(ex, weekN)}
+    ${formatLastTime(ex.id || ex.name)}${typeof progLine !== 'undefined' ? progLine : ''}${locked ? '' : proposalChipHTML(ex.id || exId(ex.name), weekN) + (proposalFor(weekN, ex.id || exId(ex.name)) ? '' : suggestionHTML(ex, weekN))}
     <div class="acc-cue">${ex.cue}</div>
     <div class="acc-body">
       <div class="set-inputs">${inputs}</div>
@@ -1163,6 +1163,7 @@ function accRows(arr, weekN, dayN, isWorking, locked, prep) {
       const off = getProgOffset(ex.name);
       if (off) sets = sets.map(v => bumpVal(v, off));
     }
+    sets = applyProposalOverride(sets, weekN, ex.id || exId(ex.name)); // an accepted weekly proposal wins
     return accRow({ ...ex, sets, baseSets: ex.sets }, weekN, dayN, isWorking, locked, prep);
   }).join('');
 }
@@ -2115,6 +2116,7 @@ onSync(ev => {
     // Pull the synced rows back down so the copy on the phone matches the sheet
     if (ev.job.tab === 'Sets') loadLastTimeData({ fresh: true });
     if (ev.job.tab === 'VB Sessions') fetchTab('VB Sessions', { fresh: true }).catch(() => {});
+    if (ev.job.tab === PROPOSALS_TAB) loadProposals({ fresh: true });
   }
   if (ev.type === 'waiting') {
     const waiting = new Set(loadOutbox().map(j => j.id));
@@ -2128,12 +2130,13 @@ onSync(ev => {
 applyCachedTMs();
 applyCachedProgram(); // targets and cues from the Program tab copy on the phone
 applyLocalHistory(); // "last time" values from the copy on the phone, so they're there on first paint
+applyCachedProposals(); // weekly proposals from the copy on the phone
 renderWeekStrip();
 renderWeekInfo();
 renderDayStrip();
 renderContent();
 // Refresh from Google in the background — re-render only if anything actually changed
-Promise.all([loadProgram(), loadLastTimeData()]).then(([p, h]) => { if (p || h) renderContent(); });
+Promise.all([loadProgram(), loadLastTimeData(), loadProposals()]).then(([p, h, pr]) => { if (p || h || pr) renderContent(); updateProposalBanner(); });
 // Send anything saved while offline last time
 if (pendingCount()) { updateSyncPill('waiting', pendingCount()); flushOutbox(); }
 // Service worker — network-first app shell so deploys appear on next open,
