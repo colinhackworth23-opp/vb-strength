@@ -344,7 +344,7 @@ function getLastTime(exerciseNameOrId) {
 function formatLastTime(exerciseName) {
   const data = getLastTime(exerciseName);
   if (!data) return '';
-  const setsStr = data.sets.join(' / ');
+  const setsStr = isRepLogged(exerciseName) ? data.sets.map(describeRepValue).join(' / ') : data.sets.join(' / ');
   return `<div class="acc-last"><span>Last: ${setsStr}</span><span class="acc-last-date">${data.displayDate}</span></div>`;
 }
 
@@ -875,6 +875,7 @@ function numericTop(sets) {
 }
 function getSuggestion(ex, weekN) {
   if (!ex.inc || weekN !== getTodayWeekIdx() + 1) return null; // only on this week's cards
+  if (isRepLogged(ex.id || ex.name)) return null; // reps are not weight — no suggestions for rep-logged exercises
   const last = getLastTime(ex.id || ex.name);
   if (!last) return null;
   const lastTop = numericTop(last.sets);
@@ -1103,11 +1104,26 @@ function collectFeedbackRows(weekN, dayN, session, date, dayLabel) {
 function accRow(ex, weekN, dayN, isWorking, locked, prep) {
   const idBase = `w${weekN}d${dayN}${ex.name.replace(/\s/g,'').substring(0,8)}`;
   const nologAttr = prep ? ' data-nolog="1"' : '';
+  const repLogged = isRepLogged(ex.id || ex.name);
   const inputs = ex.sets.map((v, si) => {
     const id = `${idBase}s${si}`;
     const disAttr = locked ? ' disabled' : '';
     const restArg = (ex.rest !== undefined) ? `,${ex.rest}` : '';
     const checkFn = isWorking ? `handleSetCheck(this,true${restArg})` : `handleSetCheck(this,false${restArg})`;
+    if (repLogged) {
+      // Planned load is a label (tap to change it for this set); the box is for reps and starts empty
+      const plan = String(v);
+      const savedLoad = ((loadCache().inputs || {})[`w${weekN}d${dayN}:${ex.name}:s${si}:reps:load`]);
+      const load = (savedLoad ? normalizeLoadInput(savedLoad) : null) || plan; // only a load changed on this phone overrides the plan
+      return `<div class="set-wrap">
+      <span class="set-lbl">S${si+1}</span>
+      <button type="button" class="set-load${load !== plan ? ' edited' : ''}" onclick="editSetLoad(this)"${disAttr} aria-label="Load for set ${si+1}">${repEsc(loadLabel(load))}</button>
+      <div class="set-input-row">
+        <input id="${id}" class="set-input rep-input" data-week="${weekN}" data-day="${dayN}" data-ex="${ex.name}" data-exid="${ex.id || exId(ex.name)}" data-s="${si}" data-type="reps" data-replog="1" data-plan="${repEsc(plan)}" data-load="${repEsc(load)}" type="text" value="" placeholder="reps" inputmode="numeric" pattern="[0-9]*" maxlength="2" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,2)"${disAttr}${nologAttr}>
+        ${!locked ? `<div class="set-check" onclick="${checkFn}"></div>` : ''}
+      </div>
+    </div>`;
+    }
     return `<div class="set-wrap">
       <span class="set-lbl">S${si+1}</span>
       <div class="set-input-row">
@@ -1562,6 +1578,32 @@ function showScreen(name) {
 }
 
 // ── Google Sheets ──
+// Change the load used for one rep-logged set (only needed when it differs from the plan)
+function editSetLoad(btn) {
+  const inp = btn.closest('.set-wrap').querySelector('.set-input');
+  if (!inp) return;
+  const cur = inp.dataset.load || 'BW';
+  const ans = window.prompt('Load used for this set — pounds added, or BW', cur === 'BW' ? 'BW' : cur.replace(/^\+/, ''));
+  if (ans === null) return; // cancelled
+  const next = normalizeLoadInput(ans);
+  if (next === null) { window.alert('Enter BW or a number of pounds, like 10.'); return; }
+  inp.dataset.load = next;
+  btn.textContent = loadLabel(next);
+  btn.classList.toggle('edited', next !== inp.dataset.plan);
+  saveInputToCache(buildCacheKey(inp) + ':load', next);
+  haptic(8);
+}
+// Checked rep-logged sets with no valid reps are not saved — say so on the save screen
+function missingRepsNoteHTML(weekN, dayN) {
+  const missing = [];
+  document.querySelectorAll(`.set-input[data-replog][data-week="${weekN}"][data-day="${dayN}"]:not([data-nolog])`).forEach(inp => {
+    const checked = inp.closest('.set-input-row') && inp.closest('.set-input-row').querySelector('.set-check.checked');
+    if (checked && cleanReps(inp.value) === null) missing.push(`${inp.dataset.ex} S${parseInt(inp.dataset.s, 10) + 1}`);
+  });
+  if (!missing.length) return '';
+  return `<div class="callout c-amber" style="margin-top:8px">No reps entered, so not saved: ${repEsc(missing.join(', '))}. Add the reps and tap Save again.</div>`;
+}
+
 const INPUT_IDS = {}; // exercise name → id, filled from the inputs on screen
 function getInputsForDay(weekN, dayN) {
   const data = {};
@@ -1571,7 +1613,13 @@ function getInputsForDay(weekN, dayN) {
     const s = parseInt(inp.getAttribute('data-s'));
     if (inp.dataset.exid) INPUT_IDS[ex] = inp.dataset.exid;
     if (!data[ex]) data[ex] = [];
-    data[ex][s] = inp.value || '-';
+    if (inp.dataset.replog) {
+      // Reps only; no valid reps means the set is not saved (plan text like BW is never saved as a result)
+      const composed = composeRepValue(inp.value, inp.dataset.load);
+      data[ex][s] = composed === null ? '-' : composed;
+    } else {
+      data[ex][s] = inp.value || '-';
+    }
   });
   // Primary lifts — combine reps × weight per set
   const liftData = {};
@@ -1626,7 +1674,7 @@ async function saveSession(weekN, dayN, dayLabelOverride, btnEl) {
     const fbRows = collectFeedbackRows(weekN, dayN, session, date, dayLabel);
     // Nothing entered at all: don't queue an empty save (it could never be confirmed)
     if (!setRows.length && !fbRows.length) {
-      if (statusEl) statusEl.innerHTML = `<div class="callout c-amber sync-note" style="margin-top:8px">Nothing to save yet — no sets have anything entered.</div>`;
+      if (statusEl) statusEl.innerHTML = `<div class="callout c-amber sync-note" style="margin-top:8px">Nothing to save yet — no sets have anything entered.${missingRepsNoteHTML(weekN, dayN)}</div>`;
       if (btn) { btn.disabled = false; btn.textContent = btnLabel || 'Save session to Google Sheets'; }
       return;
     }
@@ -1661,7 +1709,7 @@ async function saveSession(weekN, dayN, dayLabelOverride, btnEl) {
       return;
     }
     applyLocalHistory(); // "last time" includes this session straight away
-    if (statusEl) statusEl.innerHTML = syncNoteHTML(saveId);
+    if (statusEl) statusEl.innerHTML = syncNoteHTML(saveId) + missingRepsNoteHTML(weekN, dayN);
     if (btn) { btn.textContent = 'Saved ✓'; setTimeout(()=>{ btn.disabled=false; btn.textContent='Save session to Google Sheets'; }, 3000); }
     // Mark week as done after its last lifting day —
     // tournament weeks have no Friday session, so Tuesday (dayN 1) is their last lift day
@@ -1747,7 +1795,7 @@ function buildShareText(screenEl, headerLine) {
       const name = row.querySelector('.acc-name');
       const meta = row.querySelector('.acc-meta');
       const ss = row.querySelector('.ss-badge');
-      const vals = [...row.querySelectorAll('.set-input')].map(i => i.value).filter(Boolean);
+      const vals = [...row.querySelectorAll('.set-input')].map(i => i.dataset.replog ? (i.dataset.plan || '') : i.value).filter(Boolean);
       if (!name) return;
       let line = `  ${name.textContent.trim()} — ${meta ? meta.textContent.trim() : ''}`;
       if (vals.length) line += `: ${vals.join(' / ')}`;

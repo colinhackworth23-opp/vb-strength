@@ -62,7 +62,7 @@ Add these to the short form:
   - Not observed live: every one of the 1,836 Sets rows is tagged `from-log`, so no row has ever been written through the outbox into the Sets tab. These findings come from reading the code, not from live saves.
 
 ### Gap A: A save with zero rows is never confirmed and blocks all later saves
-- Status: Proposed
+- Status: Building. Approved by Colin 2026-10-13. Built, tested and pushed (commit `dac83ec`); not Shipped until Colin confirms on his phone.
 - Raised by: Dev (from the outbox audit)
 - Problem: `saveSession` always queues a Sets job, even when it has no rows (every set blank, or a day whose sets are not programmed that week). The script writes nothing for it, so no Save ID ever lands in the sheet and the confirm check never passes. The outbox stops at the first failed job, so that job retries forever and every save behind it (including real sessions) never syncs. They stay on the phone and still show in "Last:", so nothing is lost until the phone's storage is cleared, but the Sheet stops updating with no clear sign.
 - Behavior: Do not queue a job with zero rows (show "Nothing to save"). Also drop zero-row jobs already in the outbox when flushing, so an existing stuck queue clears itself. No change to jobs that have rows.
@@ -76,6 +76,7 @@ Add these to the short form:
 - Rollback: Revert the commit.
 - Dependencies: None. Any new way of skipping unfilled sets (including the pull-up reps item) makes an empty job more likely, so this goes first.
 - Success check: Pending-save count on the phone returns to zero after a flush with an empty job in the queue.
+- Build notes (Dev): `saveSession` no longer queues a Sets job with no rows and shows "Nothing to save yet"; `queueSave` refuses zero-row jobs; `flushOutbox` clears zero-row jobs already stuck. A save with only effort taps (no set rows) still sends its feedback job. Tests: `node tests/sync-helpers.test.js` (an empty job in front of a real save: the real save sends once and the outbox empties; confirmed to fail on the old code). A page-level check (jsdom) of the Save button with nothing entered also passes. Not tested on a real phone.
 
 ### Gap B: A save is lost silently if the phone will not store the outbox
 - Status: Proposed (low priority)
@@ -101,7 +102,7 @@ Add these to the short form:
 - Acceptance criteria: Whichever is chosen is written down here and RULES.md/analysis follow it.
 
 ### Log pull-ups as reps, not weight
-- Status: Proposed
+- Status: Building. Approved by Colin 2026-10-13 (after Gap A). Built, tested and pushed; not Shipped until Colin confirms on his phone.
 - Raised by: Colin (reported); drafted by Dev
 - Problem: The Weighted pull-up card prefills each set box with the planned load (`BW`, `+10`, `+20`, `+25`), but Colin logs reps. He has to clear the text before typing, and the box reads as a weight field.
 - Behavior:
@@ -128,7 +129,7 @@ Add these to the short form:
   - Plan edited in the Program tab: label follows the sheet after the daily refresh.
 - Risks: A forgotten reps entry means a missing set (mitigated by the save-screen note). Label/tap layout is unproven until tried on the phone.
 - Rollback: Revert the commit; no data or sheet changes to undo. Rows already saved in the new format (`6 reps`, `10x6`) are the same formats already in the sheet.
-- Dependencies: Coach answers are in (below). Colin's go-ahead on Gap A (outbox) is needed first: the audit found it, and this item adds another way to skip unfilled sets, so it should not ship ahead of Gap A. Not yet marked Ready.
+- Dependencies: Coach answers are in (below). Gap A (outbox) went first and is in its own commit, so this item can be reverted without undoing it.
 - Success check: After a pull-up session, the Sets rows for that session have Reps filled and no plan text; the next session's "Last:" shows those reps.
 - Open questions for Coach / Colin (Dev will not decide these):
   1. Which exercises are rep-logged? Dev proposes Weighted pull-up and Pull-up practice (doorframe bar); Coach confirms Banded negative pull-up and Scapular pull-up.
@@ -143,6 +144,9 @@ Add these to the short form:
   4. Reps completed is enough. No failed-set marker. If grip or a slipping handle ended the set, Colin taps Grind and writes "slipped" in the effort note. Coach reads that note; the app does nothing with it. Old `30 failed` row stays as stored.
   5. Tapping the load label to edit is enough (Colin to confirm on the phone).
   Data-integrity notes from Coach: the Sets rows before Oct 7 for Weighted pull-up record `BW` with no reps, so there is no logged rep history before Oct 7. The Week 1 figure of 5/5/5 is Colin's recollection, not data. Old bare-number rows stay as load and are never converted to reps.
+- Build notes (Dev, 2026-10-13): Rep-logged ids are the four Coach-approved variants (Weighted pull-up, Pull-up practice, Banded negative pull-up, Scapular pull-up; not Dead hang), listed in `sync.js` (`REP_LOGGED_IDS`). The load label shows `BW` or `+10 lb`; tapping it opens the phone's built-in prompt box to change the load for that set. Reps box: number pad, digits only, 1-99. Saved Value is `N reps` or `LxN`. Checked sets with no reps are listed on the save screen and not saved. "Last:" reads rep-logged values with `describeRepValue`. The in-app suggestion code skips rep-logged exercises, so reps are never read as weight. "Share this workout" still shows the plan for these exercises. Script/stylesheet `?v=` tags bumped to `20261013a`. No Apps Script, sheet or Program tab change.
+- Tests run (Dev): `node tests/sync-helpers.test.js` (13 pass): ids, reps validation, value compose/parse round trip against the formats already in the Sets tab, old-value display, outbox. Page-level check in jsdom with the real scripts (13 pass; scratch test, not in the repo because it needs the `jsdom` package): empty reps boxes and load labels, other exercises untouched, digits-only input, saved rows for typed reps and an edited load, no-reps note, empty-day save, typed values surviving a re-render, "Last:" text for every old format, suggestions guard, share text. One real bug was caught and fixed this way before commit (every set showed `BW` regardless of plan).
+- Not verified (needs Colin's phone): one-handed use, tap targets with sweaty hands, number pad on iOS, the load prompt box inside the home-screen app, bad-Wi-Fi save, and the first real save into the Sets tab (no row has gone through the new save path yet).
 - Verification Dev can do: diff review for data-loss risk; run the reps parse/compose and "Last:" functions in Node against the real stored formats above; check the deploy serves the new `?v=` files. Verification Dev cannot do: one-handed use, sweaty-hands tap targets and bad-Wi-Fi saves on the iPhone. Colin tests those and reports before this is marked Shipped.
 
 ## Backlog / ideas
@@ -150,12 +154,14 @@ Add these to the short form:
   - Coach check 2026-10-13: `?tab=__meta` returns version 3, so the new script is live. The Sets header row still ends at Save ID because no Sets save has happened since it was deployed. The Block header is added by the first Sets save after a workout. Dev to confirm after Colin's next session; until then RULES.md `block_start` (date-based) is the filter that works.
 - Sheet endpoint is readable by anyone with the URL: `doGet` in Code.gs has no check and `SHEET_URL` is in the public repo, so training, VB notes and pain notes are exposed. Not confirmed live (Dev's fetch failed). Fixing it needs a decision from Colin first. (Raised by: Dev)
   - Coach view: pain notes and VB sessions are in that data, so this is worth fixing, but it is Colin's decision on trade-offs. Not blocking any training work.
+- Sunday assessment and pull-ups: the Sunday run skips pull-ups today only because they have no Increment and a non-numeric plan. If someone adds an Increment to a pull-up row in the Program tab, the run could read `6 reps` as a weight of 6. The Coach's rule is that it must not read rep counts as weight; suggest adding a "skip rep-logged exercises (weighted-pull-up, pull-up-practice-doorframe-bar, banded-negative-pull-up, scapular-pull-up)" line to RULES.md step 4. RULES.md is the Coach's file, so Dev has not changed it. (Raised by: Dev)
 - Last-session performance for rep-logged exercises, after the pull-up item and the Coach's answers.
 
 ## Decision log
 | Date | Decision | Why | Revisit when |
 |------|----------|-----|--------------|
 | 2026-10-13 | Adopted the Coach + App Dev two-role workflow with SPEC.md as the handoff | Separate training decisions from implementation; keep a shared record | After the first few weeks of use |
+| 2026-10-13 | Colin approved building Gap A (empty saves block the outbox) first, then the pull-up reps item | The audit found Gap A; the pull-up change adds another way to skip sets, so the outbox fix goes first | After Colin's first real session on the new version |
 
 ## Gym friction log
 Real-world annoyances or failures. Each may become an item above.

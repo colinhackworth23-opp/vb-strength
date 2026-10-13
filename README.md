@@ -16,6 +16,8 @@ Beach volleyball strength program, as a home-screen web app. Live at
 | `sw.js` | Service worker: opens from the phone's copy when signal is bad |
 | `apps-script/Code.gs` | The Google Apps Script behind the sheet (copy of what's deployed) |
 
+To check the save outbox and the pull-up helpers after a change, run `node tests/sync-helpers.test.js` (plain Node, no packages, no network).
+
 After changing any of the app files, bump the `?v=` number on the four `<script>` tags and the stylesheet in `vb-strength-app.html` so phones pick up the new versions together.
 
 ## Google Sheet tabs

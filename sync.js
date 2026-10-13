@@ -23,6 +23,62 @@ function parseSetValue(v) {
   if (m) return { weight: '', reps: parseInt(m[1], 10) };
   return { weight: '', reps: '' };
 }
+// ── Rep-logged exercises (pull-ups) ──
+// These are logged as reps. The planned load (BW, +10) is shown as a label, not typed.
+// Saved Value formats are ones parseSetValue already reads: "6 reps" (bodyweight) and "10x6" (load x reps).
+// Dead hang is time-based and is not in this list.
+const REP_LOGGED_IDS = ['weighted-pull-up', 'pull-up-practice-doorframe-bar', 'banded-negative-pull-up', 'scapular-pull-up'];
+function isRepLogged(idOrName) { return REP_LOGGED_IDS.indexOf(exId(idOrName)) !== -1; }
+// Whole number of reps, 1-99, or null
+function cleanReps(raw) {
+  const s = String(raw === null || raw === undefined ? '' : raw).trim();
+  if (!/^\d{1,2}$/.test(s)) return null;
+  const n = parseInt(s, 10);
+  return n >= 1 && n <= 99 ? n : null;
+}
+// Plan or typed load → added pounds (0 = bodyweight), or null when it isn't a plain load
+function loadPounds(load) {
+  const s = String(load === null || load === undefined ? '' : load).trim();
+  if (/^bw$/i.test(s)) return 0;
+  const m = /^\+?(\d+(?:\.\d+)?)$/.exec(s);
+  return m ? parseFloat(m[1]) : null;
+}
+// What the person typed when changing a set's load → "BW" or "+N", or null if it isn't a load
+function normalizeLoadInput(text) {
+  const s = String(text === null || text === undefined ? '' : text).trim().replace(/\s*lbs?\.?$/i, '').trim();
+  if (s === '' || /^bw$/i.test(s)) return 'BW';
+  const m = /^\+?(\d+(?:\.\d+)?)$/.exec(s);
+  if (!m) return null;
+  const n = parseFloat(m[1]);
+  if (n === 0) return 'BW';
+  return n <= 999 ? '+' + n : null;
+}
+function loadLabel(load) {
+  const lb = loadPounds(load);
+  if (lb === 0) return 'BW';
+  if (lb !== null) return '+' + lb + ' lb';
+  return String(load === null || load === undefined ? '' : load);
+}
+// Value saved to the Sets tab for one set, or null when there are no valid reps (nothing is saved)
+function composeRepValue(reps, load) {
+  const r = cleanReps(reps);
+  if (r === null) return null;
+  const lb = loadPounds(load);
+  return lb !== null && lb > 0 ? lb + 'x' + r : r + ' reps';
+}
+function repEsc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+// How a stored value reads on the "Last:" line for a rep-logged exercise. Old rows are shown as they were
+// logged and marked when reps were never recorded — reps are never guessed.
+function describeRepValue(stored) {
+  const s = String(stored === null || stored === undefined ? '' : stored).trim();
+  let m = /^(\d+)\s*reps?$/i.exec(s);
+  if (m) return m[1] + ' reps';
+  m = /^(\d+(?:\.\d+)?)\s*[x×]\s*(\d+)$/i.exec(s);
+  if (m) return '+' + m[1] + ' lb × ' + m[2];
+  if (/^\d+(?:\.\d+)?$/.test(s)) return '+' + s + ' lb (reps not recorded)';
+  if (/^bw$/i.test(s)) return 'BW (reps not recorded)';
+  return repEsc(s);
+}
 function localSessionId(date, dayLabel) {
   const p = n => String(n).padStart(2, '0');
   return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}-${dayLabel}`;

@@ -786,6 +786,33 @@ body {
   color: var(--ok);
 }
 
+/* Rep-logged sets (pull-ups): planned load is a label, the box is for reps */
+.set-load {
+  min-width: 60px;
+  height: 26px;
+  padding: 0 var(--s2);
+  border: 1px dashed var(--line-2);
+  border-radius: var(--r-sm);
+  background: transparent;
+  font-family: var(--f-num);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+.set-load.edited {
+  border-style: solid;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.set-load:disabled { cursor: default; opacity: 0.7; }
+.rep-input::placeholder {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-4);
+}
+
 /* Set check — completion affordance */
 .set-check {
   width: 30px;
