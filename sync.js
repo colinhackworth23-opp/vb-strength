@@ -123,12 +123,20 @@ const _syncListeners = [];
 function onSync(fn) { _syncListeners.push(fn); }
 function emitSync(event) { _syncListeners.forEach(fn => { try { fn(event); } catch(e) {} }); }
 
+// A job with no rows can never be confirmed (nothing is written, so no Save ID lands in the
+// sheet) and would block every save behind it. There is nothing in it to lose, so it is dropped.
+function jobHasNothingToSend(job) {
+  return !job || !Array.isArray(job.rows) || job.rows.length === 0;
+}
+
 function queueSave(job) {
+  if (jobHasNothingToSend(job)) return false; // nothing to save — never queue an unconfirmable job
   const list = loadOutbox();
   list.push({ ...job, createdAt: Date.now(), tries: 0 });
   saveOutbox(list);
   emitSync({ type: 'queued', job, pending: list.length });
   flushOutbox();
+  return true;
 }
 
 async function flushOutbox() {
@@ -140,6 +148,13 @@ async function flushOutbox() {
     let list = loadOutbox();
     while (list.length) {
       const job = list[0];
+      if (jobHasNothingToSend(job)) {
+        // An empty job already stuck in the outbox (saved by an older version): clear it so the saves behind it can send
+        list = list.filter(x => x.id !== job.id);
+        saveOutbox(list);
+        emitSync({ type: 'synced', pending: list.length });
+        continue;
+      }
       emitSync({ type: 'sending', job, pending: list.length });
       const ok = await sendJob(job);
       list = loadOutbox();

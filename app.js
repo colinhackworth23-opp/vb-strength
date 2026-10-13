@@ -1598,6 +1598,7 @@ async function saveSession(weekN, dayN, dayLabelOverride, btnEl) {
   _savingSessions[lockKey] = true;
   const statusEl = document.getElementById(`status-${weekN}-${dayN}`);
   const btn = btnEl || document.querySelector(`button[onclick="saveSession(${weekN},${dayN})"]`);
+  const btnLabel = btn ? btn.textContent : '';
   if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
   if (navigator.vibrate) { try { navigator.vibrate(15); } catch(e){} }
   // Snapshot PRs BEFORE saving so we can compare this session against history
@@ -1621,24 +1622,43 @@ async function saveSession(weekN, dayN, dayLabelOverride, btnEl) {
         setRows.push([date, `Week ${weekN}`, dayLabel, session, id, name, i + 1, String(v), pv.weight, pv.reps, '', PROGRAM_BLOCK]);
       });
     });
+    // Effort taps (Easy / Right / Grind + note) travel in their own small job
+    const fbRows = collectFeedbackRows(weekN, dayN, session, date, dayLabel);
+    // Nothing entered at all: don't queue an empty save (it could never be confirmed)
+    if (!setRows.length && !fbRows.length) {
+      if (statusEl) statusEl.innerHTML = `<div class="callout c-amber sync-note" style="margin-top:8px">Nothing to save yet — no sets have anything entered.</div>`;
+      if (btn) { btn.disabled = false; btn.textContent = btnLabel || 'Save session to Google Sheets'; }
+      return;
+    }
     // A second tap on an identical session within 2 minutes is ignored
     const sig = JSON.stringify(setRows.map(r => r.slice(4, 8)));
     const last = _lastSessionSave[lockKey];
-    if (last && last.sig === sig && Date.now() - last.at < 120000) {
+    if (setRows.length && last && last.sig === sig && Date.now() - last.at < 120000) {
       if (statusEl) statusEl.innerHTML = `<div class="callout c-success sync-note" style="margin-top:8px">Already saved — no duplicate added.</div>`;
       if (btn) { btn.textContent = 'Saved ✓'; setTimeout(()=>{ btn.disabled=false; btn.textContent='Save session to Google Sheets'; }, 3000); }
       return;
     }
-    const saveId = newSaveId();
-    _lastSessionSave[lockKey] = { sig, at: Date.now() };
-    queueSave({ id: saveId, tab: 'Sets', rows: setRows, legacy, label: `${dayLabel} session` });
+    let saveId = newSaveId();
+    let queuedAny = false;
+    if (setRows.length) {
+      queuedAny = true;
+      _lastSessionSave[lockKey] = { sig, at: Date.now() };
+      queueSave({ id: saveId, tab: 'Sets', rows: setRows, legacy, label: `${dayLabel} session` });
+    }
     // How each exercise felt (Easy / Right / Grind + note) goes in its own small job.
     // Only re-sent if something changed since the last save of this day.
-    const fbRows = collectFeedbackRows(weekN, dayN, session, date, dayLabel);
     const fbSig = JSON.stringify(fbRows.map(r => r.slice(4, 8)));
     if (fbRows.length && _lastFeedbackSig[lockKey] !== fbSig) {
       _lastFeedbackSig[lockKey] = fbSig;
-      queueSave({ id: newSaveId(), tab: 'Feedback', rows: fbRows, legacy: fbRows.map(r => ({ tab: 'Feedback', row: r })), label: `${dayLabel} feedback` });
+      const fbId = newSaveId();
+      queueSave({ id: fbId, tab: 'Feedback', rows: fbRows, legacy: fbRows.map(r => ({ tab: 'Feedback', row: r })), label: `${dayLabel} feedback` });
+      queuedAny = true;
+      if (!setRows.length) saveId = fbId; // only effort notes this time — the status note follows that job
+    }
+    if (!queuedAny) { // only effort notes, and they were already sent
+      if (statusEl) statusEl.innerHTML = `<div class="callout c-success sync-note" style="margin-top:8px">Already saved — nothing new to send.</div>`;
+      if (btn) { btn.disabled = false; btn.textContent = btnLabel || 'Save session to Google Sheets'; }
+      return;
     }
     applyLocalHistory(); // "last time" includes this session straight away
     if (statusEl) statusEl.innerHTML = syncNoteHTML(saveId);
