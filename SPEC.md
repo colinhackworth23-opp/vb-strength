@@ -54,6 +54,51 @@ Add these to the short form:
 - Acceptance criteria:
   - A written summary of how each case is handled today (retry, refresh, failed write, duplicate submission)
   - Any gap found is raised as its own item (full form) before any code changes
+- Audit result (Dev, 2026-10-13, read-only; code in `sync.js`, `app.js` `saveSession`, `apps-script/Code.gs`): **gaps found**, raised as items below. Nothing was changed. How each case works today:
+  - Retry after a failed or unconfirmed send: **safe for Sets and Feedback.** The job is stored on the phone before sending and removed only after the sheet confirms its Save ID. On retry the script checks the last 3,000 rows for that Save ID under a script lock and writes nothing if found. Rows and Save ID go in one write.
+  - Refresh or app close mid-save: **safe.** The job is already stored, and the outbox is flushed on app open, when signal returns, and when the app comes to the front. A second tab or app instance resending the same job is also caught by the Save ID check.
+  - Failed write (script error, lock timeout): **safe.** The send result is unreadable (`no-cors`), so only the confirm check counts; no confirm means the job stays and retries (5s, doubling to 2 min, no retry limit).
+  - Duplicate submission: **partly safe.** Same-job duplicates are blocked by Save ID. Tapping Save again after a refresh makes a new job with a new Save ID, so the same set rows are added again (the in-memory 2-minute guard is lost on refresh). The app reads the latest row for a set, so the screen is right, but the Sheet has duplicate rows (see item D).
+  - Not observed live: every one of the 1,836 Sets rows is tagged `from-log`, so no row has ever been written through the outbox into the Sets tab. These findings come from reading the code, not from live saves.
+
+### Gap A: A save with zero rows is never confirmed and blocks all later saves
+- Status: Proposed
+- Raised by: Dev (from the outbox audit)
+- Problem: `saveSession` always queues a Sets job, even when it has no rows (every set blank, or a day whose sets are not programmed that week). The script writes nothing for it, so no Save ID ever lands in the sheet and the confirm check never passes. The outbox stops at the first failed job, so that job retries forever and every save behind it (including real sessions) never syncs. They stay on the phone and still show in "Last:", so nothing is lost until the phone's storage is cleared, but the Sheet stops updating with no clear sign.
+- Behavior: Do not queue a job with zero rows (show "Nothing to save"). Also drop zero-row jobs already in the outbox when flushing, so an existing stuck queue clears itself. No change to jobs that have rows.
+- Acceptance criteria:
+  - Tapping Save with no loggable sets queues nothing and says so.
+  - A zero-row job already in the outbox is removed on the next flush, and the jobs behind it send.
+  - Normal sessions save and confirm exactly as before; a retry after a dropped confirm still writes once.
+- Data impact: None. An empty job holds no data. No sheet or script change.
+- Edge cases: Offline (no change); mixed outbox with one empty job and several real ones.
+- Risks: Low. The guard must only match `rows.length === 0`, never jobs with rows.
+- Rollback: Revert the commit.
+- Dependencies: None. Any new way of skipping unfilled sets (including the pull-up reps item) makes an empty job more likely, so this goes first.
+- Success check: Pending-save count on the phone returns to zero after a flush with an empty job in the queue.
+
+### Gap B: A save is lost silently if the phone will not store the outbox
+- Status: Proposed (low priority)
+- Raised by: Dev
+- Problem: `saveOutbox` swallows storage errors (private browsing, full or blocked storage). The send still runs once, but if it fails there is nothing to retry, and the screen still says "Saved ✓".
+- Behavior: If storing the job fails, keep it in memory for this page's retries and show a visible warning: "Not stored on this phone yet. Keep the app open until it syncs."
+- Acceptance criteria: With storage forced to fail, the warning shows; with a failed send then a good one, the job still syncs while the app stays open.
+- Data impact: None. Risks: Low. Rollback: Revert the commit. Dependencies: None.
+- Success check: Not expected to trigger in normal use; test only by forcing it.
+
+### Gap C: Duplicate row on non-Sets tabs after a long offline gap
+- Status: Proposed (low priority, short form)
+- Raised by: Dev
+- Problem: VB Sessions, Check-ins, Maxes and Proposals have no Save ID column; the script remembers a save for 6 hours. If the send reaches the sheet, the confirm fails, and the phone then stays offline more than 6 hours, the retry adds the row a second time.
+- Behavior: Decision needed from Colin whether to add a Save ID column to those tabs (sheet and script change that Colin deploys) or accept the risk.
+- Acceptance criteria: A retry after more than 6 hours does not add a second row.
+
+### Gap D: Saving the same session twice adds the set rows twice
+- Status: Proposed (decision for Colin, short form)
+- Raised by: Dev
+- Problem: Re-saving a day after editing (or after a refresh) appends a second set of rows for the same session, exercise and set. The app and the Sunday assessment read the latest row, so results look right, but any other sheet formula or analysis sees duplicates.
+- Behavior: Decision needed: keep append-only (safest for data, current behavior) or mark replaced rows. Dev recommends keeping append-only and having any analysis read the latest row per session/exercise/set.
+- Acceptance criteria: Whichever is chosen is written down here and RULES.md/analysis follow it.
 
 ### Log pull-ups as reps, not weight
 - Status: Proposed
@@ -83,7 +128,7 @@ Add these to the short form:
   - Plan edited in the Program tab: label follows the sheet after the daily refresh.
 - Risks: A forgotten reps entry means a missing set (mitigated by the save-screen note). Label/tap layout is unproven until tried on the phone.
 - Rollback: Revert the commit; no data or sheet changes to undo. Rows already saved in the new format (`6 reps`, `10x6`) are the same formats already in the sheet.
-- Dependencies: Coach answers below (which exercises). Not blocked by the outbox audit, but any outbox gap found there takes priority over this.
+- Dependencies: Coach answers are in (below). Colin's go-ahead on Gap A (outbox) is needed first: the audit found it, and this item adds another way to skip unfilled sets, so it should not ship ahead of Gap A. Not yet marked Ready.
 - Success check: After a pull-up session, the Sets rows for that session have Reps filled and no plan text; the next session's "Last:" shows those reps.
 - Open questions for Coach / Colin (Dev will not decide these):
   1. Which exercises are rep-logged? Dev proposes Weighted pull-up and Pull-up practice (doorframe bar); Coach confirms Banded negative pull-up and Scapular pull-up.
