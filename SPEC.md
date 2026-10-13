@@ -91,11 +91,20 @@ Add these to the short form:
   3. Pull-up progression: nothing in RULES.md or the Program tab defines it beyond the weekly cue text, and the Sunday assessment skips pull-ups (no Increment). Any rep-based suggestion needs a rule written here first.
   4. Failed or partial sets: is reps completed enough, or is a marker wanted (the old data has one `30 failed`)?
   5. Is "tap the load label to edit" enough when the load differs from plan?
+- Coach answers (2026-10-13; items marked "Colin" need his confirmation):
+  1. Rep-logged: Weighted pull-up, Pull-up practice (doorframe bar), Banded negative pull-up, Scapular pull-up. Not Dead hang (time-based). Scapular pull-up is low value to log but harmless to include.
+  2. Do not turn cue text into Program data yet. Rep targets only matter if the app ever suggests progression, and that is out of scope here (see 3). Revisit after the Week 4 decision.
+  3. No app-side pull-up progression. The Sunday assessment keeps skipping pull-ups and must not read rep counts as weight. Coach decides the Week 5 start by hand at the end of Week 4 from the logged reps. Rationale: small load step after rep gains, Moderate evidence. The decision cut-offs are Heuristic and are not to be built.
+  4. Reps completed is enough. No failed-set marker. If grip or a slipping handle ended the set, Colin taps Grind and writes "slipped" in the effort note. Coach reads that note; the app does nothing with it. Old `30 failed` row stays as stored.
+  5. Tapping the load label to edit is enough (Colin to confirm on the phone).
+  Data-integrity notes from Coach: the Sets rows before Oct 7 for Weighted pull-up record `BW` with no reps, so there is no logged rep history before Oct 7. The Week 1 figure of 5/5/5 is Colin's recollection, not data. Old bare-number rows stay as load and are never converted to reps.
 - Verification Dev can do: diff review for data-loss risk; run the reps parse/compose and "Last:" functions in Node against the real stored formats above; check the deploy serves the new `?v=` files. Verification Dev cannot do: one-handed use, sweaty-hands tap targets and bad-Wi-Fi saves on the iPhone. Colin tests those and reports before this is marked Shipped.
 
 ## Backlog / ideas
 - Sets tab Block column: the app writes `fall-2026-b1` as a 12th column, but the live Sets header and all 1,836 rows stop at column 11 (Save ID). The deployed Apps Script is probably older than `apps-script/Code.gs`, and RULES.md step 4 (`block_start`) may have no Block data to filter on. Needs Colin to compare the script in the Apps Script editor. (Raised by: Dev)
+  - Coach check 2026-10-13: `?tab=__meta` returns version 3, so the new script is live. The Sets header row still ends at Save ID because no Sets save has happened since it was deployed. The Block header is added by the first Sets save after a workout. Dev to confirm after Colin's next session; until then RULES.md `block_start` (date-based) is the filter that works.
 - Sheet endpoint is readable by anyone with the URL: `doGet` in Code.gs has no check and `SHEET_URL` is in the public repo, so training, VB notes and pain notes are exposed. Not confirmed live (Dev's fetch failed). Fixing it needs a decision from Colin first. (Raised by: Dev)
+  - Coach view: pain notes and VB sessions are in that data, so this is worth fixing, but it is Colin's decision on trade-offs. Not blocking any training work.
 - Last-session performance for rep-logged exercises, after the pull-up item and the Coach's answers.
 
 ## Decision log
