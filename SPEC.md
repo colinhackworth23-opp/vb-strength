@@ -155,7 +155,7 @@ Add these to the short form:
 - Problem: Block 1 ends with a deload (Week 10, Nov 30 - Dec 6). Colin wants fresh numbers as the baseline for Block 2 instead of estimating from 8-rep sets.
 - Behavior (suggest-and-confirm, never auto-apply):
   - Add a Week 11 (Dec 7 - 13, after the deload) to the program. It is a test week, not a training week.
-  - Mon: Back squat. Wed: Incline bench, then bodyweight pull-ups. Fri: Hex bar deadlift.
+  - Mon: Back squat. Wed: bodyweight pull-up test first (arms fresh, matches the usual Wednesday order), then incline bench. The single-arm DB clean and jerk is dropped that day. Fri: Hex bar deadlift.
   - Each test lift: warm-up ramp, then ONE top set of 3 reps (3RM attempt); if a joint is symptomatic that day, drop to a lighter 5-rep top set instead of skipping. Stop the set at the first sign of form breaking or a sharp slowdown. No second attempt. Reps and weight are logged as for any set.
   - Pull-ups: one set of bodyweight reps to the last clean rep. Log reps.
   - Everything else that day is about half the Week 4 volume. Calves and shoulder/knee prehab stay as written.
@@ -168,6 +168,13 @@ Add these to the short form:
   - Test sets are saved to the Sets tab with Block `fall-2026-b1` and can be told apart from Block 1 training sets (exercise ID and week are enough).
 - Rationale: Testing a 3-rep max is safer than a 1RM and, per Moderate evidence, gives a more accurate estimate than extrapolating from 8-rep sets. The single-attempt rule is Heuristic. The new TM equals the estimated max because the program's weekly percentages (65-86% TM) are already built on max-style TMs. A deload before testing lets the numbers reflect readiness, not fatigue.
 - Goals to score against (Coach, Heuristic; estimated one-rep max, not the weight on the bar). Equivalent 3-rep weights (floor / solid / stretch): squat 220 / 225 / 235, hex bar 310 / 320 / 325, incline bench 160 / 165 / 170. Estimated-max form: squat 250 solid (floor 240), hex bar 350 (floor 340), incline bench 180 (floor 175), bodyweight pull-ups 9-10 reps (floor 8). Baselines today (estimated, not tested): squat 234, hex bar 329, incline bench 171, pull-ups 7.
+- Test day ramps (Coach; Heuristic; weights in lb are placeholders for the "good" top set and Colin picks the final weight with the chooser below). Ramp sets are listed as load x reps, with rest in minutes:
+  - Back squat (top set 225 x 3): bar x 8 (1), 95 x 5 (1), 135 x 4 (2), 165 x 3 (2), 185 x 2 (3), 205 x 1 (4-5), then the top set.
+  - Hex bar deadlift (top set 320 x 3): 135 x 5 (1), 185 x 4 (2), 225 x 3 (2), 255 x 2 (3), 285 x 1 (4-5), then the top set.
+  - Incline bench (top set 165 x 3): bar x 8 (1), 65 x 6 (1), 95 x 5 (2), 115 x 4 (2), 135 x 3 (3), 150 x 1 (4-5), then the top set. Spotter or safeties required.
+  - Bodyweight pull-ups (no chooser; reps are the result): scapular pull-ups x 10 (1), 3 bodyweight reps (2), 5 bodyweight reps (3), then one set to the last clean rep (full hang at the bottom, chin over the bar, no kipping). Use the same grip setup Colin plans to use from now on and note it.
+  - Reaching the last ramp single before the top set triggers the chooser. Pull-ups have no chooser.
+  - Pull-up goals (reps): floor 8, good 9-10, stretch 11-12.
 - UI notes (Coach supplies the content; Dev decides layout):
   - Once the last ramp set before the top set is checked, show a "Choose your top set" card with three options per lift. Colin taps one and it fills the top-set weight. Nothing is pre-selected or auto-chosen.
   - Top-set options for 3 reps (floor / good / stretch): squat 220 / 225 / 235, hex bar 310 / 320 / 325, incline bench 160 / 165 / 170. Current TMs for reference: squat 235, hex bar 325, incline bench 170.
