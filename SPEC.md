@@ -156,7 +156,7 @@ Add these to the short form:
 - Behavior (suggest-and-confirm, never auto-apply):
   - Add a Week 11 (Dec 7 - 13, after the deload) to the program. It is a test week, not a training week.
   - Mon: Back squat. Wed: Incline bench, then bodyweight pull-ups. Fri: Hex bar deadlift.
-  - Each test lift: warm-up ramp, then ONE top set of 3 reps (3RM attempt); if a joint is symptomatic that day, drop to a lighter 5-rep top set instead of skipping, stopped at the first sign of form breaking or a sharp slowdown. No second attempt. Reps and weight are logged as for any set.
+  - Each test lift: warm-up ramp, then ONE top set of 3 reps (3RM attempt); if a joint is symptomatic that day, drop to a lighter 5-rep top set instead of skipping. Stop the set at the first sign of form breaking or a sharp slowdown. No second attempt. Reps and weight are logged as for any set.
   - Pull-ups: one set of bodyweight reps to the last clean rep. Log reps.
   - Everything else that day is about half the Week 4 volume. Calves and shoulder/knee prehab stay as written.
   - After the top set, the app shows an estimated max (Epley: weight x (1 + reps/30)) and a suggested training max of 90% of it. Colin confirms or edits the number. Nothing is written to the Program tab or used for Block 2 until he confirms.
