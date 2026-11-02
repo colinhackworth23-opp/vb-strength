@@ -156,21 +156,21 @@ Add these to the short form:
 - Behavior (suggest-and-confirm, never auto-apply):
   - Add a Week 11 (Dec 7 - 13, after the deload) to the program. It is a test week, not a training week.
   - Mon: Back squat. Wed: Incline bench, then bodyweight pull-ups. Fri: Hex bar deadlift.
-  - Each test lift: warm-up ramp, then ONE top set of 5 reps (5RM attempt), stopped at the first sign of form breaking or a sharp slowdown. No second attempt. Reps and weight are logged as for any set.
+  - Each test lift: warm-up ramp, then ONE top set of 3 reps (3RM attempt); if a joint is symptomatic that day, drop to a lighter 5-rep top set instead of skipping, stopped at the first sign of form breaking or a sharp slowdown. No second attempt. Reps and weight are logged as for any set.
   - Pull-ups: one set of bodyweight reps to the last clean rep. Log reps.
   - Everything else that day is about half the Week 4 volume. Calves and shoulder/knee prehab stay as written.
   - After the top set, the app shows an estimated max (Epley: weight x (1 + reps/30)) and a suggested training max of 90% of it. Colin confirms or edits the number. Nothing is written to the Program tab or used for Block 2 until he confirms.
   - Sunday assessment makes no proposals for Week 11 and does not read test sets as normal progression (add 11 to the Rules tab `no_increase_weeks`).
 - Acceptance criteria:
   - Week 11 appears after Week 10 with only the three test days and the accessory work above.
-  - A logged 5-rep top set on each lift shows an estimated max and a 90% suggestion that Colin can edit before confirming.
+  - A logged 3-rep top set on each lift shows an estimated max and a 90% suggestion that Colin can edit before confirming.
   - Without Colin's confirmation, no Program cell and no Rules value changes.
   - Test sets are saved to the Sets tab with Block `fall-2026-b1` and can be told apart from Block 1 training sets (exercise ID and week are enough).
-- Rationale: Testing 3-5 rep maxes is safer than a 1RM and, per Moderate evidence, gives a more accurate estimate than extrapolating from 8-rep sets. The 90% training max and the single-attempt rule are Heuristic. A deload before testing lets the numbers reflect readiness, not fatigue.
-- Goals to score against (Coach, Heuristic; estimated one-rep max, not the weight on the bar). Equivalent 5-rep weights (floor / solid / stretch): squat 205 / 215 / 225, hex bar 290 / 300 / 310, incline bench 150 / 155 / 160. Estimated-max form: squat 250 solid (floor 240), hex bar 350 (floor 340), incline bench 180 (floor 175), bodyweight pull-ups 9-10 reps (floor 8). Baselines today (estimated, not tested): squat 234, hex bar 329, incline bench 171, pull-ups 7.
+- Rationale: Testing a 3-rep max is safer than a 1RM and, per Moderate evidence, gives a more accurate estimate than extrapolating from 8-rep sets. The 90% training max and the single-attempt rule are Heuristic. A deload before testing lets the numbers reflect readiness, not fatigue.
+- Goals to score against (Coach, Heuristic; estimated one-rep max, not the weight on the bar). Equivalent 3-rep weights (floor / solid / stretch): squat 220 / 225 / 235, hex bar 310 / 320 / 325, incline bench 160 / 165 / 170. Estimated-max form: squat 250 solid (floor 240), hex bar 350 (floor 340), incline bench 180 (floor 175), bodyweight pull-ups 9-10 reps (floor 8). Baselines today (estimated, not tested): squat 234, hex bar 329, incline bench 171, pull-ups 7.
 - Data impact: A Week 11 column in the Program tab (or Dev's proposal for how to add a week) and the test exercises as Program rows. Rules tab: `no_increase_weeks` becomes `10,11`. No change to Sets columns. Dev decides how the app shows the estimate.
 - Edge cases: Week 11 skipped or shortened (travel, tournament): nothing carries forward; test in Block 2 Week 1 instead. If Colin is off for more than 2-3 weeks after the test, the Coach re-ramps at Block 2 Week 1 from 5-10% below the tested number.
-- Risks: A pain flag on a test day overrides the test. Maxing out can mislead if the set was not a true 5RM; the estimate is only as good as the set.
+- Risks: A pain flag on a test day overrides the test. Maxing out can mislead if the set was not a true 3RM; the estimate is only as good as the set.
 - Rollback: Remove Week 11 from the Program tab; no data to undo.
 - Dependencies: Colin confirms the Block 2 start date and what happens between Dec 7 and January. If there is a long gap, Week 11 stays but the Coach re-ramps in Block 2 Week 1.
 - Success check: By Dec 13, three lifts and pull-ups have a logged top set and Colin has confirmed training maxes for Block 2.
