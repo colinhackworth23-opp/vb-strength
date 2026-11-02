@@ -168,6 +168,15 @@ Add these to the short form:
   - Test sets are saved to the Sets tab with Block `fall-2026-b1` and can be told apart from Block 1 training sets (exercise ID and week are enough).
 - Rationale: Testing a 3-rep max is safer than a 1RM and, per Moderate evidence, gives a more accurate estimate than extrapolating from 8-rep sets. The single-attempt rule is Heuristic. The new TM equals the estimated max because the program's weekly percentages (65-86% TM) are already built on max-style TMs. A deload before testing lets the numbers reflect readiness, not fatigue.
 - Goals to score against (Coach, Heuristic; estimated one-rep max, not the weight on the bar). Equivalent 3-rep weights (floor / solid / stretch): squat 220 / 225 / 235, hex bar 310 / 320 / 325, incline bench 160 / 165 / 170. Estimated-max form: squat 250 solid (floor 240), hex bar 350 (floor 340), incline bench 180 (floor 175), bodyweight pull-ups 9-10 reps (floor 8). Baselines today (estimated, not tested): squat 234, hex bar 329, incline bench 171, pull-ups 7.
+- UI notes (Coach supplies the content; Dev decides layout):
+  - Once the last ramp set before the top set is checked, show a "Choose your top set" card with three options per lift. Colin taps one and it fills the top-set weight. Nothing is pre-selected or auto-chosen.
+  - Top-set options for 3 reps (floor / good / stretch): squat 220 / 225 / 235, hex bar 310 / 320 / 325, incline bench 160 / 165 / 170. Current TMs for reference: squat 235, hex bar 325, incline bench 170.
+  - Guide text on the card, same for all three lifts:
+    - Stretch: the last ramp single moved fast and smooth, it felt like 4 or more reps were left, depth and form were clean, nothing hurts, and sleep and energy were normal.
+    - Good: the last ramp single moved at a normal pace, it felt like 2-3 reps were left, and form was clean.
+    - Floor: the last ramp single was slower, it felt like 2 or fewer reps were left, or sleep or energy was poor, or you are sore.
+    - Stop rule: any knee or shoulder pain, depth getting shallow, or the bar slowing sharply means stop. Drop to a lighter 5-rep set instead of forcing the 3.
+  - The guide text is advice; it never blocks a choice. These cut-offs are Heuristic.
 - Data impact: A Week 11 column in the Program tab (or Dev's proposal for how to add a week) and the test exercises as Program rows. Rules tab: `no_increase_weeks` becomes `10,11`. No change to Sets columns. Dev decides how the app shows the estimate.
 - Edge cases: Week 11 skipped or shortened (travel, tournament): nothing carries forward; test in Block 2 Week 1 instead. If Colin is off for more than 2-3 weeks after the test, the Coach re-ramps at Block 2 Week 1 from 5-10% below the tested number.
 - Risks: A pain flag on a test day overrides the test. Maxing out can mislead if the set was not a true 3RM; the estimate is only as good as the set.
