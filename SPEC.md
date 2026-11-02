@@ -149,6 +149,33 @@ Add these to the short form:
 - Not verified (needs Colin's phone): one-handed use, tap targets with sweaty hands, number pad on iOS, the load prompt box inside the home-screen app, bad-Wi-Fi save, and the first real save into the Sets tab (no row has gone through the new save path yet).
 - Verification Dev can do: diff review for data-loss risk; run the reps parse/compose and "Last:" functions in Node against the real stored formats above; check the deploy serves the new `?v=` files. Verification Dev cannot do: one-handed use, sweaty-hands tap targets and bad-Wi-Fi saves on the iPhone. Colin tests those and reports before this is marked Shipped.
 
+### Test week at the end of Block 1 (Week 11)
+- Status: Proposed
+- Raised by: Colin; drafted by Coach
+- Problem: Block 1 ends with a deload (Week 10, Nov 30 - Dec 6). Colin wants fresh numbers as the baseline for Block 2 instead of estimating from 8-rep sets.
+- Behavior (suggest-and-confirm, never auto-apply):
+  - Add a Week 11 (Dec 7 - 13, after the deload) to the program. It is a test week, not a training week.
+  - Mon: Back squat. Wed: Incline bench, then bodyweight pull-ups. Fri: Hex bar deadlift.
+  - Each test lift: warm-up ramp, then ONE top set of 5 reps (5RM attempt), stopped at the first sign of form breaking or a sharp slowdown. No second attempt. Reps and weight are logged as for any set.
+  - Pull-ups: one set of bodyweight reps to the last clean rep. Log reps.
+  - Everything else that day is about half the Week 4 volume. Calves and shoulder/knee prehab stay as written.
+  - After the top set, the app shows an estimated max (Epley: weight x (1 + reps/30)) and a suggested training max of 90% of it. Colin confirms or edits the number. Nothing is written to the Program tab or used for Block 2 until he confirms.
+  - Sunday assessment makes no proposals for Week 11 and does not read test sets as normal progression (add 11 to the Rules tab `no_increase_weeks`).
+- Acceptance criteria:
+  - Week 11 appears after Week 10 with only the three test days and the accessory work above.
+  - A logged 5-rep top set on each lift shows an estimated max and a 90% suggestion that Colin can edit before confirming.
+  - Without Colin's confirmation, no Program cell and no Rules value changes.
+  - Test sets are saved to the Sets tab with Block `fall-2026-b1` and can be told apart from Block 1 training sets (exercise ID and week are enough).
+- Rationale: Testing 3-5 rep maxes is safer than a 1RM and, per Moderate evidence, gives a more accurate estimate than extrapolating from 8-rep sets. The 90% training max and the single-attempt rule are Heuristic. A deload before testing lets the numbers reflect readiness, not fatigue.
+- Goals to score against (Coach, Heuristic; estimated max from the top set): squat 250 solid (floor 240), hex bar 350 (floor 340), incline bench 180 (floor 175), bodyweight pull-ups 9-10 reps (floor 8). Baselines today (estimated, not tested): squat 234, hex bar 329, incline bench 171, pull-ups 7.
+- Data impact: A Week 11 column in the Program tab (or Dev's proposal for how to add a week) and the test exercises as Program rows. Rules tab: `no_increase_weeks` becomes `10,11`. No change to Sets columns. Dev decides how the app shows the estimate.
+- Edge cases: Week 11 skipped or shortened (travel, tournament): nothing carries forward; test in Block 2 Week 1 instead. If Colin is off for more than 2-3 weeks after the test, the Coach re-ramps at Block 2 Week 1 from 5-10% below the tested number.
+- Risks: A pain flag on a test day overrides the test. Maxing out can mislead if the set was not a true 5RM; the estimate is only as good as the set.
+- Rollback: Remove Week 11 from the Program tab; no data to undo.
+- Dependencies: Colin confirms the Block 2 start date and what happens between Dec 7 and January. If there is a long gap, Week 11 stays but the Coach re-ramps in Block 2 Week 1.
+- Success check: By Dec 13, three lifts and pull-ups have a logged top set and Colin has confirmed training maxes for Block 2.
+- Open questions for Colin: Block 2 start date; whether testing happens the week of Dec 7 or later.
+
 ## Backlog / ideas
 - Sets tab Block column: the app writes `fall-2026-b1` as a 12th column, but the live Sets header and all 1,836 rows stop at column 11 (Save ID). The deployed Apps Script is probably older than `apps-script/Code.gs`, and RULES.md step 4 (`block_start`) may have no Block data to filter on. Needs Colin to compare the script in the Apps Script editor. (Raised by: Dev)
   - Coach check 2026-10-13: `?tab=__meta` returns version 3, so the new script is live. The Sets header row still ends at Save ID because no Sets save has happened since it was deployed. The Block header is added by the first Sets save after a workout. Dev to confirm after Colin's next session; until then RULES.md `block_start` (date-based) is the filter that works.
