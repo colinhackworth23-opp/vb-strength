@@ -9,6 +9,7 @@ Runs Sundays ~7:45 pm Chicago as a scheduled task. Tunable numbers live in the s
    - Skip primary lifts, warm-up/primer/cooldown/prehab groups, exercises without an Increment, ids appearing in more than one Program group, non-numeric plans, and the no-increase weeks.
    - Hold if any set was missed vs plan, effort was Grind, or the note mentions pain.
    - Otherwise propose actual + N increments (Easy `easy_steps`, Right/none `right_steps`), capped at `max_jump_pct` of the top set (never below one increment), for the next week, only if above what the plan already says.
+   - Week 11 is the test week (no Program tab column; defined in `program.js`). It is in `no_increase_weeks`, and its top sets and half-volume accessories are not normal progression: never use them to hold or propose.
    - Week 8 has one optional extra set (the last set) on RDL and hip thrust. It is not a planned set for the assessment: judge "any set below plan" on the first three sets only, and never hold or flag because the extra set is missing. A proposal's `To` keeps the same number of sets as the plan cell it replaces, so the optional extra set is never dropped.
 5. Append `weight` proposals (status `pending`, source `sunday-run`) with Reason, Last week, Flags; append a `run` heartbeat row.
 6. Read decline reasons/notes from the past week and mention anything notable in the summary.

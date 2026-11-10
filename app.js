@@ -647,7 +647,7 @@ function getTodayWeekIdx() {
   const startMid = new Date(start.getFullYear(), start.getMonth(), start.getDate());
   const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const diffDays = Math.floor((todayMid - startMid) / 86400000);
-  const weekIdx = Math.max(0, Math.min(9, Math.floor(diffDays / 7)));
+  const weekIdx = Math.max(0, Math.min(WEEKS.length - 1, Math.floor(diffDays / 7)));
   return weekIdx;
 }
 
@@ -1285,6 +1285,174 @@ function buildGymDay(weekN, slot, w, loads, calDay) {
   return h + `<div class="spacer"></div>`;
 }
 
+// ── Week 11 test week (SPEC.md "Test week at the end of Block 1") ──
+// Content comes from TEST_WEEK in program.js. The app shows the Coach's ramps and top-set options,
+// never picks a weight, and only changes a training max when Colin confirms it.
+const TEST_LIFT_LABEL = { squat:'squat', bench:'incline bench', dl:'hex bar' };
+// Week 11 has no Program-tab column: take the live Week 4 plan (first N sets when `keep` is given) and
+// drop the progression extras (no verdict chips, offsets or proposals in a test week).
+function testWeekView(arr, keep) {
+  const out = [];
+  (arr || []).forEach(ex => {
+    const id = ex.id || exId(ex.name);
+    if (keep && !keep[id]) return;
+    const src = Array.isArray(ex.sets) ? ex.sets : ((ex.sets || {})[TEST_WEEK.refWeek] || []);
+    const sets = keep ? src.slice(0, keep[id]) : src.slice();
+    if (!sets.length) return;
+    const copy = { ...ex, id, sets };
+    delete copy.inc;
+    out.push(copy);
+  });
+  return out;
+}
+function testLoadLabel(v) { return v === 'bar' ? 'Bar' : (typeof v === 'number' ? `${v} lbs` : String(v)); }
+// Ramp sets: checked off with their own rest timer, never logged (the hidden input only keeps the tick)
+function testRampRows(weekN, dayN, exKey, ramp, locked) {
+  return ramp.map(([load, reps, mins], i) => {
+    const last = i === ramp.length - 1;
+    const check = locked ? '' : `<div class="set-check"${last ? ' data-ramp-last="1"' : ''} onclick="handleSetCheck(this,false,${Math.round(mins * 60)});refreshTestUI()"></div>`;
+    return `<div class="lift-row test-ramp"><div class="lift-label">Ramp ${i + 1}<div class="lift-sub">then rest ${mins === 4.5 ? '4-5' : mins} min</div></div>` +
+      `<span class="badge badge-wu">${reps} reps</span><div class="lift-target">${testLoadLabel(load)}</div>` +
+      `<input type="hidden" class="lift-input-weight" data-week="${weekN}" data-day="${dayN}" data-ex="${exKey}" data-s="${i}">` + check + `</div>`;
+  }).join('');
+}
+function testLiftBlock(weekN, dayN, key, locked) {
+  const t = TEST_WEEK.lifts[key];
+  const g = TEST_WEEK.guide;
+  const exKey = `${t.name}__${key}`;
+  let h = `<div class="callout c-blue">${t.goal}${t.note ? ` <b>${t.note}</b>` : ''}</div>`;
+  h += testRampRows(weekN, dayN, `${exKey}__ramp`, t.ramp, locked);
+  if (!locked) {
+    const o = t.options;
+    h += `<div class="callout c-amber test-chooser" data-lift="${key}" hidden>
+      <div class="test-chooser-title">Choose your top set · 3 reps</div>
+      <div class="test-opts">${['floor', 'good', 'stretch'].map(k =>
+        `<button type="button" class="prog-chip test-opt" data-w="${o[k]}" onclick="chooseTopSet(this,${o[k]})">${k[0].toUpperCase() + k.slice(1)} ${o[k]}</button>`).join('')}</div>
+      <div class="test-guide"><p><b>Stretch</b> if ${g.stretch}</p><p><b>Good</b> if ${g.good}</p><p><b>Floor</b> if ${g.floor}</p><p><b>Stop:</b> ${g.stop}</p><p class="test-fine">Advice only. Any of the three is your call.</p></div>
+    </div>`;
+  }
+  const dis = locked ? ' disabled' : '';
+  h += `<div class="lift-row test-top"><div class="lift-label">Top set<div class="lift-sub">one set · 3 reps (5 if a joint is talking)</div></div>` +
+    `<input class="lift-input lift-input-reps" data-week="${weekN}" data-day="${dayN}" data-ex="${exKey}" data-s="0" data-type="reps" type="text" inputmode="numeric" value="3"${dis} oninput="refreshTestUI()">` +
+    `<span class="lift-unit">reps</span>` +
+    `<input class="lift-input lift-input-weight" data-week="${weekN}" data-day="${dayN}" data-ex="${exKey}" data-s="0" data-type="weight" type="text" inputmode="numeric" value="" placeholder="pick"${dis} oninput="refreshTestUI()">` +
+    `<span class="lift-unit">lbs</span>` +
+    (locked ? '' : `<div class="set-check lift-check" onclick="handleSetCheck(this,true)"></div>`) + `</div>`;
+  h += `<div class="test-est" data-lift="${key}"></div>`;
+  if (!locked) h += effortRowHTML(weekN, dayN, key, t.name);
+  return h;
+}
+function testPullupBlock(weekN, dayN, locked) {
+  const p = TEST_WEEK.pullup;
+  let h = `<div class="callout c-blue">${p.goal} Full hang at the bottom, chin over the bar, no kipping. Use the grip you plan to keep and write it in the note.</div>`;
+  h += testRampRows(weekN, dayN, 'Pull-up test__ramp', p.ramp, locked);
+  h += accRows([{ id:'weighted-pull-up', name:'Pull-up test (bodyweight)', meta:'1 set', rec:'to the last clean rep', rest:180,
+    cue:'One set of bodyweight pull-ups to the last clean rep: full hang at the bottom, chin over the bar, no kipping. Type the reps you got.', sets:['BW'] }],
+    weekN, dayN, true, locked);
+  return h;
+}
+// The chooser fills the top-set weight. Nothing is pre-selected.
+function chooseTopSet(btn, weight) {
+  const inp = btn.closest('.section').querySelector('.test-top .lift-input-weight');
+  if (!inp || inp.disabled) return;
+  inp.value = String(weight);
+  saveInputToCache(buildCacheKey(inp), inp.value);
+  haptic(10);
+  refreshTestUI();
+}
+function refreshTestUI() {
+  // The chooser appears once the last ramp single is checked
+  document.querySelectorAll('.test-chooser').forEach(card => {
+    const sec = card.closest('.section');
+    const last = sec && sec.querySelector('.set-check[data-ramp-last]');
+    card.hidden = !(last && last.classList.contains('checked'));
+    const top = sec && sec.querySelector('.test-top .lift-input-weight');
+    card.querySelectorAll('.test-opt').forEach(b => b.classList.toggle('selected', !!top && top.value !== '' && Number(top.value) === Number(b.dataset.w)));
+  });
+  document.querySelectorAll('.test-est').forEach(paintTestEstimate);
+}
+function paintTestEstimate(el) {
+  const key = el.dataset.lift;
+  const row = el.previousElementSibling;
+  if (!row) return;
+  const wt = parseFloat(row.querySelector('.lift-input-weight').value);
+  const reps = parseInt(row.querySelector('.lift-input-reps').value, 10);
+  const done = (loadCache().testTMs || {})[key];
+  const valid = wt > 0 && reps >= 1 && reps <= 12;
+  const sig = `${valid ? wt : ''}|${valid ? reps : ''}|${done ? done.value : ''}|${TM[key]}`;
+  if (el.dataset.sig === sig) return; // unchanged: keep whatever is being typed in the TM box
+  el.dataset.sig = sig;
+  const doneLine = done ? `<div class="test-done">✓ New ${TEST_LIFT_LABEL[key]} TM ${done.value} confirmed ${done.date}</div>` : '';
+  if (!valid) { el.innerHTML = done ? `<div class="callout c-green">${doneLine}</div>` : ''; return; }
+  const est = epleyE1RM(wt, reps);
+  const suggested = Math.floor(est / 5) * 5;
+  el.innerHTML = `<div class="callout c-green test-est-card">
+    <div>Estimated max <b>${est} lbs</b> (Epley, ${wt} × ${reps}). Current TM ${TM[key]}.</div>
+    <div class="test-tm-line"><span>New TM</span><input class="test-tm-input" type="text" inputmode="numeric" value="${done ? done.value : suggested}" aria-label="New training max">` +
+    `<button type="button" class="prog-chip prog-clean" onclick="confirmTestTM(this,'${key}')">${done ? 'Update TM' : 'Confirm TM'}</button></div>
+    <div class="test-fine">Suggested: the estimate rounded down to 5 lbs. Edit it if you want. Nothing changes until you confirm.</div>
+    ${doneLine}
+  </div>`;
+}
+// Confirming sets the app's training max and logs a Maxes row (the same row the Maxes screen saves)
+function confirmTestTM(btn, key) {
+  const inp = btn.closest('.test-est').querySelector('.test-tm-input');
+  const raw = String(inp.value).trim();
+  const n = parseInt(raw, 10);
+  if (!/^\d+$/.test(raw) || n < 50 || n > 800) { window.alert('Enter the new training max in pounds, like 245.'); return; }
+  TM[key] = n;
+  saveTMToCache();
+  const date = new Date().toLocaleDateString('en-US');
+  const c = loadCache();
+  c.testTMs = c.testTMs || {};
+  c.testTMs[key] = { value: n, date };
+  saveCache(c);
+  const row = [date, TM.squat, TM.bench, TM.dl, TM.ohp];
+  queueSave({ id: newSaveId(), tab: 'Maxes', rows: [row], legacy: [{ tab: 'Maxes', row }], label: `New ${TEST_LIFT_LABEL[key]} TM` });
+  haptic(15);
+  const el = btn.closest('.test-est');
+  el.dataset.sig = '';
+  paintTestEstimate(el);
+}
+function buildTestDay(weekN, slot, w, calDay) {
+  const locked = isWeekDone(weekN);
+  const dayLabel = DAY_NAMES[calDay];
+  const slotIdx = slot === 'lower' ? 0 : slot === 'pushPull' ? 1 : 2;
+  const titles = { lower:'Test · back squat', pushPull:'Test · pull-ups + incline bench', power:'Test · hex bar deadlift' };
+  let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-lift">${titles[slot]}</span></div>`;
+  if (locked) h += `<div class="locked-banner"><span>✓ Week ${weekN} completed — view only</span></div>`;
+  const readiness = getReadiness(weekN, slotIdx);
+  if (!locked) {
+    const opts = [['rough','😴','Rough night'],['okay','😐','Okay'],['fresh','💪','Fresh']];
+    h += `<div class="ready-card" data-week="${weekN}" data-slot="${slotIdx}">
+      <span class="ready-q">How'd you sleep?</span>
+      <div class="ready-chips">${opts.map(([v,e,l]) =>
+        `<button class="ready-chip${readiness===v?' selected':''}" onclick="tapReadiness(this,'${v}')">${e} ${l}</button>`).join('')}
+      </div></div>`;
+  }
+  if (readiness === 'rough' && !locked) h += `<div class="callout c-amber">Rough night: pick Floor, or do the lighter 5-rep set. Moving the test a day is fine too. Loads are not changed for you.</div>`;
+  h += `<div class="callout c-blue">Test day. Warm up, ramp, then ONE top set — no second attempt. Stop the set at the first sign of form breaking or a sharp slowdown. A pain flag today beats the test.</div>`;
+  const primers = { lower: ACC.primerLower, pushPull: ACC.primerPushPull, power: ACC.primerPower };
+  h += `<div class="section"><div class="section-header">Warm-up · same every day</div>${accRows(testWeekView(ACC.warmupGeneral), weekN, slotIdx, false, locked, true)}</div>`;
+  h += `<div class="section"><div class="section-header">Primer · today only</div>${accRows(testWeekView(primers[slot]), weekN, slotIdx, false, locked, true)}</div>`;
+  if (slot === 'pushPull') {
+    h += `<div class="section"><div class="section-header">Pull-up test · first, arms fresh</div>${testPullupBlock(weekN, slotIdx, locked)}</div>`;
+    h += `<div class="section"><div class="section-header">Incline bench · test</div>${testLiftBlock(weekN, slotIdx, 'bench', locked)}</div>`;
+  } else {
+    const key = slot === 'lower' ? 'squat' : 'dl';
+    h += `<div class="section"><div class="section-header">${TEST_WEEK.lifts[key].name} · test</div>${testLiftBlock(weekN, slotIdx, key, locked)}</div>`;
+  }
+  h += `<div class="section"><div class="section-header">Accessories · half volume</div>${accRows(testWeekView(ACC[slot], TEST_WEEK.keep[slot]), weekN, slotIdx, false, locked)}</div>`;
+  const cooldowns = { lower: ACC.cooldownLower, pushPull: ACC.cooldownPushPull, power: ACC.cooldownPower };
+  h += `<div class="section"><div class="section-header">Cool-down · optional</div>${accRows(testWeekView(cooldowns[slot]), weekN, slotIdx, false, locked, true)}</div>`;
+  if (!locked) {
+    h += `<div id="status-${weekN}-${slotIdx}"></div>`;
+    h += `<button class="save-btn" onclick="saveSession(${weekN},${slotIdx},'${dayLabel}',this)">Save session to Google Sheets</button>`;
+    h += `<button class="share-btn" onclick="shareDay(${weekN-1},${calDay},'Block 1 · Test week · ${dayLabel} — ${titles[slot]}')">Share this workout</button>`;
+  }
+  return h + `<div class="spacer"></div>`;
+}
+
 function buildEndReport() {
   const estStartTM = { squat: 230, bench: 170, dl: 315, ohp: 115 };
   const gains = {};
@@ -1420,7 +1588,7 @@ function buildPrehab(weekN, w) {
   let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-vb">Prehab · 15 min</span></div>`;
   if (locked) h += `<div class="locked-banner"><span>✓ Week ${weekN} completed — view only</span></div>`;
   h += `<div class="callout c-green">Saturday prehab — 15 minutes, no excuses. Two days before Monday's gym session. Shoulder and knee maintenance that compounds across the whole block.</div>`;
-  h += `<div class="section"><div class="section-header">Prehab circuit · tap to check off</div>${accRows(ACC.prehab, weekN, 5, false, locked, true)}</div>`;
+  h += `<div class="section"><div class="section-header">Prehab circuit · tap to check off</div>${accRows(w && w.testWeek ? testWeekView(ACC.prehab) : ACC.prehab, weekN, 5, false, locked, true)}</div>`;
   h += `<div class="section"><div class="section-header">Zone 2 · the cramping lever</div>${accRows([{ rest:0, name:'Zone 2 aerobic', meta:'30-40 min', rec:'conversational pace', cue:'Brisk walk with the stroller, home stairs, or bike/stairmaster if you are at the gym. You must be able to hold a conversation — if you cannot, slow down. This is the piece that actually raises the ceiling you played under in the finals, and it only works if it is boring and consistent. Sunday counts as a second dose if life allows.', sets:['30-40 min'] }], weekN, 5, false, locked)}</div>`;
   return h + `<div class="spacer"></div>`;
 }
@@ -1491,7 +1659,8 @@ function buildWeekContent(weekIdx) {
   for (let d = 0; d < 7; d++) {
     const token = (w.days && w.days[d]) || 'off';
     let content;
-    if (token === 'lower') content = buildGymDay(w.n, 'lower', w, loads, d);
+    if (w.testWeek && (token === 'lower' || token === 'push-pull' || token === 'power')) content = buildTestDay(w.n, token === 'push-pull' ? 'pushPull' : token, w, d);
+    else if (token === 'lower') content = buildGymDay(w.n, 'lower', w, loads, d);
     else if (token === 'push-pull') content = buildGymDay(w.n, 'pushPull', w, loads, d);
     else if (token === 'power') content = buildGymDay(w.n, 'power', w, loads, d);
     else if (token === 'home-upper') content = buildHomeDay(w.n, 'homeUpper', w, d);
@@ -1520,7 +1689,7 @@ function renderWeekInfo() {
   const badge = isWeekDone(w.n) ? '<span class="done-badge">Completed</span>' : '';
   document.getElementById('weekInfo').innerHTML = `<span class="week-title">${w.phase}</span><span class="week-meta">${w.dates} &middot; ${w.intensity} &middot; ${w.volume}</span>${badge}`;
   const heroLbl = document.getElementById('heroWeekLabel');
-  if (heroLbl) heroLbl.textContent = `Week ${w.n} of 10`;
+  if (heroLbl) heroLbl.textContent = w.testWeek ? 'Test week' : `Week ${w.n} of 10`;
 }
 
 function renderDayStrip() {
@@ -1542,6 +1711,7 @@ function renderContent() {
   applyCachedInputs();
   attachCacheListeners();
   restoreCheckmarks();
+  refreshTestUI();
   setTimeout(updateProgress, 50);
 }
 

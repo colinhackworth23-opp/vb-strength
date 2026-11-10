@@ -24,7 +24,7 @@ After changing any of the app files, bump the `?v=` number on the four `<script>
 
 - **Sets** — the training log, one row per set (with a **Block** column saying which training block it belongs to). Created automatically from Log. Warm-ups, primers and cool-downs are checked off in the app but never logged.
 - **Feedback** — one row per exercise per session: Easy / Right / Grind and an optional note, tapped at the end of each exercise.
-- **Program** — exercises, cues and targets by week (`W1`…`W10`, sets separated by ` / `). Edit a cell to change the plan; the app picks it up next time it opens.
+- **Program** — exercises, cues and targets by week (`W1`…`W10`, sets separated by ` / `). Edit a cell to change the plan; the app picks it up next time it opens. Week 11 (the test week) is not in the sheet; it is defined in `program.js` (`TEST_WEEK`).
 - **Proposals** — an event log of weekly plan-change proposals and your answers (the app only adds rows; the latest row for an ID wins). Written by the Sunday assessment, answered in the app.
 - **Log** — the old one-row-per-exercise log, kept as a backup. Nothing writes to it.
 - **VB Sessions**, **Check-ins**, **Maxes** — unchanged.

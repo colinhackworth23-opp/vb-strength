@@ -47,7 +47,42 @@ const WEEKS = [
   { n:10, phase:'Deload', dates:'Nov 30 – Dec 6', intensity:'55–65% TM', volume:'3×5', rpe:'5', reps:5,
     pcts:{ squat:[0.55,0.60,0.65], bench:[0.55,0.60,0.65], dl:[0.55,0.60,0.65] },
     days:['lower','home-lower','push-pull','home-upper','power','prehab','off'], lastLiftSlot:'power', deload:true, done:false },
+  // Test week (SPEC.md "Test week at the end of Block 1"). Tue/Thu are recovery days; Block 2 starts Dec 14.
+  { n:11, phase:'Test week', dates:'Dec 7 – Dec 13', intensity:'3-rep top set', volume:'1×3 per lift', rpe:'9', reps:3,
+    pcts:{ squat:[], bench:[], dl:[] },
+    days:['lower','off','push-pull','off','power','prehab','off'], lastLiftSlot:'power', testWeek:true, done:false },
 ];
+
+// ── Week 11 test week ──
+// The Coach supplies these numbers (Heuristic); the app only displays them and never chooses for Colin.
+// Ramp sets: [load, reps, rest minutes]. 'bar' = the empty bar. Ramp sets are checked off, never logged.
+const TEST_WEEK = {
+  refWeek: 4, // accessories: the live Week 4 plan, first N sets ("about half the Week 4 volume")
+  lifts: {
+    squat: { name:'Back squat / safety bar', ramp:[['bar',8,1],[95,5,1],[135,4,2],[165,3,2],[185,2,3],[205,1,4.5]],
+      options:{ floor:220, good:225, stretch:235 }, goal:'Goal (estimated max): 250 solid · 240 floor. Today about 234.' },
+    bench: { name:'Incline bench', ramp:[['bar',8,1],[65,6,1],[95,5,2],[115,4,2],[135,3,3],[150,1,4.5]],
+      options:{ floor:160, good:165, stretch:170 }, goal:'Goal (estimated max): 180 solid · 175 floor. Today about 171.',
+      note:'Spotter or safeties required.' },
+    dl: { name:'Hex bar deadlift', ramp:[[135,5,1],[185,4,2],[225,3,2],[255,2,3],[285,1,4.5]],
+      options:{ floor:310, good:320, stretch:325 }, goal:'Goal (estimated max): 350 solid · 340 floor. Today about 329.' },
+  },
+  pullup: { ramp:[['Scapular pull-ups',10,1],['Bodyweight',3,2],['Bodyweight',5,3]],
+    goal:'Goal: 9-10 reps · floor 8 · stretch 11-12. Today about 7.' },
+  // Exercise id → sets kept from the Week 4 plan. Anything not listed is dropped for the test week
+  // (Friday's hang clean, front squat and finisher; Wednesday's clean and jerk and pull-up work).
+  keep: {
+    lower: { 'romanian-deadlift-barbell':2, 'leg-press':2, 'nordic-curl-slow-eccentric':2, 'standing-calf-raise-barbell':2 },
+    pushPull: { 'chest-supported-db-row':2, 'dips':2, 'lat-pulldown':2, 'facepull':2, 'band-external-rotation':2, 'db-lateral-raise':2, 'standing-calf-raise':2 },
+    power: { 'barbell-hip-thrust':2, 'landmine-rotation':2, 'seated-calf-raise':2 },
+  },
+  guide: {
+    stretch:'the last ramp single moved fast and smooth, it felt like 4 or more reps were left, depth and form were clean, nothing hurts, and sleep and energy were normal.',
+    good:'the last ramp single moved at a normal pace, it felt like 2-3 reps were left, and form was clean.',
+    floor:'the last ramp single was slower, it felt like 2 or fewer reps were left, or sleep or energy was poor, or you are sore.',
+    stop:'any knee or shoulder pain, depth getting shallow, or the bar slowing sharply means stop. Drop to a lighter 5-rep set instead of forcing the 3.',
+  },
+};
 
 const ACC = {
   warmupGeneral: [

@@ -150,7 +150,7 @@ Add these to the short form:
 - Verification Dev can do: diff review for data-loss risk; run the reps parse/compose and "Last:" functions in Node against the real stored formats above; check the deploy serves the new `?v=` files. Verification Dev cannot do: one-handed use, sweaty-hands tap targets and bad-Wi-Fi saves on the iPhone. Colin tests those and reports before this is marked Shipped.
 
 ### Test week at the end of Block 1 (Week 11)
-- Status: Proposed
+- Status: Building. Approved by Colin 2026-11-09 (test Dec 7 - 13; Block 2 starts Dec 14, right after). Built, tested and pushed; not Shipped until Colin has run the test days on his phone.
 - Raised by: Colin; drafted by Coach
 - Problem: Block 1 ends with a deload (Week 10, Nov 30 - Dec 6). Colin wants fresh numbers as the baseline for Block 2 instead of estimating from 8-rep sets.
 - Behavior (suggest-and-confirm, never auto-apply):
@@ -190,7 +190,20 @@ Add these to the short form:
 - Rollback: Remove Week 11 from the Program tab; no data to undo.
 - Dependencies: Colin confirms the Block 2 start date and what happens between Dec 7 and January. If there is a long gap, Week 11 stays but the Coach re-ramps in Block 2 Week 1.
 - Success check: By Dec 13, three lifts and pull-ups have a logged top set and Colin has confirmed training maxes for Block 2.
-- Open questions for Colin: Block 2 start date; whether testing happens the week of Dec 7 or later.
+- Open questions for Colin: answered 2026-11-09. Test Dec 7 - 13; Block 2 starts Dec 14, the Monday after. No gap after testing, so the re-ramp edge case above does not apply.
+- Coach decisions made while building (Heuristic; Colin can overrule any of them):
+  - Tue and Thu are recovery days (the existing off-day cuff routine). Saturday prehab stays. Calves and shoulder/knee work stay inside the gym days.
+  - Test days run the test lift right after the warm-up and primer. Friday's hang clean, front squat and interval finisher are dropped so the hex bar test is fresh. Wednesday drops the clean and jerk, scapular pull-ups, weighted pull-ups and banded negatives (the pull-up test replaces them).
+  - "Half the Week 4 volume" = the first 2 sets of each remaining accessory, at the live Week 4 plan values from the Program tab (for example RDL 165 / 175). No verdict chips, offsets or proposals on test-week accessories.
+  - Suggested new TM = the Epley estimate rounded down to 5 lbs (conservative).
+- Build notes (Dev, 2026-11-09):
+  - Week 11 lives in `program.js` (`WEEKS[10]` with `testWeek:true`, and `TEST_WEEK` holding the ramps, top-set options, guide text and kept accessories). No Program tab column was added, so no sheet schema or Apps Script change and Colin cannot edit Week 11 in the sheet. That is the Dev proposal the data-impact line allowed for.
+  - `app.js` `buildTestDay`: readiness card (Rough night shows advice only and changes no load), protocol callout, warm-up and primer, ramp rows (checked off with their own rest timer, never logged), the "Choose your top set" card (hidden until the last ramp single is checked; nothing pre-selected), a top-set row (3 reps by default, weight empty until chosen; an unchosen top set saves nothing), and an estimate card (Epley) with an editable TM box and Confirm. Confirming sets the app TM and queues one Maxes row (squat, bench, dl, ohp), the same row the Maxes screen writes. The pull-up test is one rep-logged set saved as `N reps` under `weighted-pull-up` in Week 11.
+  - Confirming a new TM also changes the loads the app shows for Weeks 1-10, because those are computed from the TM. This only affects how past weeks display; logged sets do not change.
+  - The week picker now reaches Week 11, and the app opens on it from Dec 7. Rules tab `no_increase_weeks` is now `10,11` (read first: it was `10`).
+  - Asset `?v=` tags bumped to `20261109b`.
+- Tests run (Dev): `node tests/test-week.test.js` (5 pass: Week 11 dates and days, Weeks 1-10 untouched, options and ramps match this item, kept accessories exist and are at most half their Week 4 sets). Existing suites pass (`week8` 5, `sync-helpers` 13). Page-level check in jsdom with the real scripts, run twice (built-in program and Program-tab-shaped program), 20 pass. It covers: Week 10 unchanged; Week 11 ramps, drops and recovery days; half-volume accessories; chooser hidden until the last single with nothing pre-selected; Good fills 225 → estimate 248 and suggested TM 245; 5 reps recomputes (263); an invalid TM is rejected; confirming 240 updates the TM and queues one Maxes row; the Monday save logs one squat row `225×3` in Week 11 with `fall-2026-b1` and no ramp rows; the Wednesday save logs `9 reps` and saves nothing for an unchosen bench top set; choices survive a re-render. The Week 8 page check still passes (11).
+- Not verified (needs Colin's phone): chooser and TM box layout and tap targets, the iOS number pad on the TM box, and whether the Maxes row reaches the sheet. Also, the Sunday Dec 13 run will see Week 11 sessions with no Week 12 to propose for. It should propose nothing; Block 2 setup (new block id, start date, program) is a separate item.
 
 ### Week 8: one extra set on five lifts
 - Status: Building. Approved by Colin 2026-11-09. Built, tested and pushed; not Shipped until Colin has done Week 8 on his phone (Nov 16 - 22).
@@ -236,6 +249,8 @@ Add these to the short form:
 | 2026-10-13 | Adopted the Coach + App Dev two-role workflow with SPEC.md as the handoff | Separate training decisions from implementation; keep a shared record | After the first few weeks of use |
 | 2026-10-13 | Colin approved building Gap A (empty saves block the outbox) first, then the pull-up reps item | The audit found Gap A; the pull-up change adds another way to skip sets, so the outbox fix goes first | After Colin's first real session on the new version |
 | 2026-11-09 | Add one extra set on squat, incline bench, hex bar, RDL and hip thrust in Week 8 only | Week 8 is labeled Peak volume but matched Week 7; Colin approved | After Week 9 loads are logged |
+| 2026-11-09 | Test week Dec 7 - 13; Block 2 starts Dec 14 (earlier than the January plan) | Colin's call; no gap after testing, so no re-ramp | When Block 2 is drafted |
+| 2026-11-09 | Week 11 is defined in program.js, not as a Program tab column | One-off week; avoids a sheet schema change and an Apps Script redeploy | If test weeks become a regular block feature |
 | 2026-11-09 | Week 8 extra sets are saved only when ticked; the Sunday assessment ignores them | Otherwise a skipped extra set would be logged as done and, for RDL and hip thrust, read as a missed set | After Week 8, with the unticked-sets backlog item |
 
 ## Gym friction log
