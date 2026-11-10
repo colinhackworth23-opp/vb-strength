@@ -2302,3 +2302,6 @@ body.prop-sheet-open { overflow: hidden; }
 .prop-reasons { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s2); }
 .prop-reason.selected { background: var(--ink); border-color: var(--ink); color: var(--bg); }
 .prop-note { margin-top: var(--s2); }
+
+/* Optional extra set (Week 8): small tag next to the set label */
+.opt-tag { display: block; font-size: 9px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; opacity: .65; line-height: 1.1; }

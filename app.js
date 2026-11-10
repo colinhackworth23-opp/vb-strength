@@ -360,9 +360,16 @@ function snapshotPRs() {
 }
 // Parse the just-saved session's primary lift data from DOM.
 // Returns array of { liftKey, weight, reps } — best set per lift only (highest weight).
+// An optional extra set (see OPTIONAL_LAST_SET in program.js) only counts once its check circle is ticked
+function isSetChecked(inp) {
+  const row = inp.closest('.set-input-row') || inp.closest('.lift-row');
+  return !!(row && row.querySelector('.set-check.checked'));
+}
+function optionalSkipped(inp) { return !!inp.dataset.optional && !isSetChecked(inp); }
 function getSessionLiftBests(weekN, dayN) {
   const liftRaw = {};
   document.querySelectorAll(`.lift-input[data-week="${weekN}"][data-day="${dayN}"]`).forEach(inp => {
+    if (optionalSkipped(inp)) return;
     const exKey = inp.getAttribute('data-ex'); // "Back squat / safety bar__squat"
     const s = parseInt(inp.getAttribute('data-s'));
     const type = inp.getAttribute('data-type');
@@ -755,9 +762,10 @@ function stopTimer() {
 function updateProgress() {
   const activeDay = document.querySelector('.day-screen.active');
   if (!activeDay) return;
-  const checks = activeDay.querySelectorAll('.set-check');
+  const checks = activeDay.querySelectorAll('.set-check:not([data-optional])');
   const done = activeDay.querySelectorAll('.set-check.checked');
-  const total = checks.length;
+  const optionalDone = activeDay.querySelectorAll('.set-check[data-optional].checked').length;
+  const total = checks.length + optionalDone; // an optional extra set counts only if you did it
   const completed = done.length;
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
   const fillEl = document.getElementById('progressFill');
@@ -842,8 +850,8 @@ function maybeRevealVerdict(checkEl) {
   if (!row) return;
   const wrap = row.querySelector('.prog-verdict');
   if (!wrap) return;
-  const total = row.querySelectorAll('.set-check').length;
-  const done = row.querySelectorAll('.set-check.checked').length;
+  const total = row.querySelectorAll('.set-check:not([data-optional])').length;
+  const done = row.querySelectorAll('.set-check:not([data-optional]).checked').length;
   if (done === total && total > 0) {
     if (!wrap.classList.contains('revealed')) { wrap.classList.add('revealed'); haptic(10); }
   } else {
@@ -1022,11 +1030,13 @@ function liftRows(loads, key, name, w, dayN, locked) {
   ws.forEach((wt, i) => {
     const disAttr = locked ? ' disabled' : '';
     const exKey = `${name}__${key}`;
-    const checkHTML = locked ? '' : `<div class="set-check lift-check" onclick="handleSetCheck(this,true)"></div>`;
-    h += `<div class="lift-row"><div class="lift-label">${rLabel} ${i+1}<div class="lift-sub">${pLabels[i]}</div></div>` +
-      `<input class="lift-input lift-input-reps" data-week="${w.n}" data-day="${dayN}" data-ex="${exKey}" data-s="${i}" data-type="reps" type="text" inputmode="numeric" value="${rCount}"${disAttr}>` +
+    const opt = isOptionalSet(w.n, key, i, ws.length);
+    const optAttr = opt ? ' data-optional="1"' : '';
+    const checkHTML = locked ? '' : `<div class="set-check lift-check"${optAttr} onclick="handleSetCheck(this,true)"></div>`;
+    h += `<div class="lift-row"><div class="lift-label">${rLabel} ${i+1}<div class="lift-sub">${pLabels[i]}${opt ? ' · optional extra set' : ''}</div></div>` +
+      `<input class="lift-input lift-input-reps" data-week="${w.n}" data-day="${dayN}" data-ex="${exKey}" data-s="${i}" data-type="reps" type="text" inputmode="numeric" value="${rCount}"${optAttr}${disAttr}>` +
       `<span class="lift-unit">reps</span>` +
-      `<input class="lift-input lift-input-weight" data-week="${w.n}" data-day="${dayN}" data-ex="${exKey}" data-s="${i}" data-type="weight" type="text" inputmode="numeric" value="${wt}"${disAttr}>` +
+      `<input class="lift-input lift-input-weight" data-week="${w.n}" data-day="${dayN}" data-ex="${exKey}" data-s="${i}" data-type="weight" type="text" inputmode="numeric" value="${wt}"${optAttr}${disAttr}>` +
       `<span class="lift-unit">lbs</span>` +
       checkHTML +
       `</div>`;
@@ -1124,11 +1134,13 @@ function accRow(ex, weekN, dayN, isWorking, locked, prep) {
       </div>
     </div>`;
     }
+    const opt = !prep && isOptionalSet(weekN, ex.id || exId(ex.name), si, ex.sets.length);
+    const optAttr = opt ? ' data-optional="1"' : '';
     return `<div class="set-wrap">
-      <span class="set-lbl">S${si+1}</span>
+      <span class="set-lbl">S${si+1}${opt ? '<span class="opt-tag">optional</span>' : ''}</span>
       <div class="set-input-row">
-        <input id="${id}" class="set-input" data-week="${weekN}" data-day="${dayN}" data-ex="${ex.name}" data-exid="${ex.id || exId(ex.name)}" data-s="${si}" type="text" value="${v}" inputmode="text"${disAttr}${nologAttr}>
-        ${!locked ? `<div class="set-check" onclick="${checkFn}"></div>` : ''}
+        <input id="${id}" class="set-input" data-week="${weekN}" data-day="${dayN}" data-ex="${ex.name}" data-exid="${ex.id || exId(ex.name)}" data-s="${si}" type="text" value="${v}" inputmode="text"${optAttr}${disAttr}${nologAttr}>
+        ${!locked ? `<div class="set-check"${optAttr} onclick="${checkFn}"></div>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -1142,7 +1154,7 @@ function accRow(ex, weekN, dayN, isWorking, locked, prep) {
     const v = getVerdict(weekN, ex.name);
     const topSet = ex.sets[ex.sets.length - 1];
     const nextVal = bumpVal(topSet, ex.inc);
-    verdictHTML = `<div class="prog-verdict${allSetsChecked(weekN, dayN, ex.name, ex.sets.length) ? ' revealed' : ''}" data-ex="${ex.name}" data-inc="${ex.inc}" data-week="${weekN}">
+    verdictHTML = `<div class="prog-verdict${allSetsChecked(weekN, dayN, ex.name, ex.sets.length - (isOptionalSet(weekN, ex.id || exId(ex.name), ex.sets.length - 1, ex.sets.length) ? 1 : 0)) ? ' revealed' : ''}" data-ex="${ex.name}" data-inc="${ex.inc}" data-week="${weekN}">
       <span class="prog-q">Next week?</span>
       <button class="prog-chip prog-clean${v==='clean'?' selected':''}" onclick="tapVerdict(this,'clean')">Clean → ${nextVal}</button>
       <button class="prog-chip prog-hold${v==='hold'?' selected':''}" onclick="tapVerdict(this,'hold')">Hold</button>
@@ -1613,6 +1625,7 @@ function getInputsForDay(weekN, dayN) {
     const s = parseInt(inp.getAttribute('data-s'));
     if (inp.dataset.exid) INPUT_IDS[ex] = inp.dataset.exid;
     if (!data[ex]) data[ex] = [];
+    if (optionalSkipped(inp)) { data[ex][s] = '-'; return; } // optional extra set not done: nothing saved
     if (inp.dataset.replog) {
       // Reps only; no valid reps means the set is not saved (plan text like BW is never saved as a result)
       const composed = composeRepValue(inp.value, inp.dataset.load);
@@ -1629,7 +1642,7 @@ function getInputsForDay(weekN, dayN) {
     const type = inp.getAttribute('data-type');
     if (!liftData[ex]) liftData[ex] = {};
     if (!liftData[ex][s]) liftData[ex][s] = {};
-    liftData[ex][s][type] = inp.value || '-';
+    liftData[ex][s][type] = optionalSkipped(inp) ? '-' : (inp.value || '-');
   });
   Object.entries(liftData).forEach(([ex, sets]) => {
     data[ex] = Object.values(sets).map(s => `${s.weight || '-'}×${s.reps || '-'}`);

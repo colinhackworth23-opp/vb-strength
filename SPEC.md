@@ -193,7 +193,7 @@ Add these to the short form:
 - Open questions for Colin: Block 2 start date; whether testing happens the week of Dec 7 or later.
 
 ### Week 8: one extra set on five lifts
-- Status: Ready. Approved by Colin 2026-11-09.
+- Status: Building. Approved by Colin 2026-11-09. Built, tested and pushed; not Shipped until Colin has done Week 8 on his phone (Nov 16 - 22).
 - Raised by: Colin (asked why Weeks 7 and 8 have identical loads); drafted by Coach
 - Problem: Week 8 is labeled "Peak volume" but has the same percentages and sets as Week 7, so nothing in it is higher volume. The label and the numbers disagree.
 - Behavior (Week 8 only, Nov 16 - 22):
@@ -213,8 +213,16 @@ Add these to the short form:
 - Rollback: Remove the extra entry from each lift in Week 8.
 - Dependencies: None. Not blocked by the test-week item.
 - Success check: Colin completes Week 8 with the extra sets on most lifts and Week 9 loads still hit plan. If Week 9 loads drop, the Coach reverts this for the next block.
+- Build notes (Dev, 2026-11-09):
+  - Squat and bench `pcts` gain a fifth entry (0.84) and hex bar a fourth (0.82) in `program.js`, so the extra set is the same % TM and 6 reps as the last planned set. RDL and hip thrust: Program tab cells `R37` (RDL) and `R71` (hip thrust) were read first (still `135 / 145 / 155` and `275 / 305 / 340`, no pending Week 8 proposals) and are now `135 / 145 / 155 / 155` and `275 / 305 / 340 / 340`. The built-in defaults in `program.js` match.
+  - Making the set truly optional needed more than adding it, because the app saves every box that has a value whether or not its check circle was ticked. New in `app.js`, only for the five Week 8 extra sets (`OPTIONAL_LAST_SET` in `program.js`): the set is labelled "optional"; it is saved only if its check circle is ticked; the RDL and hip thrust "Next week?" chip appears after the three required sets; the progress bar does not wait for it; a skipped extra set cannot count as a PR. Every other set in every other week behaves exactly as before.
+  - RULES.md step 4 has the one line saying the extra set is optional and that a proposal's `To` keeps the same number of sets as the plan cell. The scheduled Sunday task keeps its own copy of the procedure and does not read RULES.md, so the same two sentences were added to its prompt (Colin's call to review). The first run that can touch this is Sunday Nov 15, which proposes Week 8 targets from Week 7.
+  - Asset `?v=` tags bumped to `20261109a`. No Apps Script change, nothing to redeploy.
+- Tests run (Dev): `node tests/week8.test.js` (5 pass: Week 8 percentages and set counts, other weeks unchanged, RDL and hip thrust defaults, which sets count as optional) and `node tests/sync-helpers.test.js` (13 pass). Page-level check in jsdom with the real scripts (11 pass; scratch test, not in the repo because it needs `jsdom`): Week 7, 9 and 10 render the old set counts; Week 8 renders squat 5, bench 5, hex bar 4, RDL 4, hip thrust 4 with only the last set optional; with the extra sets skipped, the squat rows saved are 4 and RDL 3, and the chip shows; ticking an extra set saves it, unticking removes it. One test mistake was caught and fixed in my own test (stale page elements after a re-render), not in the app.
+- Not verified (needs Colin's phone): how the "optional" tag looks and whether it crowds the set boxes on a small screen; the real first Week 8 save into Sets; whether the Sunday Nov 15 run keeps the four-value cells.
 
 ## Backlog / ideas
+- Unticked sets are saved as if done: `saveSession` collects every set box that has a value, whether or not its check circle was ticked, so a set skipped on the day but still showing its planned weight is logged as performed. The Sunday assessment then reads that planned weight as the actual one. Week 8's optional extra sets are the only case handled so far. Needs a decision from Colin and the Coach (save only ticked sets, or warn on unticked ones) before any change, because it alters what gets logged for every exercise. (Raised by: Dev)
 - Sets tab Block column: the app writes `fall-2026-b1` as a 12th column, but the live Sets header and all 1,836 rows stop at column 11 (Save ID). The deployed Apps Script is probably older than `apps-script/Code.gs`, and RULES.md step 4 (`block_start`) may have no Block data to filter on. Needs Colin to compare the script in the Apps Script editor. (Raised by: Dev)
   - Coach check 2026-10-13: `?tab=__meta` returns version 3, so the new script is live. The Sets header row still ends at Save ID because no Sets save has happened since it was deployed. The Block header is added by the first Sets save after a workout. Dev to confirm after Colin's next session; until then RULES.md `block_start` (date-based) is the filter that works.
 - Sheet endpoint is readable by anyone with the URL: `doGet` in Code.gs has no check and `SHEET_URL` is in the public repo, so training, VB notes and pain notes are exposed. Not confirmed live (Dev's fetch failed). Fixing it needs a decision from Colin first. (Raised by: Dev)
@@ -228,6 +236,7 @@ Add these to the short form:
 | 2026-10-13 | Adopted the Coach + App Dev two-role workflow with SPEC.md as the handoff | Separate training decisions from implementation; keep a shared record | After the first few weeks of use |
 | 2026-10-13 | Colin approved building Gap A (empty saves block the outbox) first, then the pull-up reps item | The audit found Gap A; the pull-up change adds another way to skip sets, so the outbox fix goes first | After Colin's first real session on the new version |
 | 2026-11-09 | Add one extra set on squat, incline bench, hex bar, RDL and hip thrust in Week 8 only | Week 8 is labeled Peak volume but matched Week 7; Colin approved | After Week 9 loads are logged |
+| 2026-11-09 | Week 8 extra sets are saved only when ticked; the Sunday assessment ignores them | Otherwise a skipped extra set would be logged as done and, for RDL and hip thrust, read as a missed set | After Week 8, with the unticked-sets backlog item |
 
 ## Gym friction log
 Real-world annoyances or failures. Each may become an item above.

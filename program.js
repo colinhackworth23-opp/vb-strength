@@ -4,6 +4,17 @@
 // Which training block new log rows belong to (written to the Sets tab's Block column)
 const PROGRAM_BLOCK = 'fall-2026-b1';
 
+// Weeks where the LAST set of an exercise is an optional extra. Skipping it is not a missed set:
+// it is not saved unless checked, the progress bar and verdict chip do not wait for it, and the
+// Sunday assessment ignores it (see RULES.md). Keys are the primary lift keys and exercise ids.
+const OPTIONAL_LAST_SET = {
+  8: ['squat', 'bench', 'dl', 'romanian-deadlift-barbell', 'barbell-hip-thrust'],
+};
+function isOptionalSet(weekN, idOrKey, setIdx, totalSets) {
+  const ids = OPTIONAL_LAST_SET[weekN];
+  return !!ids && ids.indexOf(idOrKey) !== -1 && totalSets > 1 && setIdx === totalSets - 1;
+}
+
 // ── Data ──
 const WEEKS = [
   { n:1, phase:'Foundation', dates:'Sep 28 – Oct 4', intensity:'65% TM', volume:'4×10', rpe:'6', reps:10,
@@ -28,7 +39,7 @@ const WEEKS = [
     pcts:{ squat:[0.78,0.80,0.82,0.84], bench:[0.78,0.80,0.82,0.84], dl:[0.78,0.80,0.82] },
     days:['lower','home-lower','push-pull','home-upper','power','prehab','off'], lastLiftSlot:'power', done:false },
   { n:8, phase:'Peak volume', dates:'Nov 16 – Nov 22', intensity:'78–84% TM', volume:'4×6', rpe:'8–9', reps:6,
-    pcts:{ squat:[0.78,0.80,0.82,0.84], bench:[0.78,0.80,0.82,0.84], dl:[0.78,0.80,0.82] },
+    pcts:{ squat:[0.78,0.80,0.82,0.84,0.84], bench:[0.78,0.80,0.82,0.84,0.84], dl:[0.78,0.80,0.82,0.82] },
     days:['lower','home-lower','push-pull','home-upper','power','prehab','off'], lastLiftSlot:'power', done:false, checkin:8 },
   { n:9, phase:'Peak volume', dates:'Nov 23 – Nov 29', intensity:'80–86% TM', volume:'4×6', rpe:'9', reps:6,
     pcts:{ squat:[0.80,0.82,0.84,0.86], bench:[0.80,0.82,0.84,0.86], dl:[0.80,0.82,0.84] },
@@ -95,7 +106,7 @@ const ACC = {
     { rest:0, name:'Interval finisher — 20s hard / 100s easy', meta:'6-8 rounds', rec:'bike, stairs or assault runner', cue:'LAST thing in the session, never before lifting. Twenty seconds genuinely hard, then 100 seconds easy spinning — the long recovery is the point. This trains your ability to recover BETWEEN efforts, which is exactly what a long tournament demands and what failed you in the finals. Skip it entirely if you are playing tomorrow. Not the ski-erg while the shoulder is still the project.', sets:{3:['6 rounds'],4:['6 rounds'],5:['6 rounds'],6:['7 rounds'],7:['7 rounds'],8:['7 rounds'],9:['8 rounds'],10:['8 rounds']} },
   ],
   lower: [
-    { inc:10, name:'Romanian deadlift (barbell)', meta:'3 × 10', rec:'straps on heavy sets', cue:'Hips back, neutral spine, 3s eccentric. Your grip fails before your posterior chain does — use straps on the top set so the hamstrings get the honest stimulus. Weight only moves when you tap Clean.', sets:{1:['135','145','155'],2:['135','145','155'],3:['135','145','155'],4:['135','145','155'],5:['135','145','155'],6:['135','145','155'],7:['135','145','155'],8:['135','145','155'],9:['135','145','155'],10:['115','125','135']} },
+    { inc:10, name:'Romanian deadlift (barbell)', meta:'3 × 10', rec:'straps on heavy sets', cue:'Hips back, neutral spine, 3s eccentric. Your grip fails before your posterior chain does — use straps on the top set so the hamstrings get the honest stimulus. Weight only moves when you tap Clean.', sets:{1:['135','145','155'],2:['135','145','155'],3:['135','145','155'],4:['135','145','155'],5:['135','145','155'],6:['135','145','155'],7:['135','145','155'],8:['135','145','155','155'],9:['135','145','155'],10:['115','125','135']} },
     { inc:10, ss:'A', name:'Leg press', meta:'3 × 12', rec:'ADDED weight — sled starts at 167', cue:'Numbers here are plates ADDED, not total. Your sled weighs 167 empty, so 180 added is about 347 total. Feet shoulder-width, toes slightly out, full range, knees tracking over the toes and never caving. Pure quad work with zero load on your lower back — this is the structural knee work that makes jumping cheaper. Remember this comes third, after squats and RDLs, and both of those get heavier as the block goes on — so a top set that feels easy in Week 1 will not feel easy in Week 6.', sets:{1:['140','160','180'],2:['140','160','180'],3:['140','160','180'],4:['140','160','180'],5:['140','160','180'],6:['140','160','180'],7:['140','160','180'],8:['140','160','180'],9:['140','160','180'],10:['90','115','115']} },
     { ss:'A', name:'Nordic curl (slow eccentric)', meta:'3 × 5', rec:'BW — 4s down', cue:'Superset with leg press: alternate, minimal rest. Lower as slowly as you can — 4 full seconds. Hamstring eccentric strength is your best landing-injury insurance.', sets:{1:['BW','BW','BW'],2:['BW','BW','BW'],3:['BW','BW','BW'],4:['BW','BW','BW'],5:['BW','BW','BW'],6:['BW','BW','BW'],7:['BW','BW','BW'],8:['BW','BW','BW'],9:['BW','BW','BW'],10:['BW','BW']} },
     { inc:10, name:'Standing calf raise (barbell)', meta:'4 × 12', rec:'3s eccentric, full stretch', cue:'Full stretch at the bottom — that range is where calves actually grow. 3-second lowering, pause at the bottom, drive up. One of five calf doses this week.', sets:{1:['215','215','215','215'],2:['215','215','215','215'],3:['215','215','215','215'],4:['215','215','215','215'],5:['215','215','215','215'],6:['215','215','215','215'],7:['215','215','215','215'],8:['215','215','215','215'],9:['215','215','215','215'],10:['185','185','185']} },
@@ -139,7 +150,7 @@ const ACC = {
     { inc:5, rest:120, name:'Front squat', meta:'3 × 5', rec:'rack position + quads', cue:'Straight after cleans while the rack position is already grooved — this was your idea and it is the right one. Elbows HIGH, bar on the front delts not the hands, wrists loose. Upright torso means quad work that spares your knee.', sets:{1:['105','115','115'],2:['105','115','115'],3:['105','115','115'],4:['105','115','115'],5:['105','115','115'],6:['105','115','115'],7:['105','115','115'],8:['105','115','115'],9:['105','115','115'],10:['95','105','105']} },
   ],
   power: [
-    { inc:10, ss:'A', name:'Barbell hip thrust', meta:'3 × 10', rec:'glutes, no spinal load', cue:'Superset with landmine rotations. Replaces Good Mornings this block — Friday already has three spine-loading lifts and a fourth is exactly where your form broke down before. Drive through the heels, 1s squeeze at the top.', sets:{1:['225','245','245'],2:['235', '255', '305'],3:['245', '275', '315'],4:['255', '285', '325'],5:['255', '285', '325'],6:['265', '295', '335'],7:['265', '295', '335'],8:['275', '305', '340'],9:['275', '305', '340'],10:['225', '245', '265']} },
+    { inc:10, ss:'A', name:'Barbell hip thrust', meta:'3 × 10', rec:'glutes, no spinal load', cue:'Superset with landmine rotations. Replaces Good Mornings this block — Friday already has three spine-loading lifts and a fourth is exactly where your form broke down before. Drive through the heels, 1s squeeze at the top.', sets:{1:['225','245','245'],2:['235', '255', '305'],3:['245', '275', '315'],4:['255', '285', '325'],5:['255', '285', '325'],6:['265', '295', '335'],7:['265', '295', '335'],8:['275', '305', '340', '340'],9:['275', '305', '340'],10:['225', '245', '265']} },
     { ss:'A', name:'Landmine rotation', meta:'5 ea side', rec:'plate on the sleeve', cue:'Bar in a corner (towel to protect the wall), light plate on the sleeve. Hips BEFORE shoulders — the power comes from trunk rotation. No slamming, no wall needed, gym-legal.', sets:{1:['10','10','10'],2:['10','10','10'],3:['10','10','10'],4:['10','10','10'],5:['10','10','10'],6:['10','10','10'],7:['10','10','10'],8:['10','10','10'],9:['10','10','10'],10:['10','10']} },
     { inc:5, name:'Seated calf raise', meta:'3 × 15', rec:'plates on lap', cue:'Last calf dose of the week. Full range, 1s pause at the bottom. Frequency across five sessions is what grows calves — this one does not need to be heroic.', sets:{1:['180','180','180'],2:['180','180','180'],3:['180','180','180'],4:['180','180','180'],5:['180','180','180'],6:['180','180','180'],7:['180','180','180'],8:['180','180','180'],9:['180','180','180'],10:['155','155']} },
   ],
