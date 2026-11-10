@@ -192,6 +192,28 @@ Add these to the short form:
 - Success check: By Dec 13, three lifts and pull-ups have a logged top set and Colin has confirmed training maxes for Block 2.
 - Open questions for Colin: Block 2 start date; whether testing happens the week of Dec 7 or later.
 
+### Week 8: one extra set on five lifts
+- Status: Ready. Approved by Colin 2026-11-09.
+- Raised by: Colin (asked why Weeks 7 and 8 have identical loads); drafted by Coach
+- Problem: Week 8 is labeled "Peak volume" but has the same percentages and sets as Week 7, so nothing in it is higher volume. The label and the numbers disagree.
+- Behavior (Week 8 only, Nov 16 - 22):
+  - Add one set to each of: back squat (4 -> 5 sets), incline bench (4 -> 5), hex bar deadlift (3 -> 4), Romanian deadlift (3 -> 4), barbell hip thrust (3 -> 4).
+  - The extra set uses the same weight and reps as the last planned set that day (for example squat: Week 8 top weight x 6; RDL and hip thrust: the last set's weight x 10).
+  - Intensity, reps and every other week are unchanged. No other exercise changes.
+  - The extra set is optional. If Colin skips it, that is not a missed set: the Sunday assessment must not hold or flag progression because it was skipped.
+- Acceptance criteria:
+  - In Week 8 the five lifts show one more set than Week 7, with the weight and reps above. Weeks 1-7 and 9-10 are unchanged.
+  - Skipping the extra set leaves the session savable and creates no "missed plan" flag in the Sunday run.
+  - The extra set saves and displays like any other set, with its effort rating on the lift unchanged.
+- Rationale: A modest volume increase at unchanged intensity is a standard way to build a peak-volume week (Moderate for the general principle that more volume at moderate loads supports hypertrophy and strength; the specific +1 set is a Heuristic). It adds about 25% to squat and bench volume in one week, which should be easy to absorb at RPE 8-9 loads, but it comes right before Thanksgiving week, the deload and the test.
+- UI notes: Nothing new. The set appears in the normal set list.
+- Data impact: Squat, bench and hex bar come from `program.js` percentages (the arrays for Week 8 each gain one entry). RDL and hip thrust come from the Program tab: add one value to the Week 8 cell (W8) of each row, copying the last value currently in that cell, and read the current W8 cell first because accepted proposals may have changed it. RULES.md step 4 needs one line: the extra Week 8 set is optional for the assessment.
+- Edge cases: Offline and sync unchanged. If Week 8 is shortened (travel, illness), drop the extra sets first. If a pain flag appears, the extra set goes.
+- Risks: Added fatigue could carry into Week 9 and the test. If recovery is poor (check-in energy "Dragging", pain, or a long volleyball week), skip the extra set.
+- Rollback: Remove the extra entry from each lift in Week 8.
+- Dependencies: None. Not blocked by the test-week item.
+- Success check: Colin completes Week 8 with the extra sets on most lifts and Week 9 loads still hit plan. If Week 9 loads drop, the Coach reverts this for the next block.
+
 ## Backlog / ideas
 - Sets tab Block column: the app writes `fall-2026-b1` as a 12th column, but the live Sets header and all 1,836 rows stop at column 11 (Save ID). The deployed Apps Script is probably older than `apps-script/Code.gs`, and RULES.md step 4 (`block_start`) may have no Block data to filter on. Needs Colin to compare the script in the Apps Script editor. (Raised by: Dev)
   - Coach check 2026-10-13: `?tab=__meta` returns version 3, so the new script is live. The Sets header row still ends at Save ID because no Sets save has happened since it was deployed. The Block header is added by the first Sets save after a workout. Dev to confirm after Colin's next session; until then RULES.md `block_start` (date-based) is the filter that works.
@@ -205,6 +227,7 @@ Add these to the short form:
 |------|----------|-----|--------------|
 | 2026-10-13 | Adopted the Coach + App Dev two-role workflow with SPEC.md as the handoff | Separate training decisions from implementation; keep a shared record | After the first few weeks of use |
 | 2026-10-13 | Colin approved building Gap A (empty saves block the outbox) first, then the pull-up reps item | The audit found Gap A; the pull-up change adds another way to skip sets, so the outbox fix goes first | After Colin's first real session on the new version |
+| 2026-11-09 | Add one extra set on squat, incline bench, hex bar, RDL and hip thrust in Week 8 only | Week 8 is labeled Peak volume but matched Week 7; Colin approved | After Week 9 loads are logged |
 
 ## Gym friction log
 Real-world annoyances or failures. Each may become an item above.
