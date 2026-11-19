@@ -234,6 +234,30 @@ Add these to the short form:
 - Tests run (Dev): `node tests/week8.test.js` (5 pass: Week 8 percentages and set counts, other weeks unchanged, RDL and hip thrust defaults, which sets count as optional) and `node tests/sync-helpers.test.js` (13 pass). Page-level check in jsdom with the real scripts (11 pass; scratch test, not in the repo because it needs `jsdom`): Week 7, 9 and 10 render the old set counts; Week 8 renders squat 5, bench 5, hex bar 4, RDL 4, hip thrust 4 with only the last set optional; with the extra sets skipped, the squat rows saved are 4 and RDL 3, and the chip shows; ticking an extra set saves it, unticking removes it. One test mistake was caught and fixed in my own test (stale page elements after a re-render), not in the app.
 - Not verified (needs Colin's phone): how the "optional" tag looks and whether it crowds the set boxes on a small screen; the real first Week 8 save into Sets; whether the Sunday Nov 15 run keeps the four-value cells.
 
+### Held or untouched weeks fall back to the old plan (Week 8 hip thrust)
+- Status: Proposed
+- Raised by: Colin (asked why Week 8 hip thrust is lighter than Week 7); drafted by Coach
+- Problem: The Sunday run only writes a weight into the Program cell for the one week it proposes. When it makes no proposal (a "Grind" rating, a pain note, or nothing above plan), the next week keeps the original planned weight. For lifts Colin has been outrunning, that is a drop. Example: hip thrust W6 295/325/365 (rated Right), W7 305/335/375 (rated Grind, "maxing out, struggling to maintain good form"), W8 plan 275/305/340 (the original plan). The run correctly held the weight but nothing carried last week's weights forward, so the plan fell 30-35 lb. The same pattern affects other lifts with no proposal for the week (for example Romanian deadlift, front squat, seated calf raise and most home-day dumbbell work).
+- Behavior (suggest-and-confirm, never auto-apply):
+  - When the Sunday run holds an exercise (Grind, pain note, or nothing above plan) and the next week's plan is below the last session's weights, it makes a "hold" proposal instead of leaving the old plan: To = last session's weights, Reason names why ("rated Grind: repeat last week's weights"), Colin accepts, edits or declines like any other proposal. It does not write the Program cell until accepted.
+  - A hold never proposes a weight above the last session's. If the plan is already at or above last session, no proposal.
+  - Deload and test weeks are excluded, and primary lifts and prep groups stay excluded as today.
+  - Hold proposals show in the same review sheet and chip, labeled "Hold".
+- Coach decision for this week only (until the above ships): Week 8 hip thrust 295 / 325 / 365 (the weights rated Right in Week 6; Week 7's +10 was a Grind with form breaking down). The optional extra set repeats 365. Colin can enter these weights directly in the set boxes; Dev can set the Program cell W8 for `barbell-hip-thrust` to `295 / 325 / 365 / 365` if Colin approves. Week 9 gets decided after Week 8.
+- Acceptance criteria:
+  - After a session rated Grind, the next Sunday run produces a pending Hold proposal whose To equals that session's weights when the plan would otherwise be lower.
+  - No Program cell changes until Colin accepts.
+  - An exercise already at or above last session's weights gets no Hold proposal.
+  - Week 10 and Week 11 produce no Hold proposals.
+- Rationale: A hold means "repeat what you did", not "return to the original plan". Without it the program moves backward whenever the original plan lags actual performance. Heuristic for the rule itself; the underlying principle (do not drop load after a hard week without a reason) is standard practice.
+- Data impact: The Sunday run's instructions and RULES.md (Coach-owned wording below); the Proposals tab gains a type or a flag for Hold; the Program tab is unchanged until a Hold is accepted. Dev decides how Hold appears in the UI.
+- Edge cases: A pain note on a lift means reduce, not just hold: the Coach decides the amount that week. If Colin already edited the plan by hand for that week, the run must not override it. Missing effort rating is not a hold.
+- Risks: More proposals to review each Sunday. Cap the list in the review sheet (Dev's call) and keep Hold items short.
+- Rollback: Remove the hold rule from the Sunday run; existing proposals are unaffected.
+- Dependencies: None.
+- Success check: The week after this ships, no exercise shows a planned weight below what Colin lifted last week unless it is a deload or a Colin-edited week.
+- Coach wording for RULES.md step 4: "If an exercise is held, propose the last session's weights for next week as a Hold (pending), unless the plan is already at or above them."
+
 ## Backlog / ideas
 - Unticked sets are saved as if done: `saveSession` collects every set box that has a value, whether or not its check circle was ticked, so a set skipped on the day but still showing its planned weight is logged as performed. The Sunday assessment then reads that planned weight as the actual one. Week 8's optional extra sets are the only case handled so far. Needs a decision from Colin and the Coach (save only ticked sets, or warn on unticked ones) before any change, because it alters what gets logged for every exercise. (Raised by: Dev)
 - Sets tab Block column: the app writes `fall-2026-b1` as a 12th column, but the live Sets header and all 1,836 rows stop at column 11 (Save ID). The deployed Apps Script is probably older than `apps-script/Code.gs`, and RULES.md step 4 (`block_start`) may have no Block data to filter on. Needs Colin to compare the script in the Apps Script editor. (Raised by: Dev)
