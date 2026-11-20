@@ -270,7 +270,8 @@ Add these to the short form:
   - Weeks 1-7 stay view-only.
   - A save queued offline locks its day right away; nothing about the save changes.
   - Week 8 is not marked Completed until its three gym lift days are saved.
-- Data impact: None to the Sheet. Local only: `doneWeeks` in the phone cache is no longer written. Existing entries are read so that weeks older than the newest completed week stay locked; the newest one (Week 8) is not whole-week locked until a later week has logged data. Nothing is deleted. Set checks are cleared for the saved day only, not the whole week.
+- Data impact: None to the Sheet. Local only: `doneWeeks` in the phone cache is no longer written. Existing entries still lock a week as a whole, but only for weeks before the current calendar week (from the block start date). This week and later weeks lock day by day. Nothing is deleted. Set checks are cleared for the saved day only, not the whole week.
+  - 2026-11-20 fix: the first build kept a whole-week lock for any week below the highest `doneWeeks` entry. On Colin's phone that still locked Week 8, probably from a stray later-week entry written by an old empty save. Switched to the calendar rule above.
 - Edge cases:
   - Day saved on another device: locks here after the next sheet refresh.
   - Phone offline with no cached Sets: the day shows editable until history loads.

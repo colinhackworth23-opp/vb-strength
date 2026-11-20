@@ -31,18 +31,12 @@ function savedDaySetFrom(entries) {
   (entries || []).forEach(e => { if (e && e.week && e.day) set.add(savedDayKey(e.week, e.day)); });
   return set;
 }
-// Highest week number that has anything logged (0 if none)
-function highestLoggedWeek(entries) {
-  let hi = 0;
-  (entries || []).forEach(e => { const m = /(\d+)/.exec(String((e && e.week) || '')); if (m) hi = Math.max(hi, parseInt(m[1], 10)); });
-  return hi;
-}
-// Whole-week lock, kept only for weeks that are over. The newest completed week is NOT locked as a whole:
-// its saved days lock one by one, so unfinished days stay editable.
-function weekLockedAsWhole(weekN, hardDone, doneWeeks, loggedHigh) {
+// Whole-week lock, kept only for completed weeks that are already over (before this calendar week).
+// This week and later weeks lock day by day, so an early save never locks unfinished days.
+function weekLockedAsWhole(weekN, hardDone, doneWeeks, todayWeekN) {
   if (hardDone) return true;
   if (!Array.isArray(doneWeeks) || !doneWeeks.includes(weekN)) return false;
-  return weekN < Math.max.apply(null, doneWeeks) || weekN < loggedHigh;
+  return weekN < todayWeekN;
 }
 
 // ── Rep-logged exercises (pull-ups) ──

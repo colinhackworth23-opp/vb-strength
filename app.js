@@ -26,11 +26,10 @@ function saveTMToCache() {
 // Read-only lock, per day: a day locks once the Sets tab (or the outbox) has a row for that week + weekday.
 // Weeks that were completed and are over keep the old whole-week lock. Nothing is deleted by locking.
 let SAVED_DAYS = new Set();
-let LOGGED_HIGH_WEEK = 0;
 function isWeekDone(weekN) { // whole-week lock (past weeks only)
   const w = WEEKS[weekN - 1];
   const cache = loadCache();
-  return weekLockedAsWhole(weekN, !!(w && w.done), cache.doneWeeks, LOGGED_HIGH_WEEK);
+  return weekLockedAsWhole(weekN, !!(w && w.done), cache.doneWeeks, getTodayWeekIdx() + 1);
 }
 function isDaySaved(weekN, calDay) { return SAVED_DAYS.has(savedDayKey('Week ' + weekN, DAY_NAMES[calDay])); }
 function isDayLocked(weekN, calDay) { return isWeekDone(weekN) || isDaySaved(weekN, calDay); }
@@ -300,7 +299,6 @@ function currentHistory() {
 }
 function applyHistory(entries) {
   SAVED_DAYS = savedDaySetFrom(entries);
-  LOGGED_HIGH_WEEK = highestLoggedWeek(entries);
   Object.keys(LAST_TIME).forEach(k => delete LAST_TIME[k]);
   if (!entries.length) return;
   Object.keys(PR_HISTORY).forEach(k => PR_HISTORY[k] = { e1rm: 0, repMaxes: {} });
