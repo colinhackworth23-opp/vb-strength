@@ -24,11 +24,17 @@ function parseSetValue(v) {
   return { weight: '', reps: '' };
 }
 // ── Which days are saved (drives the per-day read-only lock) ──
-// A day counts as saved when the Sets tab (or a save still waiting in the outbox) has a row for that week + weekday.
+// A day counts as saved when the Sets tab (or a save still waiting in the outbox) has a row for that week + weekday
+// in THIS block. Older programs reused the same week labels ("Week 8", May 2026), so rows from another block never count:
+// a row with a Block value must match; a row without one (older saves) must be dated on or after the block start.
 function savedDayKey(week, dayName) { return String(week || '').trim() + '|' + String(dayName || '').trim(); }
-function savedDaySetFrom(entries) {
+function savedDaySetFrom(entries, block, start) {
   const set = new Set();
-  (entries || []).forEach(e => { if (e && e.week && e.day) set.add(savedDayKey(e.week, e.day)); });
+  (entries || []).forEach(e => {
+    if (!e || !e.week || !e.day) return;
+    if (e.block ? e.block !== block : !(e.date instanceof Date && start instanceof Date && e.date >= start)) return;
+    set.add(savedDayKey(e.week, e.day));
+  });
   return set;
 }
 // Whole-week lock, kept only for completed weeks that are already over (before this calendar week).

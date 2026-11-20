@@ -181,12 +181,19 @@ test('a save the sheet already has is confirmed without being lost or duplicated
 });
 
 // ── Per-day read-only lock ──
-test('saved days come from Sets rows (week + weekday), one key per day', () => {
+test('saved days come from this block only: older programs reused the same week labels', () => {
   const { run } = makeEnv();
   const out = JSON.parse(run(`JSON.stringify([...savedDaySetFrom([
-    {week:'Week 8',day:'Friday'},{week:'Week 8',day:'Friday'},{week:' Week 8 ',day:'Monday'},{week:'',day:'Tuesday'},{week:'Week 7',day:'Friday'}])])`));
-  assert.deepStrictEqual(out.sort(), ['Week 7|Friday', 'Week 8|Friday', 'Week 8|Monday']);
-  assert.strictEqual(run("savedDaySetFrom([]).size"), 0);
+    {week:'Week 8',day:'Wednesday',date:new Date(2026,4,24),block:''},      // May 2026 program, from the old Log
+    {week:'Week 9',day:'Tuesday',date:new Date(2026,6,30),block:''},        // July 2026 program
+    {week:'Week 8',day:'Monday',date:new Date(2026,10,17),block:''},        // this block, saved before the Block column
+    {week:'Week 8',day:'Friday',date:new Date(2026,10,19),block:'fall-2026-b1'},
+    {week:'Week 8',day:'Friday',date:new Date(2026,10,19),block:'fall-2026-b1'},
+    {week:'Week 8',day:'Tuesday',date:new Date(2026,10,17),block:'spring-2027-b2'}, // another block
+    {week:'',day:'Thursday',date:new Date(2026,10,19),block:'fall-2026-b1'}
+  ], 'fall-2026-b1', new Date(2026,8,28))])`));
+  assert.deepStrictEqual(out.sort(), ['Week 8|Friday', 'Week 8|Monday']);
+  assert.strictEqual(run("savedDaySetFrom([], 'b', new Date()).size"), 0);
 });
 test('whole-week lock only for completed weeks before this calendar week', () => {
   const { run } = makeEnv();

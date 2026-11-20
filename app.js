@@ -270,7 +270,7 @@ function historyFromSets(rows) {
   rows.forEach((r, i) => {
     const date = new Date(r[0]);
     if (!r[0] || isNaN(date.getTime()) || !r[4]) return;
-    out.push({ date, order: i, week: r[1], day: r[2], session: String(r[3] || ''), id: String(r[4]), name: String(r[5] || r[4]), set: Number(r[6]) || 0, value: r[7] });
+    out.push({ date, order: i, week: r[1], day: r[2], session: String(r[3] || ''), id: String(r[4]), name: String(r[5] || r[4]), set: Number(r[6]) || 0, value: r[7], block: String(r[11] || '') });
   });
   return out;
 }
@@ -298,7 +298,7 @@ function currentHistory() {
   return entries.concat(historyFromSets(pendingRows('Sets')).map(e => ({ ...e, order: e.order + 1e6 })));
 }
 function applyHistory(entries) {
-  SAVED_DAYS = savedDaySetFrom(entries);
+  SAVED_DAYS = savedDaySetFrom(entries, PROGRAM_BLOCK, PROGRAM_START);
   Object.keys(LAST_TIME).forEach(k => delete LAST_TIME[k]);
   if (!entries.length) return;
   Object.keys(PR_HISTORY).forEach(k => PR_HISTORY[k] = { e1rm: 0, repMaxes: {} });
@@ -653,7 +653,7 @@ function getTodayDayIdx() {
 }
 function getTodayWeekIdx() {
   // Week 1 started Aug 3, 2026 (Monday). Parse as LOCAL time with Y,M,D args.
-  const start = new Date(2026, 8, 28); // Monday Sep 28 2026 (month is 0-indexed)
+  const start = PROGRAM_START; // Monday Sep 28 2026, set in program.js
   const today = new Date();
   // Normalize both to midnight local so DST and hour-of-day don't skew the math
   const startMid = new Date(start.getFullYear(), start.getMonth(), start.getDate());

@@ -3,6 +3,7 @@
 
 // Which training block new log rows belong to (written to the Sets tab's Block column)
 const PROGRAM_BLOCK = 'fall-2026-b1';
+const PROGRAM_START = new Date(2026, 8, 28); // Monday of Week 1 of this block (local time; month is 0-indexed). Change with PROGRAM_BLOCK.
 
 // Weeks where the LAST set of an exercise is an optional extra. Skipping it is not a missed set:
 // it is not saved unless checked, the progress bar and verdict chip do not wait for it, and the

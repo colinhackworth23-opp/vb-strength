@@ -271,6 +271,7 @@ Add these to the short form:
   - A save queued offline locks its day right away; nothing about the save changes.
   - Week 8 is not marked Completed until its three gym lift days are saved.
 - Data impact: None to the Sheet. Local only: `doneWeeks` in the phone cache is no longer written. Existing entries still lock a week as a whole, but only for weeks before the current calendar week (from the block start date). This week and later weeks lock day by day. Nothing is deleted. Set checks are cleared for the saved day only, not the whole week.
+  - 2026-11-20 fix 2: the Sets tab also holds rows from earlier programs that reused the same week labels ("Week 8 Wednesday" on 5/24/2026, "Week 9 Tuesday" on 7/30/2026, converted from the old Log). Those locked this block's Week 8 Wednesday. A saved day now counts only rows from this block: Block column equal to `PROGRAM_BLOCK`, or no Block value and dated on or after `PROGRAM_START` (new in `program.js`, also used for today's week). Next block: change both together.
   - 2026-11-20 fix: the first build kept a whole-week lock for any week below the highest `doneWeeks` entry. On Colin's phone that still locked Week 8, probably from a stray later-week entry written by an old empty save. Switched to the calendar rule above.
 - Edge cases:
   - Day saved on another device: locks here after the next sheet refresh.
