@@ -23,6 +23,28 @@ function parseSetValue(v) {
   if (m) return { weight: '', reps: parseInt(m[1], 10) };
   return { weight: '', reps: '' };
 }
+// ── Which days are saved (drives the per-day read-only lock) ──
+// A day counts as saved when the Sets tab (or a save still waiting in the outbox) has a row for that week + weekday.
+function savedDayKey(week, dayName) { return String(week || '').trim() + '|' + String(dayName || '').trim(); }
+function savedDaySetFrom(entries) {
+  const set = new Set();
+  (entries || []).forEach(e => { if (e && e.week && e.day) set.add(savedDayKey(e.week, e.day)); });
+  return set;
+}
+// Highest week number that has anything logged (0 if none)
+function highestLoggedWeek(entries) {
+  let hi = 0;
+  (entries || []).forEach(e => { const m = /(\d+)/.exec(String((e && e.week) || '')); if (m) hi = Math.max(hi, parseInt(m[1], 10)); });
+  return hi;
+}
+// Whole-week lock, kept only for weeks that are over. The newest completed week is NOT locked as a whole:
+// its saved days lock one by one, so unfinished days stay editable.
+function weekLockedAsWhole(weekN, hardDone, doneWeeks, loggedHigh) {
+  if (hardDone) return true;
+  if (!Array.isArray(doneWeeks) || !doneWeeks.includes(weekN)) return false;
+  return weekN < Math.max.apply(null, doneWeeks) || weekN < loggedHigh;
+}
+
 // ── Rep-logged exercises (pull-ups) ──
 // These are logged as reps. The planned load (BW, +10) is shown as a label, not typed.
 // Saved Value formats are ones parseSetValue already reads: "6 reps" (bodyweight) and "10x6" (load x reps).

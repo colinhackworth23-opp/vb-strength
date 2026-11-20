@@ -258,6 +258,28 @@ Add these to the short form:
 - Success check: The week after this ships, no exercise shows a planned weight below what Colin lifted last week unless it is a deload or a Colin-edited week.
 - Coach wording for RULES.md step 4: "If an exercise is held, propose the last session's weights for next week as a Hold (pending), unless the plan is already at or above them."
 
+### Read-only lock per saved day, not per week
+- Status: Building (built and tested; not Shipped until Colin confirms on his phone)
+- Raised by: Colin (2026-11-20; approval is his request)
+- Problem: Saving the last lift day (Friday) marked the whole week done and locked every day as view-only. Colin saved Friday of Week 8 early and could no longer log the rest of the week.
+- Behavior: A day becomes view-only only when that day has been saved: the Sets tab, or a save still waiting in the outbox, has a row for that week and weekday. Unsaved days in the same week stay editable. Saving no longer marks the week done.
+  - Banner on a locked day reads "Friday saved — view only". Old completed weeks keep "Week N completed — view only".
+  - The week pill and "Completed" badge show only when all three gym lift days (lower, push-pull, power) are saved, or for old completed weeks.
+- Acceptance criteria:
+  - With Week 8 Monday and Friday saved, Monday and Friday are view-only; Tuesday, Wednesday and Thursday take input.
+  - Weeks 1-7 stay view-only.
+  - A save queued offline locks its day right away; nothing about the save changes.
+  - Week 8 is not marked Completed until its three gym lift days are saved.
+- Data impact: None to the Sheet. Local only: `doneWeeks` in the phone cache is no longer written. Existing entries are read so that weeks older than the newest completed week stay locked; the newest one (Week 8) is not whole-week locked until a later week has logged data. Nothing is deleted. Set checks are cleared for the saved day only, not the whole week.
+- Edge cases:
+  - Day saved on another device: locks here after the next sheet refresh.
+  - Phone offline with no cached Sets: the day shows editable until history loads.
+  - Effort-only saves (no sets) do not lock a day.
+  - A day saved with some sets missing is locked with those sets missing. There is no unlock button yet (Colin's call; see decision log).
+- Risks: A day saved by mistake (half-filled) is locked. Before this change the same happened to the whole week.
+- Rollback: Revert the commit. Old `doneWeeks` entries still exist on the phone, so weeks 1-8 would lock as before.
+- Success check: Colin logs the rest of Week 8 without hitting a view-only day.
+
 ## Backlog / ideas
 - Unticked sets are saved as if done: `saveSession` collects every set box that has a value, whether or not its check circle was ticked, so a set skipped on the day but still showing its planned weight is logged as performed. The Sunday assessment then reads that planned weight as the actual one. Week 8's optional extra sets are the only case handled so far. Needs a decision from Colin and the Coach (save only ticked sets, or warn on unticked ones) before any change, because it alters what gets logged for every exercise. (Raised by: Dev)
 - Sets tab Block column: the app writes `fall-2026-b1` as a 12th column, but the live Sets header and all 1,836 rows stop at column 11 (Save ID). The deployed Apps Script is probably older than `apps-script/Code.gs`, and RULES.md step 4 (`block_start`) may have no Block data to filter on. Needs Colin to compare the script in the Apps Script editor. (Raised by: Dev)
@@ -275,6 +297,7 @@ Add these to the short form:
 | 2026-11-09 | Add one extra set on squat, incline bench, hex bar, RDL and hip thrust in Week 8 only | Week 8 is labeled Peak volume but matched Week 7; Colin approved | After Week 9 loads are logged |
 | 2026-11-09 | Test week Dec 7 - 13; Block 2 starts Dec 14 (earlier than the January plan) | Colin's call; no gap after testing, so no re-ramp | When Block 2 is drafted |
 | 2026-11-09 | Week 11 is defined in program.js, not as a Program tab column | One-off week; avoids a sheet schema change and an Apps Script redeploy | If test weeks become a regular block feature |
+| 2026-11-20 | Read-only lock moves from the whole week to each saved day | Colin saved Friday early and lost editing for the rest of Week 8 | If Colin needs to correct a saved day (an unlock option would be a new item) |
 | 2026-11-09 | Week 8 extra sets are saved only when ticked; the Sunday assessment ignores them | Otherwise a skipped extra set would be logged as done and, for RDL and hip thrust, read as a missed set | After Week 8, with the unticked-sets backlog item |
 
 ## Gym friction log

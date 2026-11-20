@@ -180,6 +180,35 @@ test('a save the sheet already has is confirmed without being lost or duplicated
   calls.filter(c => c.method === 'POST').forEach(c => assert.strictEqual(c.body.saveId, 'c1'));
 });
 
+// ── Per-day read-only lock ──
+test('saved days come from Sets rows (week + weekday), one key per day', () => {
+  const { run } = makeEnv();
+  const out = JSON.parse(run(`JSON.stringify([...savedDaySetFrom([
+    {week:'Week 8',day:'Friday'},{week:'Week 8',day:'Friday'},{week:' Week 8 ',day:'Monday'},{week:'',day:'Tuesday'},{week:'Week 7',day:'Friday'}])])`));
+  assert.deepStrictEqual(out.sort(), ['Week 7|Friday', 'Week 8|Friday', 'Week 8|Monday']);
+  assert.strictEqual(run("savedDaySetFrom([]).size"), 0);
+});
+test('highestLoggedWeek', () => {
+  const { run } = makeEnv();
+  assert.strictEqual(run("highestLoggedWeek([{week:'Week 3'},{week:'Week 8'},{week:'Week 10'},{week:'x'}])"), 10);
+  assert.strictEqual(run("highestLoggedWeek([])"), 0);
+});
+test('newest completed week is not locked as a whole; older weeks and hardcoded done still are', () => {
+  const { run } = makeEnv();
+  const L = (n, hard, dw, hi) => run(`weekLockedAsWhole(${n}, ${hard}, ${JSON.stringify(dw)}, ${hi})`);
+  // Colin's case: weeks 1-8 marked done, Week 8 is the newest, nothing logged for Week 9
+  const dw = [1, 2, 3, 4, 5, 6, 7, 8];
+  assert.strictEqual(L(8, false, dw, 8), false, 'Week 8 stays editable');
+  assert.strictEqual(L(7, false, dw, 8), true, 'Week 7 stays view-only');
+  assert.strictEqual(L(1, false, dw, 8), true);
+  // once Week 9 has data, Week 8 is a past week
+  assert.strictEqual(L(8, false, dw, 9), true);
+  // never marked / hardcoded
+  assert.strictEqual(L(9, false, dw, 8), false);
+  assert.strictEqual(L(9, true, [], 0), true);
+  assert.strictEqual(L(8, false, undefined, 8), false);
+});
+
 (async () => {
   let failed = 0;
   for (const t of tests) {

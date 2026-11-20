@@ -23,17 +23,29 @@ function saveTMToCache() {
   cache.tms = { ...TM };
   saveCache(cache);
 }
-function markWeekDone(weekN) {
-  const cache = loadCache();
-  if (!cache.doneWeeks) cache.doneWeeks = [];
-  if (!cache.doneWeeks.includes(weekN)) cache.doneWeeks.push(weekN);
-  saveCache(cache);
-}
-function isWeekDone(weekN) {
+// Read-only lock, per day: a day locks once the Sets tab (or the outbox) has a row for that week + weekday.
+// Weeks that were completed and are over keep the old whole-week lock. Nothing is deleted by locking.
+let SAVED_DAYS = new Set();
+let LOGGED_HIGH_WEEK = 0;
+function isWeekDone(weekN) { // whole-week lock (past weeks only)
   const w = WEEKS[weekN - 1];
-  if (w && w.done) return true; // hardcoded fallback
   const cache = loadCache();
-  return cache.doneWeeks ? cache.doneWeeks.includes(weekN) : false;
+  return weekLockedAsWhole(weekN, !!(w && w.done), cache.doneWeeks, LOGGED_HIGH_WEEK);
+}
+function isDaySaved(weekN, calDay) { return SAVED_DAYS.has(savedDayKey('Week ' + weekN, DAY_NAMES[calDay])); }
+function isDayLocked(weekN, calDay) { return isWeekDone(weekN) || isDaySaved(weekN, calDay); }
+function lockBannerHTML(weekN, calDay) {
+  const msg = isWeekDone(weekN) ? `✓ Week ${weekN} completed — view only` : `✓ ${DAY_NAMES[calDay]} saved — view only`;
+  return `<div class="locked-banner"><span>${msg}</span></div>`;
+}
+// A week shows "Completed" once every gym lift day in it is saved (or it is an old whole-week lock)
+function isWeekComplete(weekN) {
+  if (isWeekDone(weekN)) return true;
+  const w = WEEKS[weekN - 1];
+  if (!w || !w.days) return false;
+  const lifts = [];
+  w.days.forEach((t, d) => { if (t === 'lower' || t === 'push-pull' || t === 'power') lifts.push(d); });
+  return lifts.length > 0 && lifts.every(d => isDaySaved(weekN, d));
 }
 
 // ── Set-check persistence ──
@@ -54,10 +66,10 @@ function isChecked(weekN, dayN, exName, setIdx) {
   if (!cache.checks) return false;
   return !!cache.checks[checkKey(weekN, dayN, exName, setIdx)];
 }
-function clearChecksForWeek(weekN) {
+function clearChecksForDay(weekN, dayN) {
   const cache = loadCache();
   if (!cache.checks) return;
-  const prefix = `w${weekN}d`;
+  const prefix = `w${weekN}d${dayN}`;
   Object.keys(cache.checks).forEach(k => {
     if (k.startsWith(prefix)) delete cache.checks[k];
   });
@@ -287,6 +299,8 @@ function currentHistory() {
   return entries.concat(historyFromSets(pendingRows('Sets')).map(e => ({ ...e, order: e.order + 1e6 })));
 }
 function applyHistory(entries) {
+  SAVED_DAYS = savedDaySetFrom(entries);
+  LOGGED_HIGH_WEEK = highestLoggedWeek(entries);
   Object.keys(LAST_TIME).forEach(k => delete LAST_TIME[k]);
   if (!entries.length) return;
   Object.keys(PR_HISTORY).forEach(k => PR_HISTORY[k] = { e1rm: 0, repMaxes: {} });
@@ -1223,7 +1237,7 @@ function getHomeCallout(slot) {
 }
 
 function buildGymDay(weekN, slot, w, loads, calDay) {
-  const locked = isWeekDone(weekN);
+  const locked = isDayLocked(weekN, calDay);
   const dayLabel = DAY_NAMES[calDay];
   const titles = { lower:'Lower body + hinge', pushPull:'Push + pull', power:'Power + posterior chain' };
   const primaryMap = { lower:'squat', pushPull:'bench', power:'dl' };
@@ -1231,7 +1245,7 @@ function buildGymDay(weekN, slot, w, loads, calDay) {
   const slot_title = titles[slot] || slot;
   const primaryKey = primaryMap[slot];
   let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-lift">${slot_title}</span></div>`;
-  if (locked) h += `<div class="locked-banner"><span>✓ Week ${weekN} completed — view only</span></div>`;
+  if (locked) h += lockBannerHTML(weekN, calDay === undefined ? 5 : calDay);
   // Check-in prompt for weeks 3, 5, 8
   if (w.checkin && !locked && slot === 'lower') h += buildCheckinPrompt(weekN);
   if (w.thanksgiving && !locked && slot === 'lower') h += `<div class="callout c-amber">Thanksgiving is Thursday this week and it lands in your heaviest week. If you are travelling, tell Claude and this becomes the deload week instead — do not try to force a peak week around a holiday.</div>`;
@@ -1415,12 +1429,12 @@ function confirmTestTM(btn, key) {
   paintTestEstimate(el);
 }
 function buildTestDay(weekN, slot, w, calDay) {
-  const locked = isWeekDone(weekN);
+  const locked = isDayLocked(weekN, calDay);
   const dayLabel = DAY_NAMES[calDay];
   const slotIdx = slot === 'lower' ? 0 : slot === 'pushPull' ? 1 : 2;
   const titles = { lower:'Test · back squat', pushPull:'Test · pull-ups + incline bench', power:'Test · hex bar deadlift' };
   let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-lift">${titles[slot]}</span></div>`;
-  if (locked) h += `<div class="locked-banner"><span>✓ Week ${weekN} completed — view only</span></div>`;
+  if (locked) h += lockBannerHTML(weekN, calDay === undefined ? 5 : calDay);
   const readiness = getReadiness(weekN, slotIdx);
   if (!locked) {
     const opts = [['rough','😴','Rough night'],['okay','😐','Okay'],['fresh','💪','Fresh']];
@@ -1566,12 +1580,12 @@ function buildTournamentFriday(weekN, w, locked) {
   return h + `<div class="spacer"></div>`;
 }
 function buildHomeDay(weekN, slot, w, calDay) {
-  const locked = isWeekDone(weekN);
+  const locked = isDayLocked(weekN, calDay);
   const dayLabel = DAY_NAMES[calDay];
   const titles = { homeUpper:'Home — upper hypertrophy', homeLower:'Home — lower + core' };
   const slotIdx = slot === 'homeUpper' ? 3 : 4;
   let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-lift">${titles[slot]}</span></div>`;
-  if (locked) h += `<div class="locked-banner"><span>✓ Week ${weekN} completed — view only</span></div>`;
+  if (locked) h += lockBannerHTML(weekN, calDay === undefined ? 5 : calDay);
   h += `<div class="callout c-blue">${getHomeCallout(slot)}</div>`;
   h += `<div class="section"><div class="section-header">Exercises · tap for cues + last time</div>${accRows(ACC[slot], weekN, slotIdx, false, locked)}</div>`;
   const homeCool = slot === 'homeUpper' ? ACC.cooldownHomeUpper : ACC.cooldownHomeLower;
@@ -1583,10 +1597,10 @@ function buildHomeDay(weekN, slot, w, calDay) {
   }
   return h + `<div class="spacer"></div>`;
 }
-function buildPrehab(weekN, w) {
-  const locked = isWeekDone(weekN);
+function buildPrehab(weekN, w, calDay) {
+  const locked = isDayLocked(weekN, calDay === undefined ? 5 : calDay);
   let h = `<div style="padding:12px 16px 0"><span class="day-tag tag-vb">Prehab · 15 min</span></div>`;
-  if (locked) h += `<div class="locked-banner"><span>✓ Week ${weekN} completed — view only</span></div>`;
+  if (locked) h += lockBannerHTML(weekN, calDay === undefined ? 5 : calDay);
   h += `<div class="callout c-green">Saturday prehab — 15 minutes, no excuses. Two days before Monday's gym session. Shoulder and knee maintenance that compounds across the whole block.</div>`;
   h += `<div class="section"><div class="section-header">Prehab circuit · tap to check off</div>${accRows(w && w.testWeek ? testWeekView(ACC.prehab) : ACC.prehab, weekN, 5, false, locked, true)}</div>`;
   h += `<div class="section"><div class="section-header">Zone 2 · the cramping lever</div>${accRows([{ rest:0, name:'Zone 2 aerobic', meta:'30-40 min', rec:'conversational pace', cue:'Brisk walk with the stroller, home stairs, or bike/stairmaster if you are at the gym. You must be able to hold a conversation — if you cannot, slow down. This is the piece that actually raises the ceiling you played under in the finals, and it only works if it is boring and consistent. Sunday counts as a second dose if life allows.', sets:['30-40 min'] }], weekN, 5, false, locked)}</div>`;
@@ -1665,7 +1679,7 @@ function buildWeekContent(weekIdx) {
     else if (token === 'power') content = buildGymDay(w.n, 'power', w, loads, d);
     else if (token === 'home-upper') content = buildHomeDay(w.n, 'homeUpper', w, d);
     else if (token === 'home-lower') content = buildHomeDay(w.n, 'homeLower', w, d);
-    else if (token === 'prehab') content = buildPrehab(w.n, w);
+    else if (token === 'prehab') content = buildPrehab(w.n, w, d);
     else if (token === 'activation') content = buildActivationDay(w.n, w);
     else if (token === 'tournament') content = buildTournamentSat(w.n, w);
     else content = buildOffDay(w.n, w);
@@ -1678,7 +1692,7 @@ function buildWeekContent(weekIdx) {
 // ── Render ──
 function renderWeekStrip() {
   document.getElementById('weekStrip').innerHTML = WEEKS.map((w, i) => {
-    const done = isWeekDone(w.n);
+    const done = isWeekComplete(w.n);
     const cls = done ? 'done' : (w.n === CURRENT_WEEK ? 'current' : 'upcoming');
     return `<button class="week-pill ${cls}${i===currentWeekIdx?' active':''}" onclick="switchWeek(${i})">W${w.n}<div class="wdot"></div></button>`;
   }).join('');
@@ -1686,7 +1700,7 @@ function renderWeekStrip() {
 
 function renderWeekInfo() {
   const w = WEEKS[currentWeekIdx];
-  const badge = isWeekDone(w.n) ? '<span class="done-badge">Completed</span>' : '';
+  const badge = isWeekComplete(w.n) ? '<span class="done-badge">Completed</span>' : '';
   document.getElementById('weekInfo').innerHTML = `<span class="week-title">${w.phase}</span><span class="week-meta">${w.dates} &middot; ${w.intensity} &middot; ${w.volume}</span>${badge}`;
   const heroLbl = document.getElementById('heroWeekLabel');
   if (heroLbl) heroLbl.textContent = w.testWeek ? 'Test week' : `Week ${w.n} of 10`;
@@ -1894,18 +1908,12 @@ async function saveSession(weekN, dayN, dayLabelOverride, btnEl) {
     applyLocalHistory(); // "last time" includes this session straight away
     if (statusEl) statusEl.innerHTML = syncNoteHTML(saveId) + missingRepsNoteHTML(weekN, dayN);
     if (btn) { btn.textContent = 'Saved ✓'; setTimeout(()=>{ btn.disabled=false; btn.textContent='Save session to Google Sheets'; }, 3000); }
-    // Mark week as done after its last lifting day —
-    // tournament weeks have no Friday session, so Tuesday (dayN 1) is their last lift day
-    const wDef = WEEKS[weekN - 1];
-    // lastLiftSlot is now a string ('power','pull',etc) or number for legacy weeks
-    const lastSlotToken = wDef && wDef.lastLiftSlot;
-    const slotTokenMap = {lower:0, 'push-pull':1, pushPull:1, power:2};
-    const lastLiftDay = typeof lastSlotToken === 'string' ? (slotTokenMap[lastSlotToken] !== undefined ? slotTokenMap[lastSlotToken] : 2) : (lastSlotToken !== undefined ? lastSlotToken : 2);
-    if (dayN === lastLiftDay) {
-      markWeekDone(weekN);
-      clearChecksForWeek(weekN);
+    // This day is now in the Sets tab / outbox, so it turns read-only (other days of the week stay editable).
+    // applyLocalHistory above already recorded it; redraw after the "Saved ✓" feedback registers.
+    if (setRows.length) {
+      clearChecksForDay(weekN, dayN);
       renderWeekStrip();
-      setTimeout(renderContent, 1200); // apply locked state after the "Saved ✓" feedback registers
+      setTimeout(renderContent, 1200);
     }
     // Detect PRs against the pre-save snapshot
     const prs = detectPRs(prSnapshot, sessionLifts);
